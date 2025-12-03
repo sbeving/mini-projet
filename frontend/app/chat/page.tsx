@@ -1,5 +1,6 @@
 "use client";
 
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { useToast } from "@/components/Toast";
 import {
     ChatFilters,
@@ -507,7 +508,11 @@ ${m.context ? `\n*Analyzed ${m.context.logsAnalyzed} logs from ${m.context.timeR
                       : "bg-background border border-border"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  {message.role === "assistant" ? (
+                    <MarkdownRenderer content={message.content} />
+                  ) : (
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  )}
                   
                   {/* Context info for assistant messages */}
                   {message.context && (

@@ -37,7 +37,7 @@ A **Mini PFA project** that provides a log-aware chatbot and dashboard for appli
 | **Frontend** | Next.js 14, TypeScript, TailwindCSS | Dashboard UI, Chat interface |
 | **Backend** | Node.js, Express, TypeScript, Prisma | REST API, Log processing |
 | **Database** | PostgreSQL 16 | Log storage, analytics queries |
-| **LLM** | Ollama (qwen2.5:3b) | AI-powered log analysis |
+| **LLM** | Ollama (qwen2.5:0.5b) | AI-powered log analysis |
 
 ## ✨ Features
 
@@ -84,7 +84,7 @@ docker-compose up -d --build
 # Pull the Ollama model (required for chat functionality)
 make pull-model
 # OR manually:
-docker exec logchat-ollama ollama pull qwen2.5:3b
+docker exec logchat-ollama ollama pull qwen2.5:0.5b
 ```
 
 ### 3. Seed Sample Data
@@ -273,7 +273,7 @@ DATABASE_URL=postgresql://logchat:logchat123@db:5432/logchat
 
 # Ollama
 OLLAMA_URL=http://ollama:11434
-OLLAMA_MODEL=qwen2.5:3b
+OLLAMA_MODEL=qwen2.5:0.5b
 
 # Frontend
 NEXT_PUBLIC_API_URL=http://localhost:3001

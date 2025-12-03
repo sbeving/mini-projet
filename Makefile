@@ -59,7 +59,7 @@ logs-ollama:
 # Pull the Ollama LLM model
 pull-model:
 	@echo "Pulling qwen2.5 model (this may take a few minutes)..."
-	docker exec logchat-ollama ollama pull qwen2.5:3b
+	docker exec logchat-ollama ollama pull qwen2.5:0.5b
 	@echo "✅ Model pulled successfully!"
 
 # Run Prisma migrations

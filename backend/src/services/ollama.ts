@@ -4,7 +4,7 @@
  */
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:3b';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:0.5b';
 
 // System prompt for log analysis
 const LOG_ANALYST_SYSTEM_PROMPT = `You are a log analysis assistant. You are given application logs and high-level statistics from a system. Your job is to explain what is happening, highlight anomalies, and answer questions clearly and concisely.

@@ -124,7 +124,7 @@ router.get('/health', async (_req: Request, res: Response) => {
       ollama: {
         available: isHealthy,
         models,
-        configured_model: process.env.OLLAMA_MODEL || 'qwen2.5:3b',
+        configured_model: process.env.OLLAMA_MODEL || 'qwen2.5:0.5b',
       },
     });
   } catch (error) {
