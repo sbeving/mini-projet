@@ -1,5 +1,6 @@
 "use client";
 
+import { useToast } from "@/components/Toast";
 import {
     ChatFilters,
     ChatMessage,
@@ -8,20 +9,19 @@ import {
     fetchServices,
     sendChatMessage,
 } from "@/lib/api";
-import { useToast } from "@/components/Toast";
-import { 
-  AlertCircle, 
-  Bot, 
-  Download, 
-  History, 
-  Loader2, 
-  MessageSquare, 
-  RotateCcw,
-  Send, 
-  Sparkles, 
-  Trash2, 
-  User,
-  X 
+import {
+    AlertCircle,
+    Bot,
+    Download,
+    History,
+    Loader2,
+    MessageSquare,
+    RotateCcw,
+    Send,
+    Sparkles,
+    Trash2,
+    User,
+    X
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

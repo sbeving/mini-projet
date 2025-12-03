@@ -1,17 +1,17 @@
 "use client";
 
 import { Log } from "@/lib/api";
-import { 
-  AlertCircle, 
-  AlertTriangle, 
-  Bug, 
-  CheckCircle, 
-  Clock, 
-  Copy, 
-  Info, 
-  Server, 
-  Skull, 
-  X 
+import {
+    AlertCircle,
+    AlertTriangle,
+    Bug,
+    CheckCircle,
+    Clock,
+    Copy,
+    Info,
+    Server,
+    Skull,
+    X
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
