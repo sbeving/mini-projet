@@ -1,0 +1,7 @@
+# Environment Variables
+.env
+.env.local
+
+# Node Modules
+node_modules/
+

@@ -1,0 +1,41 @@
+// Prisma schema for LogChat
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Represents an ingested application log entry
+model Log {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  /// Timestamp from the log itself (parsed or provided)
+  timestamp DateTime
+  
+  /// Log level: INFO, WARN, ERROR, DEBUG, FATAL, etc.
+  level     String
+  
+  /// Service/application name that generated the log
+  service   String
+  
+  /// The main log message
+  message   String
+  
+  /// The original raw log line/payload
+  raw       String
+  
+  /// Additional metadata (JSON blob)
+  meta      Json?
+
+  @@index([timestamp])
+  @@index([level])
+  @@index([service])
+  @@index([timestamp, level])
+  @@map("logs")
+}
