@@ -139,21 +139,21 @@ export default function MarkdownRenderer({ content, className = "" }: MarkdownRe
             const isInline = !className;
             if (isInline) {
               return (
-                <code className="bg-primary/15 text-primary-light px-1.5 py-0.5 rounded text-sm font-mono border border-primary/20">
+                <code className="bg-primary/15 text-primary-light px-1.5 py-0.5 rounded text-sm font-mono border border-primary/20 break-all">
                   {children}
                 </code>
               );
             }
             const language = className?.replace("language-", "") || "";
             return (
-              <div className="relative my-3">
+              <div className="relative my-3 max-w-full overflow-hidden">
                 {language && (
-                  <div className="absolute top-0 right-0 px-2 py-1 text-xs text-muted bg-surface-hover rounded-bl-lg rounded-tr-lg border-l border-b border-border">
+                  <div className="absolute top-0 right-0 px-2 py-1 text-xs text-muted bg-surface-hover rounded-bl-lg rounded-tr-lg border-l border-b border-border z-10">
                     {language}
                   </div>
                 )}
                 <code
-                  className="block bg-[#0d1117] border border-border rounded-xl p-4 text-sm font-mono overflow-x-auto whitespace-pre text-green-400"
+                  className="block bg-[#0d1117] border border-border rounded-xl p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap break-words text-green-400 max-w-full"
                   {...props}
                 >
                   {children}
@@ -162,7 +162,7 @@ export default function MarkdownRenderer({ content, className = "" }: MarkdownRe
             );
           },
           pre: ({ children }) => (
-            <pre className="bg-[#0d1117] border border-border rounded-xl overflow-x-auto my-3">
+            <pre className="bg-[#0d1117] border border-border rounded-xl overflow-x-auto my-3 max-w-full">
               {children}
             </pre>
           ),

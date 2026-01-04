@@ -123,3 +123,35 @@ export function staffOrAdmin(req: Request, res: Response, next: NextFunction) {
     return authorize('ADMIN', 'STAFF')(req, res, next);
   });
 }
+
+/**
+ * Require admin role (simpler version for direct use)
+ */
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  const token = extractToken(req);
+
+  if (!token) {
+    res.status(401).json({ success: false, error: 'Authentication required' });
+    return;
+  }
+
+  validateSession(token)
+    .then((payload) => {
+      if (!payload) {
+        res.status(401).json({ success: false, error: 'Invalid or expired token' });
+        return;
+      }
+
+      if (payload.role !== 'ADMIN') {
+        res.status(403).json({ success: false, error: 'Admin access required' });
+        return;
+      }
+
+      req.user = payload;
+      next();
+    })
+    .catch((error) => {
+      console.error('Auth middleware error:', error);
+      res.status(500).json({ success: false, error: 'Authentication error' });
+    });
+}

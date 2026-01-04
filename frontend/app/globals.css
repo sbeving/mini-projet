@@ -414,11 +414,16 @@ body {
   @apply rounded-2xl rounded-bl-md;
   @apply shadow-lg shadow-black/10;
   @apply max-w-none;
+  @apply overflow-hidden;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Better spacing for AI responses */
 .chat-bubble-assistant .markdown-content {
   @apply text-foreground;
+  @apply w-full;
+  overflow-x: auto;
 }
 
 .chat-bubble-assistant .markdown-content > *:first-child {
@@ -427,6 +432,19 @@ body {
 
 .chat-bubble-assistant .markdown-content > *:last-child {
   @apply mb-0;
+}
+
+.chat-bubble-assistant .markdown-content code,
+.chat-bubble-assistant .markdown-content pre {
+  @apply max-w-full;
+  overflow-x: auto;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.chat-bubble-user {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 /* ========================================

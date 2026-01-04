@@ -49,6 +49,21 @@ model User {
   
   /// Activity logs for this user
   activities   UserActivity[]
+  
+  /// Log sources created by this user
+  logSources   LogSource[]
+  
+  /// Integrations created by this user
+  integrations Integration[] @relation("IntegrationCreator")
+  
+  /// Audit logs for this user
+  auditLogs    AuditLog[]    @relation("AuditLogs")
+  
+  /// Alert rules created by this user
+  alertRules   AlertRule[]   @relation("AlertRuleCreator")
+  
+  /// Alerts acknowledged by this user
+  acknowledgedAlerts Alert[]  @relation("AlertAcknowledger")
 
   @@index([email])
   @@index([role])
@@ -246,3 +261,281 @@ model UsageStats {
   @@index([date])
   @@map("usage_stats")
 }
+
+/// Log source types
+enum LogSourceType {
+  API
+  WEBHOOK
+  SYSLOG
+  AGENT
+  CLOUD
+  DATABASE
+}
+
+/// Integration status
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+  FAILED
+  PENDING
+}
+
+/// Log Source - API keys and webhook endpoints for log ingestion
+model LogSource {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  /// Source name
+  name        String
+  
+  /// Description
+  description String?
+  
+  /// Source type
+  type        LogSourceType @default(API)
+  
+  /// API Key (visible to user once)
+  apiKey      String   @unique
+  
+  /// Hashed API key for validation
+  apiKeyHash  String
+  
+  /// IP whitelist (empty = allow all)
+  allowedIps  String[] @default([])
+  
+  /// Webhook URL (if type = WEBHOOK)
+  webhookUrl  String?
+  
+  /// Webhook secret for HMAC validation
+  webhookSecret String?
+  
+  /// Active status
+  isActive    Boolean  @default(true)
+  
+  /// Rate limit (requests per window)
+  rateLimit   Int      @default(1000)
+  
+  /// Rate limit window (seconds)
+  rateLimitWindow Int  @default(60)
+  
+  /// Custom metadata
+  metadata    Json?
+  
+  /// Creator
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  
+  /// Last time used
+  lastUsedAt  DateTime?
+  
+  /// Usage stats
+  usageStats  LogSourceUsage[]
+
+  @@index([createdById])
+  @@index([isActive])
+  @@index([type])
+  @@map("LogSource")
+}
+
+/// Integration - external service connections
+model Integration {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  /// Integration name
+  name        String
+  
+  /// Integration type (slack, pagerduty, email, etc.)
+  type        String
+  
+  /// Status
+  status      IntegrationStatus @default(ACTIVE)
+  
+  /// Configuration (service-specific)
+  config      Json
+  
+  /// Encrypted credentials
+  credentials Json?
+  
+  /// IP whitelist for callbacks
+  allowedIps  String[] @default([])
+  
+  /// Webhook URL for this integration
+  webhookUrl  String?
+  
+  /// Webhook secret
+  webhookSecret String?
+  
+  /// Retry policy
+  retryPolicy Json?
+  
+  /// Last successful sync
+  lastSyncAt  DateTime?
+  
+  /// Last error time
+  lastErrorAt DateTime?
+  
+  /// Last error message
+  lastErrorMessage String?
+  
+  /// Total syncs
+  syncCount   Int      @default(0)
+  
+  /// Total errors
+  errorCount  Int      @default(0)
+  
+  /// Creator
+  createdById String
+  createdBy   User     @relation("IntegrationCreator", fields: [createdById], references: [id])
+
+  @@index([createdById])
+  @@index([status])
+  @@index([type])
+  @@map("Integration")
+}
+
+/// Log source usage tracking
+model LogSourceUsage {
+  id            String   @id @default(cuid())
+  timestamp     DateTime @default(now())
+  
+  /// Source
+  logSourceId   String
+  logSource     LogSource @relation(fields: [logSourceId], references: [id], onDelete: Cascade)
+  
+  /// Metrics
+  logsReceived  Int      @default(0)
+  bytesReceived Int      @default(0)
+  requestsCount Int      @default(0)
+  errorsCount   Int      @default(0)
+  
+  /// Source IP
+  sourceIp      String?
+  
+  /// User agent
+  userAgent     String?
+
+  @@index([logSourceId, timestamp])
+  @@index([timestamp])
+  @@map("LogSourceUsage")
+}
+
+/// Audit log for all admin actions (CISO requirement)
+model AuditLog {
+  id         String   @id @default(cuid())
+  timestamp  DateTime @default(now())
+  
+  /// User who performed the action
+  userId     String
+  user       User     @relation("AuditLogs", fields: [userId], references: [id])
+  
+  /// Action performed
+  action     String
+  
+  /// Resource type (log_source, integration, user, etc.)
+  resource   String
+  
+  /// Resource ID
+  resourceId String?
+  
+  /// Additional details
+  details    Json?
+  
+  /// IP address
+  ipAddress  String?
+  
+  /// User agent
+  userAgent  String?
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+  @@index([resource])
+  @@map("AuditLog")
+}
+
+/// Alert rules for automated monitoring
+model AlertRule {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  /// Rule name
+  name        String
+  
+  /// Description
+  description String?
+  
+  /// Condition (query/filter)
+  condition   Json
+  
+  /// Severity when triggered
+  severity    String   @default("INFO")
+  
+  /// Active status
+  isActive    Boolean  @default(true)
+  
+  /// Notification channels (email, slack, etc.)
+  notificationChannels String[] @default([])
+  
+  /// Cooldown period (minutes)
+  cooldownMinutes Int   @default(5)
+  
+  /// Last triggered
+  lastTriggeredAt DateTime?
+  
+  /// Trigger count
+  triggerCount    Int      @default(0)
+  
+  /// Creator
+  createdById String
+  createdBy   User     @relation("AlertRuleCreator", fields: [createdById], references: [id])
+  
+  /// Alerts triggered by this rule
+  alerts      Alert[]
+
+  @@index([createdById])
+  @@index([isActive])
+  @@map("AlertRule")
+}
+
+/// Triggered alerts
+model Alert {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  
+  /// Rule that triggered this alert
+  ruleId      String
+  rule        AlertRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  
+  /// Log that triggered (if applicable)
+  logId       String?
+  
+  /// Severity
+  severity    String
+  
+  /// Alert message
+  message     String
+  
+  /// Additional details
+  details     Json?
+  
+  /// Acknowledged status
+  isAcknowledged Boolean @default(false)
+  
+  /// Who acknowledged
+  acknowledgedById String?
+  acknowledgedBy   User?   @relation("AlertAcknowledger", fields: [acknowledgedById], references: [id])
+  
+  /// When acknowledged
+  acknowledgedAt   DateTime?
+
+  @@index([ruleId])
+  @@index([logId])
+  @@index([isAcknowledged])
+  @@index([createdAt])
+  @@map("Alert")
+}
+

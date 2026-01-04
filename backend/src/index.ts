@@ -15,6 +15,9 @@ import chatRouter from './routes/chat.js';
 import chatSessionsRouter from './routes/chat-sessions.js';
 import logsRouter from './routes/logs.js';
 import streamRouter from './routes/stream.js';
+import logSourcesRouter from './routes/log-sources.js';
+import integrationsRouter from './routes/integrations.js';
+import auditLogsRouter from './routes/audit-logs.js';
 
 // Import services
 import { cleanupExpiredSessions, seedDefaultUsers } from './services/auth.js';
@@ -76,6 +79,9 @@ app.use('/api/chat', chatRouter);
 app.use('/api/chat-sessions', chatSessionsRouter);
 app.use('/api/stream', streamRouter);
 app.use('/api/admin/analytics', adminAnalyticsRouter);
+app.use('/api/log-sources', logSourcesRouter);
+app.use('/api/integrations', integrationsRouter);
+app.use('/api/audit-logs', auditLogsRouter);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
@@ -116,7 +122,10 @@ app.listen(PORT, async () => {
 ║  📈 Analytics:    /api/analytics                      ║
 ║  💬 Chat:         /api/chat                           ║
 ║  💬 Sessions:     /api/chat-sessions                  ║
-║  📊 Admin:        /api/admin/analytics                ║
+║  � Log Sources:  /api/log-sources (admin)            ║
+║  🔗 Integrations: /api/integrations (admin)           ║
+║  📋 Audit Logs:   /api/audit-logs (admin)             ║
+║  �📊 Admin:        /api/admin/analytics                ║
 ║  ❤️  Health:       /health                             ║
 ╚═══════════════════════════════════════════════════════╝
   `);
