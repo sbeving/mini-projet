@@ -1,12 +1,15 @@
 "use client";
 
-import { Activity, Wifi, WifiOff } from "lucide-react";
+import { Activity, Radio, Wifi, WifiOff, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface LiveIndicatorProps {
   isConnected: boolean;
   lastUpdate?: Date | null;
   logsPerMinute?: number;
+  logsPerSecond?: number;
+  errorsPerSecond?: number;
+  activeConnections?: number;
 }
 
 /**
@@ -16,8 +19,12 @@ export default function LiveIndicator({
   isConnected,
   lastUpdate,
   logsPerMinute = 0,
+  logsPerSecond = 0,
+  errorsPerSecond = 0,
+  activeConnections = 0,
 }: LiveIndicatorProps) {
   const [pulse, setPulse] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Pulse animation on data update
   useEffect(() => {
@@ -29,21 +36,25 @@ export default function LiveIndicator({
   }, [lastUpdate]);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border">
+    <div 
+      className="relative flex items-center gap-3 px-4 py-2 bg-card rounded-lg border border-border hover:border-primary/50 transition-colors cursor-pointer"
+      onMouseEnter={() => setShowDetails(true)}
+      onMouseLeave={() => setShowDetails(false)}
+    >
       {/* Connection Status */}
       <div className="flex items-center gap-2">
         {isConnected ? (
           <>
             <div className="relative">
-              <Wifi className="h-4 w-4 text-green-500" />
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full animate-ping" />
+              <Radio className="h-4 w-4 text-red-500 animate-pulse" />
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full animate-ping" />
             </div>
-            <span className="text-sm text-green-500 font-medium">Live</span>
+            <span className="text-sm text-red-500 font-bold uppercase tracking-wide">Live</span>
           </>
         ) : (
           <>
-            <WifiOff className="h-4 w-4 text-red-500" />
-            <span className="text-sm text-red-500 font-medium">Offline</span>
+            <WifiOff className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground font-medium">Offline</span>
           </>
         )}
       </div>
@@ -51,24 +62,60 @@ export default function LiveIndicator({
       {/* Separator */}
       <div className="w-px h-4 bg-border" />
 
-      {/* Activity */}
+      {/* Real-time Metrics */}
       <div className="flex items-center gap-2">
-        <Activity 
-          className={`h-4 w-4 ${pulse ? "text-primary scale-125" : "text-muted-foreground"} transition-all duration-200`}
+        <Zap 
+          className={`h-4 w-4 ${logsPerSecond > 0 ? "text-yellow-500" : "text-muted-foreground"} ${pulse ? "scale-125" : ""} transition-all duration-200`}
         />
-        <span className="text-sm text-muted-foreground">
-          {logsPerMinute.toFixed(1)}/min
+        <span className="text-sm font-mono">
+          <span className={logsPerSecond > 0 ? "text-yellow-500" : "text-muted-foreground"}>
+            {logsPerSecond.toFixed(1)}
+          </span>
+          <span className="text-muted-foreground">/s</span>
         </span>
       </div>
 
-      {/* Last Update */}
-      {lastUpdate && (
+      {/* Errors indicator */}
+      {errorsPerSecond > 0 && (
         <>
           <div className="w-px h-4 bg-border" />
-          <span className="text-xs text-muted-foreground">
-            Updated {formatRelativeTime(lastUpdate)}
+          <span className="text-sm font-mono text-red-400">
+            ⚠️ {errorsPerSecond.toFixed(1)} err/s
           </span>
         </>
+      )}
+
+      {/* Hover Details Panel */}
+      {showDetails && isConnected && (
+        <div className="absolute top-full left-0 mt-2 p-3 bg-card border border-border rounded-lg shadow-xl z-50 min-w-[200px]">
+          <div className="text-xs font-medium text-muted-foreground mb-2">Real-Time Stats</div>
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Logs/second:</span>
+              <span className="font-mono text-yellow-500">{logsPerSecond.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Logs/minute:</span>
+              <span className="font-mono">{logsPerMinute.toFixed(0)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Errors/second:</span>
+              <span className={`font-mono ${errorsPerSecond > 0 ? "text-red-400" : "text-green-400"}`}>
+                {errorsPerSecond.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Active viewers:</span>
+              <span className="font-mono text-blue-400">{activeConnections}</span>
+            </div>
+            {lastUpdate && (
+              <div className="flex justify-between text-sm pt-1 border-t border-border">
+                <span className="text-muted-foreground">Last update:</span>
+                <span className="font-mono text-xs">{formatRelativeTime(lastUpdate)}</span>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

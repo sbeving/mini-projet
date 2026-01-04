@@ -2,59 +2,202 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========================================
+   CSS Custom Properties & Theme
+======================================== */
 :root {
   --background: #0a0a0f;
   --foreground: #fafafa;
+  
+  /* Gradient colors */
+  --gradient-start: #6366f1;
+  --gradient-end: #8b5cf6;
+  
+  /* Glow colors */
+  --glow-primary: rgba(99, 102, 241, 0.4);
+  --glow-accent: rgba(139, 92, 246, 0.3);
 }
 
+/* ========================================
+   Base Styles
+======================================== */
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
+/* ========================================
+   Custom Scrollbar
+======================================== */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #111118;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #27272a;
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
 }
 
-/* Log level badges */
-.log-level-debug { @apply bg-gray-600 text-gray-100; }
-.log-level-info { @apply bg-blue-600 text-blue-100; }
-.log-level-warn { @apply bg-amber-600 text-amber-100; }
-.log-level-error { @apply bg-red-600 text-red-100; }
-.log-level-fatal { @apply bg-red-800 text-red-100; }
-
-/* Animation for loading states */
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a transparent;
 }
 
-.animate-pulse-slow {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* ========================================
+   Component Classes
+======================================== */
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary to-accent text-white;
+    @apply hover:shadow-lg hover:shadow-primary/25 hover:scale-[1.02];
+    @apply focus:ring-primary/50;
+    @apply active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply bg-surface-hover text-foreground;
+    @apply hover:bg-surface-active hover:shadow-md;
+    @apply focus:ring-surface-active;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-muted-foreground;
+    @apply hover:bg-surface-hover hover:text-foreground;
+    @apply focus:ring-surface-active;
+  }
+
+  .btn-danger {
+    @apply bg-error/10 text-error;
+    @apply hover:bg-error/20 hover:shadow-lg hover:shadow-error/20;
+    @apply focus:ring-error/50;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full px-4 py-2.5 bg-surface border border-border rounded-xl;
+    @apply text-foreground placeholder:text-muted;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary;
+    @apply transition-all duration-200;
+  }
+
+  .input:hover:not(:focus) {
+    @apply border-border-hover;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-card border border-border rounded-2xl overflow-hidden;
+    @apply transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply hover:border-border-hover hover:shadow-xl hover:shadow-black/20;
+    @apply hover:transform hover:-translate-y-0.5;
+  }
+
+  .card-glow {
+    @apply hover:shadow-2xl hover:shadow-primary/10;
+    @apply hover:border-primary/30;
+  }
+
+  /* Glass morphism */
+  .glass {
+    @apply bg-surface/80 backdrop-blur-xl border border-white/5;
+  }
+
+  .glass-card {
+    @apply bg-card/90 backdrop-blur-xl border border-white/5 rounded-2xl;
+  }
+
+  /* Badges */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full;
+  }
+
+  .badge-primary {
+    @apply bg-primary/10 text-primary;
+  }
+
+  .badge-success {
+    @apply bg-success/10 text-success;
+  }
+
+  .badge-warning {
+    @apply bg-warning/10 text-warning;
+  }
+
+  .badge-error {
+    @apply bg-error/10 text-error;
+  }
+
+  .badge-info {
+    @apply bg-info/10 text-info;
+  }
 }
 
-/* Chat message animations */
-@keyframes slideIn {
+/* ========================================
+   Log Level Badges
+======================================== */
+.log-level-debug {
+  @apply bg-gray-500/20 text-gray-300 border border-gray-500/30;
+}
+
+.log-level-info {
+  @apply bg-blue-500/20 text-blue-300 border border-blue-500/30;
+}
+
+.log-level-warn {
+  @apply bg-amber-500/20 text-amber-300 border border-amber-500/30;
+}
+
+.log-level-error {
+  @apply bg-red-500/20 text-red-300 border border-red-500/30;
+}
+
+.log-level-fatal {
+  @apply bg-red-700/30 text-red-200 border border-red-700/40;
+}
+
+/* ========================================
+   Animations
+======================================== */
+
+/* Fade in */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Slide up */
+@keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -62,12 +205,12 @@ body {
   }
 }
 
-.message-enter {
-  animation: slideIn 0.3s ease-out;
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
 }
 
-/* Toast slide in animation */
-@keyframes slide-in {
+/* Slide in from right */
+@keyframes slide-in-right {
   from {
     opacity: 0;
     transform: translateX(100%);
@@ -79,15 +222,10 @@ body {
 }
 
 .animate-slide-in {
-  animation: slide-in 0.3s ease-out;
+  animation: slide-in-right 0.3s ease-out;
 }
 
-/* Modal animations */
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
+/* Scale in */
 @keyframes scale-in {
   from {
     opacity: 0;
@@ -99,49 +237,37 @@ body {
   }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.2s ease-out;
-}
-
 .animate-scale-in {
   animation: scale-in 0.2s ease-out;
 }
 
-/* Shimmer loading effect */
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
+/* Chat message animation */
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
   }
-  100% {
-    background-position: 200% 0;
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    #27272a 25%,
-    #3f3f46 50%,
-    #27272a 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+.message-enter {
+  animation: message-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Glow effect for important elements */
-.glow-error {
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+/* Pulse slow */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
-.glow-warning {
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.glow-success {
-  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
-}
-
-/* Live pulse indicator */
+/* Live pulse */
 @keyframes live-pulse {
   0%, 100% {
     opacity: 1;
@@ -149,7 +275,7 @@ body {
   }
   50% {
     opacity: 0.7;
-    transform: scale(1.1);
+    transform: scale(1.2);
   }
 }
 
@@ -157,25 +283,297 @@ body {
   animation: live-pulse 2s ease-in-out infinite;
 }
 
-/* Row highlight animation */
-@keyframes highlight {
-  0% {
-    background-color: rgba(59, 130, 246, 0.3);
+/* Shimmer loading */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    #18181b 25%,
+    #27272a 50%,
+    #18181b 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Float animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Glow pulse */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--glow-primary), 0 0 40px var(--glow-accent);
   }
-  100% {
-    background-color: transparent;
+  50% {
+    box-shadow: 0 0 30px var(--glow-primary), 0 0 60px var(--glow-accent);
   }
 }
 
-.animate-highlight {
-  animation: highlight 2s ease-out;
+.animate-glow {
+  animation: glow-pulse 3s ease-in-out infinite;
 }
 
-/* Number counter animation */
+/* ========================================
+   Glow Effects
+======================================== */
+.glow-error {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3), 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.glow-warning {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.3), 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.glow-success {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3), 0 4px 12px rgba(34, 197, 94, 0.2);
+}
+
+.glow-primary {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3), 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+/* ========================================
+   Hover Effects
+======================================== */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 40px rgba(139, 92, 246, 0.2);
+}
+
+/* ========================================
+   Gradient Backgrounds
+======================================== */
+.gradient-bg {
+  background: linear-gradient(135deg, #0a0a0f 0%, #111118 50%, #0a0a0f 100%);
+}
+
+.gradient-radial {
+  background: radial-gradient(ellipse at center, #111118 0%, #0a0a0f 70%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ========================================
+   Chat Message Bubbles
+======================================== */
+.chat-bubble-user {
+  @apply bg-gradient-to-br from-primary to-accent text-white;
+  @apply rounded-2xl rounded-br-md;
+  @apply shadow-lg shadow-primary/20;
+}
+
+.chat-bubble-assistant {
+  @apply bg-surface border border-border;
+  @apply rounded-2xl rounded-bl-md;
+  @apply shadow-lg shadow-black/10;
+  @apply max-w-none;
+}
+
+/* Better spacing for AI responses */
+.chat-bubble-assistant .markdown-content {
+  @apply text-foreground;
+}
+
+.chat-bubble-assistant .markdown-content > *:first-child {
+  @apply mt-0;
+}
+
+.chat-bubble-assistant .markdown-content > *:last-child {
+  @apply mb-0;
+}
+
+/* ========================================
+   Code & Markdown Styling
+======================================== */
+.prose {
+  @apply text-foreground;
+}
+
+.prose code {
+  @apply bg-surface-hover px-1.5 py-0.5 rounded text-sm font-mono text-primary-light;
+}
+
+.prose pre {
+  @apply bg-surface border border-border rounded-xl p-4 overflow-x-auto;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0;
+}
+
+.prose a {
+  @apply text-primary hover:text-primary-hover underline underline-offset-2;
+}
+
+.prose strong {
+  @apply text-foreground font-semibold;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  @apply text-foreground font-bold mt-6 mb-3;
+}
+
+.prose ul, .prose ol {
+  @apply my-4 ml-4;
+}
+
+.prose li {
+  @apply my-1;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-primary/50 pl-4 italic text-muted-foreground;
+}
+
+/* ========================================
+   Table Styling
+======================================== */
+.table-container {
+  @apply overflow-x-auto rounded-xl border border-border;
+}
+
+.table {
+  @apply w-full text-sm;
+}
+
+.table th {
+  @apply bg-surface px-4 py-3 text-left font-semibold text-muted-foreground border-b border-border;
+}
+
+.table td {
+  @apply px-4 py-3 border-b border-border;
+}
+
+.table tr:last-child td {
+  @apply border-b-0;
+}
+
+.table tr:hover td {
+  @apply bg-surface-hover;
+}
+
+/* ========================================
+   Stat Cards
+======================================== */
+.stat-card {
+  @apply relative overflow-hidden;
+}
+
+.stat-card::before {
+  content: '';
+  @apply absolute top-0 right-0 w-32 h-32 opacity-10;
+  background: radial-gradient(circle, currentColor 0%, transparent 70%);
+  transform: translate(30%, -30%);
+}
+
+/* ========================================
+   Loading States
+======================================== */
+.skeleton {
+  @apply animate-shimmer rounded-lg;
+}
+
+.skeleton-text {
+  @apply h-4 w-full skeleton;
+}
+
+.skeleton-title {
+  @apply h-6 w-3/4 skeleton;
+}
+
+.skeleton-circle {
+  @apply rounded-full skeleton;
+}
+
+/* ========================================
+   Responsive Utilities
+======================================== */
+@media (max-width: 640px) {
+  .hide-mobile {
+    display: none;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .hide-tablet {
+    display: none;
+  }
+}
+
+@media (min-width: 1025px) {
+  .hide-desktop {
+    display: none;
+  }
+}
+
+/* ========================================
+   Focus Visible
+======================================== */
+:focus-visible {
+  @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+}
+
+/* ========================================
+   Selection
+======================================== */
+::selection {
+  @apply bg-primary/30 text-foreground;
+}
+
+/* ========================================
+   Number counter animation
+======================================== */
 @keyframes count-up {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -187,22 +585,19 @@ body {
   animation: count-up 0.5s ease-out;
 }
 
-/* Hover effects */
-.hover-lift {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+/* ========================================
+   Row highlight animation
+======================================== */
+@keyframes highlight {
+  0% {
+    background-color: rgba(99, 102, 241, 0.2);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
-.hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-/* Card hover glow */
-.card-glow {
-  transition: box-shadow 0.3s ease;
-}
-
-.card-glow:hover {
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.15);
+.animate-highlight {
+  animation: highlight 2s ease-out;
 }
 

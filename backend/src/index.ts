@@ -8,10 +8,17 @@ import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
 
 // Import routes
+import adminAnalyticsRouter from './routes/admin-analytics.js';
 import analyticsRouter from './routes/analytics.js';
+import authRouter from './routes/auth.js';
 import chatRouter from './routes/chat.js';
+import chatSessionsRouter from './routes/chat-sessions.js';
 import logsRouter from './routes/logs.js';
 import streamRouter from './routes/stream.js';
+
+// Import services
+import { cleanupExpiredSessions, seedDefaultUsers } from './services/auth.js';
+import { updateDailyStats } from './services/activity.js';
 
 // Initialize Prisma
 export const prisma = new PrismaClient({
@@ -62,10 +69,13 @@ app.get('/health', async (_req: Request, res: Response) => {
 });
 
 // API Routes
+app.use('/api/auth', authRouter);
 app.use('/api/logs', logsRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/chat', chatRouter);
+app.use('/api/chat-sessions', chatSessionsRouter);
 app.use('/api/stream', streamRouter);
+app.use('/api/admin/analytics', adminAnalyticsRouter);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
@@ -95,18 +105,47 @@ process.on('SIGTERM', async () => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║           LogChat Backend API Server                  ║
 ╠═══════════════════════════════════════════════════════╣
 ║  🚀 Server running on http://localhost:${PORT}          ║
+║  🔐 Auth:         /api/auth                           ║
 ║  📊 Logs API:     /api/logs                           ║
 ║  📈 Analytics:    /api/analytics                      ║
 ║  💬 Chat:         /api/chat                           ║
+║  💬 Sessions:     /api/chat-sessions                  ║
+║  📊 Admin:        /api/admin/analytics                ║
 ║  ❤️  Health:       /health                             ║
 ╚═══════════════════════════════════════════════════════╝
   `);
+
+  // Seed default users in development
+  if (process.env.NODE_ENV === 'development') {
+    await seedDefaultUsers();
+  }
+
+  // Cleanup expired sessions every hour
+  setInterval(async () => {
+    const cleaned = await cleanupExpiredSessions();
+    if (cleaned > 0) {
+      console.log(`Cleaned up ${cleaned} expired sessions`);
+    }
+  }, 60 * 60 * 1000);
+
+  // Update daily usage stats every hour
+  setInterval(async () => {
+    try {
+      await updateDailyStats();
+      console.log('Updated daily usage stats');
+    } catch (error) {
+      console.error('Failed to update daily stats:', error);
+    }
+  }, 60 * 60 * 1000);
+
+  // Run initial stats update
+  updateDailyStats().catch(console.error);
 });
 
 export default app;

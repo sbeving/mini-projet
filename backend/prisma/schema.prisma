@@ -10,6 +10,76 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// User roles for access control
+enum Role {
+  ADMIN
+  STAFF
+  USER
+}
+
+/// User account for authentication
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  /// User email (unique identifier)
+  email     String   @unique
+  
+  /// Hashed password
+  password  String
+  
+  /// Display name
+  name      String
+  
+  /// User role
+  role      Role     @default(USER)
+  
+  /// Whether the account is active
+  active    Boolean  @default(true)
+  
+  /// Last login timestamp
+  lastLogin DateTime? @map("last_login")
+  
+  /// Sessions for this user
+  sessions     Session[]
+  
+  /// Chat sessions for this user
+  chatSessions ChatSession[]
+  
+  /// Activity logs for this user
+  activities   UserActivity[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+/// Session for authenticated users
+model Session {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+  
+  /// Session token (hashed)
+  token     String   @unique
+  
+  /// Associated user
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  /// User agent string
+  userAgent String?  @map("user_agent")
+  
+  /// IP address
+  ipAddress String?  @map("ip_address")
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
 /// Represents an ingested application log entry
 model Log {
   id        String   @id @default(cuid())
@@ -38,4 +108,141 @@ model Log {
   @@index([service])
   @@index([timestamp, level])
   @@map("logs")
+}
+
+/// Activity type enum
+enum ActivityType {
+  LOGIN
+  LOGOUT
+  PAGE_VIEW
+  CHAT_MESSAGE
+  CHAT_SESSION_START
+  CHAT_SESSION_END
+  DASHBOARD_VIEW
+  LOG_SEARCH
+  LOG_VIEW
+  EXPORT
+  SETTINGS_CHANGE
+}
+
+/// Chat session - stores conversation history
+model ChatSession {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  /// Session title (auto-generated from first message)
+  title     String
+  
+  /// User who owns this chat session
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  /// Messages in this session
+  messages  ChatMessage[]
+  
+  /// Whether session is archived
+  archived  Boolean  @default(false)
+  
+  /// Total messages count (denormalized for performance)
+  messageCount Int   @default(0) @map("message_count")
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@map("chat_sessions")
+}
+
+/// Chat message - individual messages in a chat session
+model ChatMessage {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  /// The chat session this message belongs to
+  sessionId String   @map("session_id")
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  /// Message role: user or assistant
+  role      String
+  
+  /// Message content
+  content   String
+  
+  /// Response time in ms (for assistant messages)
+  responseTime Int?  @map("response_time")
+  
+  /// Tokens used (if tracked)
+  tokensUsed   Int?  @map("tokens_used")
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+/// User activity tracking for analytics
+model UserActivity {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  /// User who performed the activity
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  /// Type of activity
+  type      ActivityType
+  
+  /// Page or resource accessed
+  path      String?
+  
+  /// Duration in seconds (for page views, sessions)
+  duration  Int?
+  
+  /// Additional metadata
+  meta      Json?
+  
+  /// IP address
+  ipAddress String?  @map("ip_address")
+  
+  /// User agent
+  userAgent String?  @map("user_agent")
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([userId, type])
+  @@map("user_activities")
+}
+
+/// Platform usage statistics (daily aggregates)
+model UsageStats {
+  id        String   @id @default(cuid())
+  
+  /// Date for these stats
+  date      DateTime @db.Date
+  
+  /// Total active users
+  activeUsers    Int @default(0) @map("active_users")
+  
+  /// Total new users
+  newUsers       Int @default(0) @map("new_users")
+  
+  /// Total chat sessions
+  chatSessions   Int @default(0) @map("chat_sessions")
+  
+  /// Total chat messages
+  chatMessages   Int @default(0) @map("chat_messages")
+  
+  /// Total logs ingested
+  logsIngested   Int @default(0) @map("logs_ingested")
+  
+  /// Total API calls
+  apiCalls       Int @default(0) @map("api_calls")
+  
+  /// Average session duration (seconds)
+  avgSessionDuration Int @default(0) @map("avg_session_duration")
+
+  @@unique([date])
+  @@index([date])
+  @@map("usage_stats")
 }

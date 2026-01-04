@@ -6,6 +6,7 @@
 import { Request, Response, Router } from 'express';
 import { z } from 'zod';
 import { createLog, createLogs, getRecentErrors, getServices, LogInput, queryLogs } from '../services/logs.js';
+import { broadcastLog, broadcastLogs } from './stream.js';
 
 const router = Router();
 
@@ -38,6 +39,9 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const input = singleLogSchema.parse(req.body);
     const log = await createLog(input as LogInput);
+    
+    // Broadcast to connected SSE clients in real-time
+    broadcastLog(log);
     
     res.status(201).json({
       success: true,
@@ -73,6 +77,16 @@ router.post('/batch', async (req: Request, res: Response) => {
   try {
     const inputs = batchLogSchema.parse(req.body);
     const count = await createLogs(inputs as LogInput[]);
+    
+    // Broadcast batch to connected SSE clients in real-time
+    // Transform inputs to match expected format
+    const logsForBroadcast = inputs.map(input => ({
+      timestamp: input.timestamp || new Date().toISOString(),
+      level: input.level || 'INFO',
+      service: input.service || 'unknown',
+      message: input.message
+    }));
+    broadcastLogs(logsForBroadcast);
     
     res.status(201).json({
       success: true,

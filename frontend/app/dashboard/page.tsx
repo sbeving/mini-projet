@@ -16,7 +16,9 @@ import {
     Log,
     TimelineDataPoint,
 } from "@/lib/api";
-import { Activity, RefreshCw, Search, X, Zap } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { Activity, Loader2, RefreshCw, Search, X, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type TimeRange = "15m" | "1h" | "6h" | "24h" | "7d";
@@ -27,6 +29,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
  * Dashboard page - Log analytics and monitoring with real-time updates
  */
 export default function DashboardPage() {
+  const router = useRouter();
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const { addToast } = useToast();
   
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -54,6 +58,23 @@ export default function DashboardPage() {
   const eventSourceRef = useRef<EventSource | null>(null);
   const logCountRef = useRef(0);
   const lastMinuteRef = useRef(Date.now());
+
+  // Live stats from SSE (simpler structure than DashboardStats)
+  interface LiveStats {
+    totalLogs: number;
+    errorCount: number;
+    errorRate: number;
+    lastMinuteLogs: number;
+    services: { service: string; count: number }[];
+  }
+  const [liveStats, setLiveStats] = useState<LiveStats | null>(null);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [authLoading, isAuthenticated, router]);
 
   // Calculate start time based on time range
   const getStartTime = useCallback(() => {
@@ -110,6 +131,13 @@ export default function DashboardPage() {
     }
   }, [levelFilter, serviceFilter, searchQuery, getStartTime, page]);
 
+  // Real-time metrics state
+  const [realtimeMetrics, setRealtimeMetrics] = useState({
+    logsPerSecond: 0,
+    errorsPerSecond: 0,
+    activeConnections: 0
+  });
+
   // Connect to SSE stream
   const connectToStream = useCallback(() => {
     if (eventSourceRef.current) {
@@ -123,47 +151,142 @@ export default function DashboardPage() {
       setIsLive(true);
       addToast({
         type: "success",
-        title: "Live Updates Connected",
-        message: "You'll receive real-time log updates",
+        title: "🔴 Live Updates Connected",
+        message: "Dashboard now shows real-time data",
         duration: 3000,
       });
     };
 
+    eventSource.addEventListener("connected", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("[SSE] Connected:", data);
+      } catch (err) {
+        console.error("[SSE] Error parsing connected event:", err);
+      }
+    });
+
     eventSource.addEventListener("stats", (event) => {
       try {
         const data = JSON.parse(event.data);
-        setLastUpdate(new Date());
+        setLastUpdate(new Date(data.timestamp));
         
+        // Update real-time metrics
+        if (data.realtime) {
+          setRealtimeMetrics(data.realtime);
+          setLogsPerMinute(Math.round(data.realtime.logsPerSecond * 60));
+        }
+        
+        // Update live stats (separate from dashboard stats, simpler structure)
+        if (data.totalLogs !== undefined) {
+          setLiveStats({
+            totalLogs: data.totalLogs,
+            errorCount: data.errorCount,
+            errorRate: data.errorRate,
+            lastMinuteLogs: data.lastMinuteLogs,
+            services: data.services || []
+          });
+        }
+
         // Update logs per minute calculation
         logCountRef.current++;
         const now = Date.now();
         if (now - lastMinuteRef.current >= 60000) {
-          setLogsPerMinute(logCountRef.current);
           logCountRef.current = 0;
           lastMinuteRef.current = now;
         }
 
-        // Check for new errors and show toast
+        // Show toast for new errors
         if (data.recentLogs && data.recentLogs.length > 0) {
           const latestLog = data.recentLogs[0];
           if (latestLog.level === "ERROR" || latestLog.level === "FATAL") {
             setNewLogCount((prev) => prev + 1);
             addToast({
               type: "error",
-              title: `New ${latestLog.level} in ${latestLog.service}`,
-              message: latestLog.message.substring(0, 100) + "...",
+              title: `⚠️ ${latestLog.level} in ${latestLog.service}`,
+              message: latestLog.message.substring(0, 100),
               duration: 5000,
             });
           }
         }
       } catch (err) {
-        console.error("Error parsing SSE data:", err);
+        console.error("[SSE] Error parsing stats:", err);
       }
     });
 
-    eventSource.onerror = () => {
+    eventSource.addEventListener("log", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("[SSE] New log received:", data.log?.message?.substring(0, 50));
+        
+        // Update real-time metrics
+        if (data.metrics) {
+          setRealtimeMetrics(data.metrics);
+        }
+        
+        // Show toast for new log
+        if (data.log) {
+          setNewLogCount(prev => prev + 1);
+          if (data.log.level === "ERROR" || data.log.level === "FATAL") {
+            addToast({
+              type: "error",
+              title: `🔥 ${data.log.level} - ${data.log.service}`,
+              message: data.log.message.substring(0, 100),
+              duration: 4000,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("[SSE] Error parsing log:", err);
+      }
+    });
+
+    eventSource.addEventListener("batch", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log(`[SSE] Batch received: ${data.count} logs`);
+        
+        if (data.metrics) {
+          setRealtimeMetrics(data.metrics);
+        }
+        
+        setNewLogCount(prev => prev + data.count);
+        addToast({
+          type: "info",
+          title: `📊 ${data.count} new logs`,
+          message: "Batch of logs ingested",
+          duration: 2000,
+        });
+      } catch (err) {
+        console.error("[SSE] Error parsing batch:", err);
+      }
+    });
+
+    eventSource.addEventListener("heartbeat", (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.logsPerSecond !== undefined) {
+          setRealtimeMetrics(prev => ({
+            ...prev,
+            logsPerSecond: data.logsPerSecond,
+            activeConnections: data.activeConnections || prev.activeConnections
+          }));
+        }
+      } catch (err) {
+        // Heartbeat parse errors are fine to ignore
+      }
+    });
+
+    eventSource.onerror = (err) => {
+      console.error("[SSE] Connection error:", err);
       setIsLive(false);
       eventSource.close();
+      addToast({
+        type: "warning",
+        title: "Connection Lost",
+        message: "Real-time updates disconnected. Click 'Go Live' to reconnect.",
+        duration: 5000,
+      });
     };
 
     return () => {
@@ -186,19 +309,23 @@ export default function DashboardPage() {
     }
   }, [addToast]);
 
-  // Initial data fetch
+  // Initial data fetch - only when authenticated
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!authLoading && isAuthenticated) {
+      fetchData();
+    }
+  }, [fetchData, authLoading, isAuthenticated]);
 
-  // Fetch logs when filters change
+  // Fetch logs when filters change - only when authenticated
   useEffect(() => {
-    fetchLogsData();
-  }, [fetchLogsData]);
+    if (!authLoading && isAuthenticated) {
+      fetchLogsData();
+    }
+  }, [fetchLogsData, authLoading, isAuthenticated]);
 
-  // Auto-refresh every 30 seconds when not live
+  // Auto-refresh every 30 seconds when not live and authenticated
   useEffect(() => {
-    if (isLive) return;
+    if (isLive || authLoading || !isAuthenticated) return;
     
     const interval = setInterval(() => {
       fetchData();
@@ -206,7 +333,7 @@ export default function DashboardPage() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [fetchData, fetchLogsData, isLive]);
+  }, [fetchData, fetchLogsData, isLive, authLoading, isAuthenticated]);
 
   // Cleanup SSE on unmount
   useEffect(() => {
@@ -235,6 +362,20 @@ export default function DashboardPage() {
   // Calculate health score (inverse of error rate)
   const healthScore = stats ? Math.max(0, 100 - stats.errorRate * 10) : 100;
 
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -258,6 +399,9 @@ export default function DashboardPage() {
             isConnected={isLive}
             lastUpdate={lastUpdate}
             logsPerMinute={logsPerMinute}
+            logsPerSecond={realtimeMetrics.logsPerSecond}
+            errorsPerSecond={realtimeMetrics.errorsPerSecond}
+            activeConnections={realtimeMetrics.activeConnections}
           />
 
           {/* Time Range Selector */}
