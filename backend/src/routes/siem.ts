@@ -12,7 +12,7 @@ import {
   correlationEngine,
   incidentManager,
   investigationAssistant,
-} from '../services/siem/index.js';
+} from '../services/siem/index';
 import { ThreatSeverity, IncidentStatus, IncidentPriority } from '../services/siem/types.js';
 
 const router = Router();
