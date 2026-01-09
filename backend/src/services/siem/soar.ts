@@ -658,8 +658,9 @@ class SOAREngine {
       }
 
       // Wait before execution if specified
-      if (step.waitBefore) {
-        await new Promise(resolve => setTimeout(resolve, step.waitBefore * 1000));
+      const waitTime = step.waitBefore ?? 0;
+      if (waitTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, waitTime * 1000));
       }
 
       // Execute the action
@@ -921,6 +922,92 @@ class SOAREngine {
 
   getPendingApprovals(): ActionExecution[] {
     return this.pendingApprovals;
+  }
+
+  /**
+   * Approve a pending action and execute it
+   */
+  async approveAction(actionId: string, approvedBy: string): Promise<{
+    success: boolean;
+    message: string;
+    action?: ActionExecution;
+  }> {
+    const index = this.pendingApprovals.findIndex(a => a.id === actionId);
+    
+    if (index === -1) {
+      return {
+        success: false,
+        message: `Action ${actionId} not found in pending approvals`,
+      };
+    }
+
+    const action = this.pendingApprovals[index];
+    
+    // Remove from pending
+    this.pendingApprovals.splice(index, 1);
+
+    // Update action status
+    action.status = 'completed';
+    action.completedAt = new Date();
+
+    // Add approval metadata
+    (action as any).approvedBy = approvedBy;
+    (action as any).approvedAt = new Date();
+
+    // Add to history
+    this.actionHistory.push(action);
+
+    // Execute the actual action (simulated)
+    console.log(`[SOAR] Action ${actionId} approved by ${approvedBy}:`, action.actionType);
+
+    return {
+      success: true,
+      message: `Action ${actionId} approved and executed`,
+      action,
+    };
+  }
+
+  /**
+   * Reject a pending action
+   */
+  async rejectAction(actionId: string, rejectedBy: string): Promise<{
+    success: boolean;
+    message: string;
+    action?: ActionExecution;
+  }> {
+    const index = this.pendingApprovals.findIndex(a => a.id === actionId);
+    
+    if (index === -1) {
+      return {
+        success: false,
+        message: `Action ${actionId} not found in pending approvals`,
+      };
+    }
+
+    const action = this.pendingApprovals[index];
+    
+    // Remove from pending
+    this.pendingApprovals.splice(index, 1);
+
+    // Update action status
+    action.status = 'failed';
+    action.completedAt = new Date();
+    action.error = `Rejected by ${rejectedBy}`;
+
+    // Add rejection metadata
+    (action as any).rejectedBy = rejectedBy;
+    (action as any).rejectedAt = new Date();
+
+    // Add to history
+    this.actionHistory.push(action);
+
+    console.log(`[SOAR] Action ${actionId} rejected by ${rejectedBy}`);
+
+    return {
+      success: true,
+      message: `Action ${actionId} rejected`,
+      action,
+    };
   }
 
   getExecutions(limit: number = 50): PlaybookExecution[] {

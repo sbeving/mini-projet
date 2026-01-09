@@ -479,6 +479,94 @@ export default function SecurityDashboard() {
           </div>
         </div>
 
+        {/* AI-Powered SIEM Features */}
+        <div className="mt-8">
+          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <span>🤖</span> AI-Powered Security Intelligence
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Threat Intelligence */}
+            <Link href="/security/threat-intel" className="group">
+              <div className="bg-gradient-to-br from-[#12121a] to-[#1a1a28] border border-purple-500/20 rounded-xl p-6 hover:border-purple-500/50 transition-all hover:scale-[1.02] h-full">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl">🌐</span>
+                  <div>
+                    <h4 className="font-semibold text-white">Threat Intelligence</h4>
+                    <p className="text-xs text-gray-500">IOC enrichment & feeds</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-400">
+                  Real-time threat feeds, IOC enrichment, and global threat landscape monitoring.
+                </p>
+                <div className="mt-4 flex items-center gap-2 text-xs text-purple-400">
+                  <span className="px-2 py-1 bg-purple-500/10 rounded">10+ Feeds</span>
+                  <span className="px-2 py-1 bg-purple-500/10 rounded">Auto-enrichment</span>
+                </div>
+              </div>
+            </Link>
+
+            {/* SOAR */}
+            <Link href="/security/soar" className="group">
+              <div className="bg-gradient-to-br from-[#12121a] to-[#1a2820] border border-green-500/20 rounded-xl p-6 hover:border-green-500/50 transition-all hover:scale-[1.02] h-full">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl">⚡</span>
+                  <div>
+                    <h4 className="font-semibold text-white">SOAR Engine</h4>
+                    <p className="text-xs text-gray-500">Automated response</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-400">
+                  Security orchestration with automated playbooks and response actions.
+                </p>
+                <div className="mt-4 flex items-center gap-2 text-xs text-green-400">
+                  <span className="px-2 py-1 bg-green-500/10 rounded">Playbooks</span>
+                  <span className="px-2 py-1 bg-green-500/10 rounded">Auto-remediate</span>
+                </div>
+              </div>
+            </Link>
+
+            {/* UEBA */}
+            <Link href="/security/ueba" className="group">
+              <div className="bg-gradient-to-br from-[#12121a] to-[#281a1a] border border-orange-500/20 rounded-xl p-6 hover:border-orange-500/50 transition-all hover:scale-[1.02] h-full">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl">👤</span>
+                  <div>
+                    <h4 className="font-semibold text-white">UEBA</h4>
+                    <p className="text-xs text-gray-500">Behavioral analytics</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-400">
+                  User & Entity Behavior Analytics with AI-powered anomaly detection.
+                </p>
+                <div className="mt-4 flex items-center gap-2 text-xs text-orange-400">
+                  <span className="px-2 py-1 bg-orange-500/10 rounded">Risk Scoring</span>
+                  <span className="px-2 py-1 bg-orange-500/10 rounded">Peer Groups</span>
+                </div>
+              </div>
+            </Link>
+
+            {/* ML Anomaly Detection */}
+            <Link href="/security/ml-anomaly" className="group">
+              <div className="bg-gradient-to-br from-[#12121a] to-[#1a1a28] border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-500/50 transition-all hover:scale-[1.02] h-full">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-3xl">🧠</span>
+                  <div>
+                    <h4 className="font-semibold text-white">ML Detection</h4>
+                    <p className="text-xs text-gray-500">Machine learning</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-400">
+                  Advanced ML models for pattern recognition and anomaly detection.
+                </p>
+                <div className="mt-4 flex items-center gap-2 text-xs text-cyan-400">
+                  <span className="px-2 py-1 bg-cyan-500/10 rounded">Multi-model</span>
+                  <span className="px-2 py-1 bg-cyan-500/10 rounded">Auto-learn</span>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </div>
+
         {/* System Status Footer */}
         <div className="mt-8 p-4 bg-[#12121a] border border-gray-800 rounded-xl">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -493,9 +581,12 @@ export default function SecurityDashboard() {
               <div className="text-sm text-gray-500">
                 AI Analysis: <span className="text-green-400">Online</span>
               </div>
+              <div className="text-sm text-gray-500">
+                ML Models: <span className="text-green-400">Running</span>
+              </div>
             </div>
             <div className="text-xs text-gray-600">
-              Powered by AI-SIEM v2.0 • Next-Gen Threat Intelligence
+              Powered by AI-SIEM v3.0 • Next-Gen Threat Intelligence • Breakthrough AI
             </div>
           </div>
         </div>

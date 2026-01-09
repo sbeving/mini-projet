@@ -778,7 +778,7 @@ router.post('/threat-intel/enrich', authenticate, async (req: Request, res: Resp
       return res.status(400).json({ error: 'Indicator and type are required' });
     }
     
-    const enrichment = await threatIntelService.enrichIndicator({ value: indicator, type });
+    const enrichment = await threatIntelService.enrichIndicator(indicator, type);
     res.json(enrichment);
   } catch (error) {
     console.error('Enrich indicator error:', error);
@@ -865,7 +865,7 @@ router.post('/soar/playbooks/:id/execute', authenticate, staffOrAdmin, async (re
     const { context } = req.body;
     const user = (req as any).user;
     
-    const result = await soarEngine.executePlaybook(
+    const result = await soarEngine.runPlaybook(
       req.params.id,
       context || {},
       user.id
