@@ -728,4 +728,539 @@ router.get('/investigate/:threatId/mitre', authenticate, async (req: Request, re
   }
 });
 
+// ============================================================
+// THREAT INTELLIGENCE
+// ============================================================
+
+import { threatIntelService } from '../services/siem/threat-intel.js';
+
+/**
+ * GET /api/siem/threat-intel/stats
+ * Get threat intelligence statistics
+ */
+router.get('/threat-intel/stats', authenticate, async (_req: Request, res: Response) => {
+  try {
+    const stats = threatIntelService.getStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Threat intel stats error:', error);
+    res.status(500).json({ error: 'Failed to get threat intel stats' });
+  }
+});
+
+/**
+ * POST /api/siem/threat-intel/extract
+ * Extract IOCs from text
+ */
+router.post('/threat-intel/extract', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ error: 'Text is required' });
+    }
+    
+    const iocs = threatIntelService.extractIOCs(text);
+    res.json({ iocs, count: iocs.length });
+  } catch (error) {
+    console.error('Extract IOCs error:', error);
+    res.status(500).json({ error: 'Failed to extract IOCs' });
+  }
+});
+
+/**
+ * POST /api/siem/threat-intel/enrich
+ * Enrich an indicator
+ */
+router.post('/threat-intel/enrich', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { indicator, type } = req.body;
+    if (!indicator || !type) {
+      return res.status(400).json({ error: 'Indicator and type are required' });
+    }
+    
+    const enrichment = await threatIntelService.enrichIndicator({ value: indicator, type });
+    res.json(enrichment);
+  } catch (error) {
+    console.error('Enrich indicator error:', error);
+    res.status(500).json({ error: 'Failed to enrich indicator' });
+  }
+});
+
+/**
+ * GET /api/siem/threat-intel/feeds
+ * Get configured threat feeds
+ */
+router.get('/threat-intel/feeds', authenticate, async (_req: Request, res: Response) => {
+  try {
+    const feeds = threatIntelService.getFeeds();
+    res.json(feeds);
+  } catch (error) {
+    console.error('Get feeds error:', error);
+    res.status(500).json({ error: 'Failed to get feeds' });
+  }
+});
+
+/**
+ * POST /api/siem/threat-intel/lookup
+ * Lookup indicator reputation
+ */
+router.post('/threat-intel/lookup', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { indicator } = req.body;
+    if (!indicator) {
+      return res.status(400).json({ error: 'Indicator is required' });
+    }
+    
+    const reputation = threatIntelService.lookupReputation(indicator);
+    res.json(reputation);
+  } catch (error) {
+    console.error('Lookup reputation error:', error);
+    res.status(500).json({ error: 'Failed to lookup reputation' });
+  }
+});
+
+// ============================================================
+// SOAR (Security Orchestration, Automation and Response)
+// ============================================================
+
+import { soarEngine } from '../services/siem/soar.js';
+
+/**
+ * GET /api/siem/soar/playbooks
+ * Get all playbooks
+ */
+router.get('/soar/playbooks', authenticate, async (_req: Request, res: Response) => {
+  try {
+    const playbooks = soarEngine.getPlaybooks();
+    res.json(playbooks);
+  } catch (error) {
+    console.error('Get playbooks error:', error);
+    res.status(500).json({ error: 'Failed to get playbooks' });
+  }
+});
+
+/**
+ * GET /api/siem/soar/playbooks/:id
+ * Get playbook by ID
+ */
+router.get('/soar/playbooks/:id', authenticate, async (req: Request, res: Response) => {
+  try {
+    const playbook = soarEngine.getPlaybook(req.params.id);
+    if (!playbook) {
+      return res.status(404).json({ error: 'Playbook not found' });
+    }
+    res.json(playbook);
+  } catch (error) {
+    console.error('Get playbook error:', error);
+    res.status(500).json({ error: 'Failed to get playbook' });
+  }
+});
+
+/**
+ * POST /api/siem/soar/playbooks/:id/execute
+ * Execute a playbook
+ */
+router.post('/soar/playbooks/:id/execute', authenticate, staffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const { context } = req.body;
+    const user = (req as any).user;
+    
+    const result = await soarEngine.executePlaybook(
+      req.params.id,
+      context || {},
+      user.id
+    );
+    res.json(result);
+  } catch (error) {
+    console.error('Execute playbook error:', error);
+    res.status(500).json({ error: 'Failed to execute playbook' });
+  }
+});
+
+/**
+ * GET /api/siem/soar/actions
+ * Get available action types
+ */
+router.get('/soar/actions', authenticate, async (_req: Request, res: Response) => {
+  try {
+    const actions = soarEngine.getActionDefinitions();
+    res.json(actions);
+  } catch (error) {
+    console.error('Get actions error:', error);
+    res.status(500).json({ error: 'Failed to get actions' });
+  }
+});
+
+/**
+ * GET /api/siem/soar/history
+ * Get action execution history
+ */
+router.get('/soar/history', authenticate, async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const history = soarEngine.getActionHistory(limit);
+    res.json(history);
+  } catch (error) {
+    console.error('Get history error:', error);
+    res.status(500).json({ error: 'Failed to get action history' });
+  }
+});
+
+/**
+ * GET /api/siem/soar/pending
+ * Get pending approvals
+ */
+router.get('/soar/pending', authenticate, staffOrAdmin, async (_req: Request, res: Response) => {
+  try {
+    const pending = soarEngine.getPendingApprovals();
+    res.json(pending);
+  } catch (error) {
+    console.error('Get pending error:', error);
+    res.status(500).json({ error: 'Failed to get pending approvals' });
+  }
+});
+
+/**
+ * POST /api/siem/soar/pending/:id/approve
+ * Approve a pending action
+ */
+router.post('/soar/pending/:id/approve', authenticate, adminOnly, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const result = await soarEngine.approveAction(req.params.id, user.id);
+    res.json(result);
+  } catch (error) {
+    console.error('Approve action error:', error);
+    res.status(500).json({ error: 'Failed to approve action' });
+  }
+});
+
+/**
+ * POST /api/siem/soar/pending/:id/reject
+ * Reject a pending action
+ */
+router.post('/soar/pending/:id/reject', authenticate, adminOnly, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    const result = await soarEngine.rejectAction(req.params.id, user.id);
+    res.json(result);
+  } catch (error) {
+    console.error('Reject action error:', error);
+    res.status(500).json({ error: 'Failed to reject action' });
+  }
+});
+
+/**
+ * GET /api/siem/soar/stats
+ * Get SOAR statistics
+ */
+router.get('/soar/stats', authenticate, async (_req: Request, res: Response) => {
+  try {
+    const stats = soarEngine.getStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Get SOAR stats error:', error);
+    res.status(500).json({ error: 'Failed to get SOAR stats' });
+  }
+});
+
+// ============================================================
+// UEBA (User and Entity Behavior Analytics)
+// ============================================================
+
+import { uebaEngine } from '../services/siem/ueba.js';
+
+/**
+ * GET /api/siem/ueba/profiles
+ * Get entity profiles
+ */
+router.get('/ueba/profiles', authenticate, async (req: Request, res: Response) => {
+  try {
+    const filters = {
+      entityType: req.query.entityType as any,
+      riskLevel: req.query.riskLevel as any,
+      peerGroup: req.query.peerGroup as string,
+    };
+    const profiles = uebaEngine.getProfiles(filters);
+    res.json(profiles);
+  } catch (error) {
+    console.error('Get profiles error:', error);
+    res.status(500).json({ error: 'Failed to get profiles' });
+  }
+});
+
+/**
+ * GET /api/siem/ueba/profiles/:entityType/:entityId
+ * Get specific entity profile
+ */
+router.get('/ueba/profiles/:entityType/:entityId', authenticate, async (req: Request, res: Response) => {
+  try {
+    const profile = uebaEngine.getProfile(
+      req.params.entityType as any,
+      req.params.entityId
+    );
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+    res.json(profile);
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ error: 'Failed to get profile' });
+  }
+});
+
+/**
+ * POST /api/siem/ueba/analyze
+ * Analyze an activity event
+ */
+router.post('/ueba/analyze', authenticate, async (req: Request, res: Response) => {
+  try {
+    const event = req.body;
+    if (!event.entityId || !event.entityType || !event.eventType) {
+      return res.status(400).json({ error: 'entityId, entityType, and eventType are required' });
+    }
+    
+    const anomalies = await uebaEngine.analyzeActivity({
+      id: event.id || `event-${Date.now()}`,
+      entityId: event.entityId,
+      entityType: event.entityType,
+      eventType: event.eventType,
+      timestamp: event.timestamp ? new Date(event.timestamp) : new Date(),
+      sourceIp: event.sourceIp,
+      destinationIp: event.destinationIp,
+      resource: event.resource,
+      action: event.action,
+      status: event.status,
+      metadata: event.metadata,
+    });
+    
+    res.json({ anomalies, count: anomalies.length });
+  } catch (error) {
+    console.error('Analyze activity error:', error);
+    res.status(500).json({ error: 'Failed to analyze activity' });
+  }
+});
+
+/**
+ * GET /api/siem/ueba/anomalies
+ * Get recent anomalies
+ */
+router.get('/ueba/anomalies', authenticate, async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 100;
+    const anomalies = uebaEngine.getAnomalies(limit);
+    res.json(anomalies);
+  } catch (error) {
+    console.error('Get anomalies error:', error);
+    res.status(500).json({ error: 'Failed to get anomalies' });
+  }
+});
+
+/**
+ * GET /api/siem/ueba/high-risk
+ * Get high-risk entities
+ */
+router.get('/ueba/high-risk', authenticate, async (req: Request, res: Response) => {
+  try {
+    const minRiskScore = parseInt(req.query.minRiskScore as string) || 60;
+    const entities = uebaEngine.getHighRiskEntities(minRiskScore);
+    res.json(entities);
+  } catch (error) {
+    console.error('Get high-risk entities error:', error);
+    res.status(500).json({ error: 'Failed to get high-risk entities' });
+  }
+});
+
+/**
+ * GET /api/siem/ueba/peer-groups
+ * Get peer groups
+ */
+router.get('/ueba/peer-groups', authenticate, async (_req: Request, res: Response) => {
+  try {
+    const groups = uebaEngine.getPeerGroups();
+    res.json(groups);
+  } catch (error) {
+    console.error('Get peer groups error:', error);
+    res.status(500).json({ error: 'Failed to get peer groups' });
+  }
+});
+
+/**
+ * GET /api/siem/ueba/stats
+ * Get UEBA statistics
+ */
+router.get('/ueba/stats', authenticate, async (_req: Request, res: Response) => {
+  try {
+    const stats = uebaEngine.getStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Get UEBA stats error:', error);
+    res.status(500).json({ error: 'Failed to get UEBA stats' });
+  }
+});
+
+/**
+ * POST /api/siem/ueba/profiles/:entityType/:entityId/reset-risk
+ * Reset entity risk score
+ */
+router.post('/ueba/profiles/:entityType/:entityId/reset-risk', authenticate, adminOnly, async (req: Request, res: Response) => {
+  try {
+    const success = uebaEngine.resetRiskScore(
+      req.params.entityType as any,
+      req.params.entityId
+    );
+    if (!success) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+    res.json({ success: true, message: 'Risk score reset' });
+  } catch (error) {
+    console.error('Reset risk score error:', error);
+    res.status(500).json({ error: 'Failed to reset risk score' });
+  }
+});
+
+// ============================================================
+// ML ANOMALY DETECTION
+// ============================================================
+
+import { mlAnomalyEngine } from '../services/siem/ml-anomaly.js';
+
+/**
+ * POST /api/siem/ml/score
+ * Score a single log for anomalies
+ */
+router.post('/ml/score', authenticate, async (req: Request, res: Response) => {
+  try {
+    const log = req.body;
+    if (!log.id || !log.message) {
+      return res.status(400).json({ error: 'Log id and message are required' });
+    }
+    
+    const score = await mlAnomalyEngine.scoreAnomaly({
+      id: log.id,
+      message: log.message,
+      timestamp: log.timestamp ? new Date(log.timestamp) : new Date(),
+      service: log.service,
+      level: log.level,
+      source: log.source,
+    });
+    
+    res.json(score);
+  } catch (error) {
+    console.error('Score anomaly error:', error);
+    res.status(500).json({ error: 'Failed to score anomaly' });
+  }
+});
+
+/**
+ * POST /api/siem/ml/score/batch
+ * Score multiple logs for anomalies
+ */
+router.post('/ml/score/batch', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { logs } = req.body;
+    if (!Array.isArray(logs)) {
+      return res.status(400).json({ error: 'logs must be an array' });
+    }
+    
+    const scores = await mlAnomalyEngine.batchScore(
+      logs.map(log => ({
+        id: log.id,
+        message: log.message,
+        timestamp: log.timestamp ? new Date(log.timestamp) : new Date(),
+        service: log.service,
+        level: log.level,
+        source: log.source,
+      }))
+    );
+    
+    const anomalies = scores.filter(s => s.isAnomaly);
+    res.json({ 
+      scores, 
+      total: scores.length,
+      anomalies: anomalies.length,
+      anomalyRate: (anomalies.length / scores.length) * 100,
+    });
+  } catch (error) {
+    console.error('Batch score error:', error);
+    res.status(500).json({ error: 'Failed to batch score anomalies' });
+  }
+});
+
+/**
+ * GET /api/siem/ml/anomalies
+ * Get anomaly history
+ */
+router.get('/ml/anomalies', authenticate, async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 100;
+    const history = mlAnomalyEngine.getAnomalyHistory(limit);
+    res.json(history);
+  } catch (error) {
+    console.error('Get anomaly history error:', error);
+    res.status(500).json({ error: 'Failed to get anomaly history' });
+  }
+});
+
+/**
+ * GET /api/siem/ml/models
+ * Get ML model info
+ */
+router.get('/ml/models', authenticate, async (_req: Request, res: Response) => {
+  try {
+    const models = mlAnomalyEngine.getModels();
+    res.json(models);
+  } catch (error) {
+    console.error('Get models error:', error);
+    res.status(500).json({ error: 'Failed to get models' });
+  }
+});
+
+/**
+ * POST /api/siem/ml/feedback
+ * Provide feedback on an anomaly detection
+ */
+router.post('/ml/feedback', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { anomalyId, isTruePositive } = req.body;
+    if (!anomalyId || isTruePositive === undefined) {
+      return res.status(400).json({ error: 'anomalyId and isTruePositive are required' });
+    }
+    
+    mlAnomalyEngine.provideFeedback(anomalyId, isTruePositive);
+    res.json({ success: true, message: 'Feedback recorded' });
+  } catch (error) {
+    console.error('Provide feedback error:', error);
+    res.status(500).json({ error: 'Failed to record feedback' });
+  }
+});
+
+/**
+ * POST /api/siem/ml/retrain
+ * Retrain ML models
+ */
+router.post('/ml/retrain', authenticate, adminOnly, async (_req: Request, res: Response) => {
+  try {
+    const result = await mlAnomalyEngine.retrainModels();
+    res.json(result);
+  } catch (error) {
+    console.error('Retrain error:', error);
+    res.status(500).json({ error: 'Failed to retrain models' });
+  }
+});
+
+/**
+ * GET /api/siem/ml/stats
+ * Get ML anomaly detection statistics
+ */
+router.get('/ml/stats', authenticate, async (_req: Request, res: Response) => {
+  try {
+    const stats = mlAnomalyEngine.getStats();
+    res.json(stats);
+  } catch (error) {
+    console.error('Get ML stats error:', error);
+    res.status(500).json({ error: 'Failed to get ML stats' });
+  }
+});
+
 export default router;

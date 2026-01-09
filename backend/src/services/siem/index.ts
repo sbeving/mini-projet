@@ -368,3 +368,19 @@ export { incidentManager } from './incidents.js';
 export { investigationAssistant } from './investigation.js';
 export * from './types.js';
 export { Investigation } from './investigation.js';
+
+// ============================================================
+// ADVANCED SIEM COMPONENTS (Breakthrough Features)
+// ============================================================
+
+// Threat Intelligence - IOC management and enrichment
+export { threatIntelService } from './threat-intel.js';
+
+// SOAR Engine - Security Orchestration, Automation and Response
+export { soarEngine } from './soar.js';
+
+// UEBA - User and Entity Behavior Analytics
+export { uebaEngine } from './ueba.js';
+
+// ML Anomaly Detection - AI-powered anomaly detection
+export { mlAnomalyEngine } from './ml-anomaly.js';
