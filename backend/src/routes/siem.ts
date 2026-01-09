@@ -361,7 +361,7 @@ router.get('/correlations/stats', authenticate, async (_req: Request, res: Respo
     const events = correlationEngine.getCorrelatedEvents();
     const stats = {
       totalRules: rules.length,
-      activeRules: rules.filter(r => r.enabled).length,
+      activeRules: rules.filter((r: { enabled: boolean }) => r.enabled).length,
       totalCorrelations: events.length,
     };
     res.json(stats);
@@ -719,7 +719,7 @@ router.get('/investigate/:threatId/mitre', authenticate, async (req: Request, re
     const mapping = {
       threatId: threat.id,
       techniques,
-      tactics: techniques.map(t => t.tactic),
+      tactics: techniques.map((t: { tactic: string }) => t.tactic),
     };
     res.json(mapping);
   } catch (error) {

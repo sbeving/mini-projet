@@ -398,7 +398,7 @@ class AlertRulesEngine {
       throw new Error(`Rule ${ruleId} not found`);
     }
 
-    let logs = testLogs;
+    let logs: { level: string; service: string; message: string }[] | undefined = testLogs;
     
     if (!logs) {
       // Get recent logs to test against
@@ -407,7 +407,7 @@ class AlertRulesEngine {
         orderBy: { timestamp: 'desc' },
       });
       
-      logs = dbLogs.map(l => ({
+      logs = dbLogs.map((l: { level: string; service: string; message: string }) => ({
         level: l.level,
         service: l.service,
         message: l.message,
@@ -417,7 +417,7 @@ class AlertRulesEngine {
     let matches = 0;
     const samples: { log: unknown; matched: boolean }[] = [];
 
-    for (const log of logs) {
+    for (const log of logs ?? []) {
       const matched = this.evaluateConditions(
         log as Record<string, unknown>,
         rule.conditions,
