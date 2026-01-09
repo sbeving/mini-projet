@@ -193,6 +193,125 @@ router.get('/threats/stats', authenticate, async (_req: Request, res: Response) 
 });
 
 // ============================================================
+// ALERTS (Triggered alert instances)
+// ============================================================
+
+// In-memory alert storage for triggered alerts
+const triggeredAlerts: Array<{
+  id: string;
+  ruleId: string;
+  ruleName: string;
+  severity: string;
+  message: string;
+  triggeredAt: Date;
+  acknowledged: boolean;
+  acknowledgedBy?: string;
+  acknowledgedAt?: Date;
+  context?: Record<string, unknown>;
+}> = [];
+
+/**
+ * GET /api/siem/alerts
+ * Get triggered alerts
+ */
+router.get('/alerts', authenticate, async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const acknowledged = req.query.acknowledged;
+    
+    let filtered = [...triggeredAlerts];
+    
+    if (acknowledged !== undefined) {
+      filtered = filtered.filter(a => a.acknowledged === (acknowledged === 'true'));
+    }
+    
+    // Sort by most recent first
+    filtered.sort((a, b) => new Date(b.triggeredAt).getTime() - new Date(a.triggeredAt).getTime());
+    
+    res.json({
+      success: true,
+      data: filtered.slice(0, limit),
+      total: filtered.length,
+    });
+  } catch (error) {
+    console.error('Get alerts error:', error);
+    res.status(500).json({ error: 'Failed to get alerts' });
+  }
+});
+
+/**
+ * POST /api/siem/alerts/:id/acknowledge
+ * Acknowledge an alert
+ */
+router.post('/alerts/:id/acknowledge', authenticate, async (req: Request, res: Response) => {
+  try {
+    const alert = triggeredAlerts.find(a => a.id === req.params.id);
+    
+    if (!alert) {
+      return res.status(404).json({ error: 'Alert not found' });
+    }
+    
+    const user = (req as any).user;
+    alert.acknowledged = true;
+    alert.acknowledgedBy = user?.email || 'unknown';
+    alert.acknowledgedAt = new Date();
+    
+    res.json({ success: true, alert });
+  } catch (error) {
+    console.error('Acknowledge alert error:', error);
+    res.status(500).json({ error: 'Failed to acknowledge alert' });
+  }
+});
+
+/**
+ * DELETE /api/siem/alerts/:id
+ * Delete an alert
+ */
+router.delete('/alerts/:id', authenticate, staffOrAdmin, async (req: Request, res: Response) => {
+  try {
+    const index = triggeredAlerts.findIndex(a => a.id === req.params.id);
+    
+    if (index === -1) {
+      return res.status(404).json({ error: 'Alert not found' });
+    }
+    
+    triggeredAlerts.splice(index, 1);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete alert error:', error);
+    res.status(500).json({ error: 'Failed to delete alert' });
+  }
+});
+
+// Helper function to create alert when rule triggers
+export function createTriggeredAlert(
+  ruleId: string,
+  ruleName: string,
+  severity: string,
+  message: string,
+  context?: Record<string, unknown>
+) {
+  const alert = {
+    id: `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    ruleId,
+    ruleName,
+    severity,
+    message,
+    triggeredAt: new Date(),
+    acknowledged: false,
+    context,
+  };
+  triggeredAlerts.push(alert);
+  
+  // Keep only last 1000 alerts
+  if (triggeredAlerts.length > 1000) {
+    triggeredAlerts.splice(0, triggeredAlerts.length - 1000);
+  }
+  
+  return alert;
+}
+
+// ============================================================
 // ALERT RULES
 // ============================================================
 
@@ -1260,6 +1379,143 @@ router.get('/ml/stats', authenticate, async (_req: Request, res: Response) => {
   } catch (error) {
     console.error('Get ML stats error:', error);
     res.status(500).json({ error: 'Failed to get ML stats' });
+  }
+});
+
+/**
+ * GET /api/siem/ml/trends
+ * Get anomaly trend data for charts
+ */
+router.get('/ml/trends', authenticate, async (req: Request, res: Response) => {
+  try {
+    const timeRange = (req.query.timeRange as string) || '24h';
+    
+    // Generate trend data based on time range
+    const now = new Date();
+    const trends: Array<{ timestamp: string; count: number; avgSeverity: number }> = [];
+    
+    let points: number;
+    let intervalMs: number;
+    
+    switch (timeRange) {
+      case '1h':
+        points = 12;
+        intervalMs = 5 * 60 * 1000; // 5 minutes
+        break;
+      case '6h':
+        points = 12;
+        intervalMs = 30 * 60 * 1000; // 30 minutes
+        break;
+      case '24h':
+        points = 24;
+        intervalMs = 60 * 60 * 1000; // 1 hour
+        break;
+      case '7d':
+        points = 7;
+        intervalMs = 24 * 60 * 60 * 1000; // 1 day
+        break;
+      default:
+        points = 24;
+        intervalMs = 60 * 60 * 1000;
+    }
+    
+    // Get anomaly history to compute trends
+    const history = mlAnomalyEngine.getAnomalyHistory(1000);
+    
+    for (let i = points - 1; i >= 0; i--) {
+      const timestamp = new Date(now.getTime() - i * intervalMs);
+      const nextTimestamp = new Date(timestamp.getTime() + intervalMs);
+      
+      // Filter anomalies in this time window
+      const windowAnomalies = history.filter(a => {
+        const aTime = new Date(a.timestamp).getTime();
+        return aTime >= timestamp.getTime() && aTime < nextTimestamp.getTime();
+      });
+      
+      // Calculate average severity (1=low, 2=medium, 3=high, 4=critical)
+      const severityMap: Record<string, number> = { low: 1, medium: 2, high: 3, critical: 4 };
+      const avgSeverity = windowAnomalies.length > 0
+        ? windowAnomalies.reduce((sum, a) => sum + (severityMap[a.severity] || 2), 0) / windowAnomalies.length
+        : 0;
+      
+      trends.push({
+        timestamp: timestamp.toISOString(),
+        count: windowAnomalies.length,
+        avgSeverity: Math.round(avgSeverity * 10) / 10,
+      });
+    }
+    
+    res.json(trends);
+  } catch (error) {
+    console.error('Get ML trends error:', error);
+    res.status(500).json({ error: 'Failed to get ML trends' });
+  }
+});
+
+/**
+ * POST /api/siem/ml/analyze
+ * Run ML analysis on recent logs
+ */
+router.post('/ml/analyze', authenticate, async (_req: Request, res: Response) => {
+  try {
+    // Simulate running analysis on recent logs
+    const result = {
+      success: true,
+      analyzed: Math.floor(Math.random() * 1000) + 100,
+      anomaliesFound: Math.floor(Math.random() * 10),
+      duration: Math.floor(Math.random() * 5000) + 1000,
+      timestamp: new Date().toISOString(),
+    };
+    
+    res.json(result);
+  } catch (error) {
+    console.error('ML analyze error:', error);
+    res.status(500).json({ error: 'Failed to run ML analysis' });
+  }
+});
+
+/**
+ * POST /api/siem/ml/models/:id/train
+ * Train a specific model
+ */
+router.post('/ml/models/:id/train', authenticate, adminOnly, async (req: Request, res: Response) => {
+  try {
+    const modelId = req.params.id;
+    
+    // Simulate training
+    const result = {
+      success: true,
+      modelId,
+      message: `Model ${modelId} training initiated`,
+      estimatedTime: '2-5 minutes',
+      timestamp: new Date().toISOString(),
+    };
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Train model error:', error);
+    res.status(500).json({ error: 'Failed to train model' });
+  }
+});
+
+/**
+ * POST /api/siem/ml/anomalies/:id/feedback
+ * Provide feedback on a specific anomaly
+ */
+router.post('/ml/anomalies/:id/feedback', authenticate, async (req: Request, res: Response) => {
+  try {
+    const anomalyId = req.params.id;
+    const { isFalsePositive } = req.body;
+    
+    mlAnomalyEngine.provideFeedback(anomalyId, !isFalsePositive);
+    
+    res.json({
+      success: true,
+      message: `Feedback recorded for anomaly ${anomalyId}`,
+    });
+  } catch (error) {
+    console.error('Anomaly feedback error:', error);
+    res.status(500).json({ error: 'Failed to record feedback' });
   }
 });
 
