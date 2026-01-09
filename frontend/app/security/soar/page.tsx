@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getStoredToken } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 
 interface PlaybookStep {
@@ -214,7 +213,6 @@ export default function SOARDashboard() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-900">
-        <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500" />
         </div>
@@ -224,7 +222,6 @@ export default function SOARDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <Navbar />
       
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}

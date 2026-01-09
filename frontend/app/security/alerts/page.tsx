@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getStoredToken } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 
 interface AlertRule {
@@ -208,7 +207,6 @@ export default function AlertsPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] text-white">
-        <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
           <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
         </div>
@@ -218,7 +216,6 @@ export default function AlertsPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <Navbar />
       
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}

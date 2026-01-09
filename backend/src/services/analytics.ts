@@ -3,7 +3,7 @@
  * Computes statistics and aggregations on log data
  */
 
-import { prisma } from '../index.js';
+import { prisma } from '../lib/prisma.js';
 
 // Time range presets in minutes
 export const TIME_RANGES = {

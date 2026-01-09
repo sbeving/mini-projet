@@ -3,7 +3,6 @@
  * Express server with API routes for log ingestion, analytics, and chat
  */
 
-import { PrismaClient } from '@prisma/client';
 import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
 
@@ -26,10 +25,9 @@ import { cleanupExpiredSessions, seedDefaultUsers } from './services/auth.js';
 import { updateDailyStats } from './services/activity.js';
 import { siemOrchestrator } from './services/siem/index.js';
 
-// Initialize Prisma
-export const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
-});
+// Import Prisma from lib (centralized to avoid circular deps)
+import { prisma } from './lib/prisma.js';
+export { prisma };
 
 // Create Express app
 const app = express();

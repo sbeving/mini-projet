@@ -3,7 +3,7 @@
  * AI-powered threat detection with anomaly detection, pattern matching, and correlation
  */
 
-import { prisma } from '../../index.js';
+import { prisma } from '../../lib/prisma.js';
 import { aiManager } from '../ai/index.js';
 import {
   Threat,
@@ -112,9 +112,9 @@ class ThreatDetectionEngine {
       `;
 
       if (hourlyLogCounts.length > 0) {
-        const counts = hourlyLogCounts.map(h => Number(h.count));
-        const mean = counts.reduce((a, b) => a + b, 0) / counts.length;
-        const stdDev = Math.sqrt(counts.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / counts.length);
+        const counts = hourlyLogCounts.map((h: { count: bigint }) => Number(h.count));
+        const mean = counts.reduce((a: number, b: number) => a + b, 0) / counts.length;
+        const stdDev = Math.sqrt(counts.reduce((sum: number, val: number) => sum + Math.pow(val - mean, 2), 0) / counts.length);
 
         this.baselines.set('hourly_log_volume', {
           id: 'hourly_log_volume',

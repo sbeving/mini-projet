@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getStoredToken } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 
 interface ThreatStats {
@@ -130,7 +129,6 @@ export default function SecurityDashboard() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] text-white">
-        <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -148,7 +146,6 @@ export default function SecurityDashboard() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
-      <Navbar />
       
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Header */}

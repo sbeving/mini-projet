@@ -3,7 +3,7 @@
  * Configurable alert rules with thresholds, patterns, and automated actions
  */
 
-import { prisma } from '../../index.js';
+import { prisma } from '../../lib/prisma.js';
 import { 
   AlertRule, 
   RuleCondition, 

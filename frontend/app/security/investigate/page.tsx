@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getStoredToken } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 
@@ -297,7 +296,6 @@ export default function InvestigatePage() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] text-white">
-        <Navbar />
         <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
           <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
         </div>
@@ -308,7 +306,6 @@ export default function InvestigatePage() {
   if (!threatId) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] text-white">
-        <Navbar />
         <div className="max-w-4xl mx-auto px-4 py-12 text-center">
           <span className="text-6xl mb-6 block">🔍</span>
           <h1 className="text-2xl font-bold mb-4">AI-Powered Investigation</h1>
@@ -328,7 +325,6 @@ export default function InvestigatePage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col">
-      <Navbar />
       
       <div className="flex-1 flex flex-col max-w-6xl mx-auto w-full px-4 py-4">
         {/* Header */}

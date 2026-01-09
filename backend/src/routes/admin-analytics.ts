@@ -7,7 +7,7 @@ import { Router, Request, Response } from "express";
 import { adminOnly, staffOrAdmin, authenticate } from "../middleware/auth.js";
 import * as activityService from "../services/activity.js";
 import * as chatService from "../services/chat.js";
-import { prisma } from "../index.js";
+import { prisma } from "../lib/prisma.js";
 
 const router = Router();
 

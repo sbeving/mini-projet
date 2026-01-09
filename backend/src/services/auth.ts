@@ -5,7 +5,7 @@
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../index.js';
+import { prisma } from '../lib/prisma.js';
 
 // JWT secret - in production, use a proper secret from environment
 const JWT_SECRET = process.env.JWT_SECRET || 'logchat-jwt-secret-change-in-production';

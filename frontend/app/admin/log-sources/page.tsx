@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import Navbar from '@/components/Navbar';
 import { Key, Plus, Copy, RefreshCw, Trash2, Settings, Activity, ExternalLink } from 'lucide-react';
 import Toast from '@/components/Toast';
 
@@ -170,7 +169,6 @@ export default function LogSourcesPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navbar />
         <div className="flex items-center justify-center h-[80vh]">
           <div className="text-muted">Loading...</div>
         </div>
@@ -180,7 +178,6 @@ export default function LogSourcesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
 
       <div className="max-w-7xl mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
