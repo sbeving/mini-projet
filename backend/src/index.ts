@@ -18,10 +18,13 @@ import streamRouter from './routes/stream.js';
 import logSourcesRouter from './routes/log-sources.js';
 import integrationsRouter from './routes/integrations.js';
 import auditLogsRouter from './routes/audit-logs.js';
+import aiRouter from './routes/ai.js';
+import siemRouter from './routes/siem.js';
 
 // Import services
 import { cleanupExpiredSessions, seedDefaultUsers } from './services/auth.js';
 import { updateDailyStats } from './services/activity.js';
+import { siemOrchestrator } from './services/siem/index.js';
 
 // Initialize Prisma
 export const prisma = new PrismaClient({
@@ -82,6 +85,8 @@ app.use('/api/admin/analytics', adminAnalyticsRouter);
 app.use('/api/log-sources', logSourcesRouter);
 app.use('/api/integrations', integrationsRouter);
 app.use('/api/audit-logs', auditLogsRouter);
+app.use('/api/ai', aiRouter);
+app.use('/api/siem', siemRouter);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
@@ -122,10 +127,12 @@ app.listen(PORT, async () => {
 ║  📈 Analytics:    /api/analytics                      ║
 ║  💬 Chat:         /api/chat                           ║
 ║  💬 Sessions:     /api/chat-sessions                  ║
-║  � Log Sources:  /api/log-sources (admin)            ║
+║  🤖 AI Providers: /api/ai                             ║
+║  �️  SIEM:         /api/siem                           ║
+║  �📁 Log Sources:  /api/log-sources (admin)            ║
 ║  🔗 Integrations: /api/integrations (admin)           ║
 ║  📋 Audit Logs:   /api/audit-logs (admin)             ║
-║  �📊 Admin:        /api/admin/analytics                ║
+║  📊 Admin:        /api/admin/analytics                ║
 ║  ❤️  Health:       /health                             ║
 ╚═══════════════════════════════════════════════════════╝
   `);
@@ -133,6 +140,20 @@ app.listen(PORT, async () => {
   // Seed default users in development
   if (process.env.NODE_ENV === 'development') {
     await seedDefaultUsers();
+  }
+
+  // Initialize SIEM Orchestrator
+  console.log('🛡️  Initializing SIEM Orchestrator...');
+  try {
+    const siemHealth = await siemOrchestrator.getHealthStatus();
+    console.log(`   ├─ Status: ${siemHealth.status === 'healthy' ? '✅ Healthy' : '❌ Unhealthy'}`);
+    console.log(`   ├─ Threat Detection: ${siemHealth.components.threatDetection?.status === 'healthy' ? '✅' : '❌'}`);
+    console.log(`   ├─ Alert Engine: ${siemHealth.components.alertRules?.status === 'healthy' ? '✅' : '❌'}`);
+    console.log(`   ├─ Correlation Engine: ${siemHealth.components.correlation?.status === 'healthy' ? '✅' : '❌'}`);
+    console.log(`   ├─ Incident Manager: ${siemHealth.components.incidents?.status === 'healthy' ? '✅' : '❌'}`);
+    console.log(`   └─ Investigation Assistant: ${siemHealth.components.investigation?.status === 'healthy' ? '✅' : '❌'}`);
+  } catch (error) {
+    console.error('   └─ ❌ SIEM initialization error:', error);
   }
 
   // Cleanup expired sessions every hour

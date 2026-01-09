@@ -3,12 +3,19 @@
 import { useAuth } from "@/lib/auth-context";
 import {
   Activity,
+  AlertTriangle,
   BarChart3,
+  Bell,
+  Bot,
+  ChevronDown,
+  FileSearch,
   LayoutDashboard,
   LogIn,
   LogOut,
   MessageSquare,
   Shield,
+  ShieldAlert,
+  Siren,
   User,
   Users,
 } from "lucide-react";
@@ -23,6 +30,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSecurityMenu, setShowSecurityMenu] = useState(false);
 
   // Don't show navbar on login page
   if (pathname === "/login") {
@@ -33,6 +41,16 @@ export default function Navbar() {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/chat", label: "Chat", icon: MessageSquare },
   ];
+
+  const securityItems = [
+    { href: "/security", label: "Security Overview", icon: ShieldAlert },
+    { href: "/security/threats", label: "Threat Detection", icon: AlertTriangle },
+    { href: "/security/incidents", label: "Incidents", icon: Siren },
+    { href: "/security/alerts", label: "Alert Rules", icon: Bell },
+    { href: "/security/investigate", label: "AI Investigation", icon: FileSearch },
+  ];
+
+  const isSecurityActive = pathname.startsWith("/security");
 
   // Add admin links for admins
   if (isAdmin) {
@@ -90,6 +108,61 @@ export default function Navbar() {
                 </Link>
               );
             })}
+
+            {/* Security Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSecurityMenu(!showSecurityMenu)}
+                className={`
+                  flex items-center gap-2 px-4 py-2 rounded-lg transition-colors
+                  ${
+                    isSecurityActive
+                      ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                      : "text-muted-foreground hover:bg-card-hover hover:text-foreground"
+                  }
+                `}
+              >
+                <ShieldAlert className="h-4 w-4" />
+                <span>Security</span>
+                <ChevronDown className={`h-3 w-3 transition-transform ${showSecurityMenu ? 'rotate-180' : ''}`} />
+              </button>
+
+              {showSecurityMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowSecurityMenu(false)}
+                  />
+                  <div className="absolute left-0 mt-2 w-56 bg-card border border-border rounded-lg shadow-lg z-20 py-1">
+                    <div className="px-4 py-2 border-b border-border">
+                      <div className="font-medium text-sm text-orange-400">🛡️ SIEM Console</div>
+                      <div className="text-xs text-muted-foreground">
+                        Security Operations Center
+                      </div>
+                    </div>
+                    {securityItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = pathname === item.href;
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setShowSecurityMenu(false)}
+                          className={`flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                            isActive 
+                              ? 'bg-orange-500/10 text-orange-400' 
+                              : 'hover:bg-card-hover'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* User Menu */}
@@ -146,6 +219,14 @@ export default function Navbar() {
                           >
                             <BarChart3 className="h-4 w-4" />
                             Analytics
+                          </Link>
+                          <Link
+                            href="/admin/ai-settings"
+                            onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-card-hover transition-colors"
+                          >
+                            <Bot className="h-4 w-4" />
+                            AI Settings
                           </Link>
                         </>
                       )}

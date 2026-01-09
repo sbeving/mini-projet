@@ -120,3 +120,35 @@ function ToastContainer({
     </div>
   );
 }
+
+/**
+ * Simple standalone Toast component for direct usage
+ */
+interface SimpleToastProps {
+  message: string;
+  type: "success" | "error" | "warning" | "info";
+  onClose: () => void;
+}
+
+export default function Toast({ message, type, onClose }: SimpleToastProps) {
+  const Icon = iconMap[type];
+  
+  return (
+    <div className="fixed bottom-4 right-4 z-50">
+      <div
+        className={`flex items-start gap-3 p-4 rounded-lg border backdrop-blur-sm shadow-lg animate-slide-in ${colorMap[type]}`}
+      >
+        <Icon className="h-5 w-5 flex-shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm">{message}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="flex-shrink-0 hover:opacity-70 transition-opacity"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}

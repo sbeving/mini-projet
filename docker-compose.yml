@@ -47,8 +47,21 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3001
       DATABASE_URL: postgresql://${POSTGRES_USER:-logchat}:${POSTGRES_PASSWORD:-logchat123}@db:5432/${POSTGRES_DB:-logchat}?schema=public
-      OLLAMA_URL: http://ollama:11434
+      # Ollama Configuration
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:0.5b}
+      # AI Provider API Keys (optional - add to .env file)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      GROK_API_KEY: ${GROK_API_KEY:-}
+      # Default AI Settings
+      DEFAULT_AI_PROVIDER: ${DEFAULT_AI_PROVIDER:-ollama}
+      DEFAULT_AI_MODEL: ${DEFAULT_AI_MODEL:-}
+      AI_SYSTEM_PROMPT: ${AI_SYSTEM_PROMPT:-}
     ports:
       - "3001:3001"
     depends_on:

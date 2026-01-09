@@ -170,7 +170,7 @@ export default function LogSourcesPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navbar user={user} onLogout={logout} />
+        <Navbar />
         <div className="flex items-center justify-center h-[80vh]">
           <div className="text-muted">Loading...</div>
         </div>
@@ -180,7 +180,7 @@ export default function LogSourcesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar user={user} onLogout={logout} />
+      <Navbar />
 
       <div className="max-w-7xl mx-auto p-6">
         <div className="flex justify-between items-center mb-6">
