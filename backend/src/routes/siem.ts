@@ -1012,16 +1012,17 @@ router.get('/soar/actions', authenticate, async (_req: Request, res: Response) =
 
 /**
  * GET /api/siem/soar/history
- * Get action execution history
+ * Get playbook execution history (with stepResults for UI)
  */
 router.get('/soar/history', authenticate, async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 50;
-    const history = soarEngine.getActionHistory(limit);
-    res.json(history);
+    // Use getExecutions() which returns PlaybookExecution[] with stepResults
+    const executions = soarEngine.getExecutions(limit);
+    res.json(executions);
   } catch (error) {
     console.error('Get history error:', error);
-    res.status(500).json({ error: 'Failed to get action history' });
+    res.status(500).json({ error: 'Failed to get execution history' });
   }
 });
 
