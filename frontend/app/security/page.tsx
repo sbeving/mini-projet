@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { getStoredToken } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { RefreshCw } from 'lucide-react';
 
 interface ThreatStats {
   total: number;
@@ -83,8 +84,36 @@ export default function SecurityDashboard() {
       if (!response.ok) throw new Error('Failed to fetch dashboard');
       
       const result = await response.json();
-      if (result.success) {
-        setData(result.data);
+      // Handle both response formats: direct data or { success: true, data: ... }
+      const dashboardData = result.success !== undefined ? result.data : result;
+      
+      if (dashboardData) {
+        // Transform the data to match expected format
+        setData({
+          threats: {
+            total: dashboardData.threats?.total || 0,
+            bySeverity: dashboardData.threats?.bySeverity || { critical: 0, high: 0, medium: 0, low: 0 },
+            byStatus: dashboardData.threats?.byStatus || { active: 0, investigating: 0, mitigated: 0, resolved: 0 },
+            recentCount: dashboardData.threats?.recentTrend || 0,
+          },
+          incidents: {
+            total: dashboardData.incidents?.total || 0,
+            open: dashboardData.incidents?.open || 0,
+            inProgress: dashboardData.incidents?.inProgress || 0,
+            resolved: dashboardData.incidents?.resolved || 0,
+          },
+          alerts: {
+            totalRules: dashboardData.alerts?.topRules?.length || 0,
+            enabledRules: dashboardData.alerts?.topRules?.length || 0,
+            recentAlerts: dashboardData.alerts?.triggeredToday || 0,
+          },
+          correlations: {
+            totalRules: dashboardData.correlations?.activePatterns || 0,
+            correlatedEvents: dashboardData.correlations?.total || 0,
+          },
+          recentThreats: [],
+          recentIncidents: [],
+        });
         setLastUpdate(new Date());
         setError(null);
       }
@@ -128,63 +157,60 @@ export default function SecurityDashboard() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] text-white">
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="w-16 h-16 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-2xl">🛡️</span>
-              </div>
-            </div>
-            <p className="text-gray-400 animate-pulse">Loading Security Dashboard...</p>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center">
+            <span className="text-3xl">🛡️</span>
           </div>
+          <div className="w-8 h-8 border-4 border-orange-500/30 border-t-orange-500 rounded-full animate-spin" />
+          <p className="text-muted animate-pulse">Loading Security Dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="space-y-6 p-4 md:p-6">
       
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <span className="text-4xl">🛡️</span>
-              Security Operations Center
-            </h1>
-            <p className="text-gray-400 mt-1">
-              Real-time threat monitoring and incident response
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right text-sm">
-              <p className="text-gray-500">Last updated</p>
-              <p className="text-gray-300">{lastUpdate?.toLocaleTimeString()}</p>
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-3 text-foreground">
+            <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center">
+              <span className="text-xl">🛡️</span>
             </div>
-            <button
-              onClick={fetchDashboard}
-              className="px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 rounded-lg transition-all flex items-center gap-2"
-            >
-              <span className="animate-spin-slow">🔄</span>
-              Refresh
-            </button>
-          </div>
+            Security Operations Center
+          </h1>
+          <p className="text-muted mt-2">
+            Real-time threat monitoring and incident response
+          </p>
         </div>
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
-            ⚠️ {error}
+        <div className="flex items-center gap-4">
+          <div className="text-right text-sm">
+            <p className="text-muted">Last updated</p>
+            <p className="text-foreground">{lastUpdate?.toLocaleTimeString()}</p>
           </div>
-        )}
+          <button
+            onClick={fetchDashboard}
+            className="flex items-center gap-2 px-4 py-2.5 bg-surface border border-border hover:bg-surface-hover rounded-xl transition-all"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400">
+          ⚠️ {error}
+        </div>
+      )}
 
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Active Threats */}
           <Link href="/security/threats" className="group">
-            <div className="bg-[#12121a] border border-red-500/20 rounded-xl p-6 hover:border-red-500/50 transition-all hover:scale-[1.02]">
+            <div className="bg-surface border border-red-500/20 rounded-2xl p-6 hover:border-red-500/50 transition-all hover:scale-[1.02]">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-3xl">🎯</span>
                 <span className={`text-sm px-2 py-1 rounded ${
@@ -196,7 +222,7 @@ export default function SecurityDashboard() {
                 </span>
               </div>
               <p className="text-4xl font-bold text-red-400">{data?.threats.byStatus.active || 0}</p>
-              <p className="text-gray-400 text-sm mt-1">Active Threats</p>
+              <p className="text-muted text-sm mt-1">Active Threats</p>
               <div className="mt-4 flex gap-2 text-xs">
                 <span className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded">
                   {data?.threats.bySeverity.high || 0} High
@@ -210,7 +236,7 @@ export default function SecurityDashboard() {
 
           {/* Open Incidents */}
           <Link href="/security/incidents" className="group">
-            <div className="bg-[#12121a] border border-orange-500/20 rounded-xl p-6 hover:border-orange-500/50 transition-all hover:scale-[1.02]">
+            <div className="bg-surface border border-orange-500/20 rounded-2xl p-6 hover:border-orange-500/50 transition-all hover:scale-[1.02]">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-3xl">🚨</span>
                 <span className="text-sm px-2 py-1 rounded bg-orange-500/20 text-orange-400">
@@ -218,8 +244,8 @@ export default function SecurityDashboard() {
                 </span>
               </div>
               <p className="text-4xl font-bold text-orange-400">{data?.incidents.open || 0}</p>
-              <p className="text-gray-400 text-sm mt-1">Open Incidents</p>
-              <div className="mt-4 h-2 bg-gray-700 rounded-full overflow-hidden">
+              <p className="text-muted text-sm mt-1">Open Incidents</p>
+              <div className="mt-4 h-2 bg-surface-hover rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-orange-500 to-yellow-500 transition-all"
                   style={{ 
@@ -237,7 +263,7 @@ export default function SecurityDashboard() {
 
           {/* Alert Rules */}
           <Link href="/security/alerts" className="group">
-            <div className="bg-[#12121a] border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-500/50 transition-all hover:scale-[1.02]">
+            <div className="bg-surface border border-cyan-500/20 rounded-2xl p-6 hover:border-cyan-500/50 transition-all hover:scale-[1.02]">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-3xl">📋</span>
                 <span className="text-sm px-2 py-1 rounded bg-cyan-500/20 text-cyan-400">
@@ -245,7 +271,7 @@ export default function SecurityDashboard() {
                 </span>
               </div>
               <p className="text-4xl font-bold text-cyan-400">{data?.alerts.totalRules || 0}</p>
-              <p className="text-gray-400 text-sm mt-1">Alert Rules</p>
+              <p className="text-muted text-sm mt-1">Alert Rules</p>
               <div className="mt-4 text-xs">
                 <span className="text-yellow-400">
                   ⚡ {data?.alerts.recentAlerts || 0} alerts (24h)
@@ -256,7 +282,7 @@ export default function SecurityDashboard() {
 
           {/* Correlations */}
           <Link href="/security/correlations" className="group">
-            <div className="bg-[#12121a] border border-purple-500/20 rounded-xl p-6 hover:border-purple-500/50 transition-all hover:scale-[1.02]">
+            <div className="bg-surface border border-purple-500/20 rounded-2xl p-6 hover:border-purple-500/50 transition-all hover:scale-[1.02]">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-3xl">🔗</span>
                 <span className="text-sm px-2 py-1 rounded bg-purple-500/20 text-purple-400">
@@ -264,7 +290,7 @@ export default function SecurityDashboard() {
                 </span>
               </div>
               <p className="text-4xl font-bold text-purple-400">{data?.correlations.correlatedEvents || 0}</p>
-              <p className="text-gray-400 text-sm mt-1">Correlated Events</p>
+              <p className="text-muted text-sm mt-1">Correlated Events</p>
               <div className="mt-4 text-xs text-purple-300">
                 📊 {data?.correlations.totalRules || 0} correlation rules
               </div>
@@ -322,7 +348,7 @@ export default function SecurityDashboard() {
                   <Link
                     key={threat.id}
                     href={`/security/threats/${threat.id}`}
-                    className="block p-4 bg-[#1a1a24] hover:bg-[#22222e] rounded-lg border border-gray-700/50 hover:border-gray-600 transition-all"
+                    className="block p-4 bg-background hover:bg-surface-hover rounded-xl border border-border hover:border-primary/30 transition-all"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
