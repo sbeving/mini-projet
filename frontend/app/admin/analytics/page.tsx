@@ -88,7 +88,7 @@ interface ChatAnalytics {
 }
 
 function authHeaders(): Record<string, string> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const token = typeof window !== "undefined" ? localStorage.getItem("logchat_token") : null;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -154,7 +154,13 @@ export default function AnalyticsDashboard() {
           count: d.count ?? 0,
         })) || [],
       });
-      setChatData(chats);
+      // Normalize chat data to ensure arrays exist
+      setChatData({
+        ...chats,
+        recentSessions: Array.isArray(chats.recentSessions) ? chats.recentSessions : [],
+        messagesByRole: Array.isArray(chats.messagesByRole) ? chats.messagesByRole : [],
+        topChatters: Array.isArray(chats.topChatters) ? chats.topChatters : [],
+      });
     } catch (err) {
       console.error("Failed to load analytics:", err);
       setError(err instanceof Error ? err.message : "Unknown error");

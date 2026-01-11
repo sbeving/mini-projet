@@ -57,6 +57,25 @@ export default function AlertsPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedRule, setSelectedRule] = useState<AlertRule | null>(null);
   const [showNewRuleModal, setShowNewRuleModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newRule, setNewRule] = useState<{
+    name: string;
+    description: string;
+    type: 'threshold' | 'pattern' | 'anomaly' | 'correlation';
+    severity: 'critical' | 'high' | 'medium' | 'low';
+    cooldown: number;
+    conditions: RuleCondition[];
+    actions: string[];
+  }>({
+    name: '',
+    description: '',
+    type: 'threshold',
+    severity: 'medium',
+    cooldown: 300,
+    conditions: [],
+    actions: [],
+  });
+  const [newCondition, setNewCondition] = useState({ field: '', operator: 'eq', value: '' });
 
   const fetchRules = useCallback(async () => {
     const token = getStoredToken();
@@ -147,6 +166,79 @@ export default function AlertsPage() {
     } catch (err) {
       console.error('Failed to acknowledge alert:', err);
     }
+  };
+
+  const createRule = async () => {
+    const token = getStoredToken();
+    if (!token || !newRule.name.trim()) return;
+    
+    setCreating(true);
+    try {
+      const response = await fetch(`${API_BASE}/api/siem/rules`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newRule.name,
+          description: newRule.description,
+          type: newRule.type,
+          severity: newRule.severity,
+          cooldown: newRule.cooldown,
+          enabled: true,
+          conditions: newRule.conditions,
+          actions: newRule.actions.map(type => ({ type, config: {} })),
+        }),
+      });
+      
+      if (response.ok) {
+        fetchRules();
+        setShowNewRuleModal(false);
+        setNewRule({
+          name: '',
+          description: '',
+          type: 'threshold',
+          severity: 'medium',
+          cooldown: 300,
+          conditions: [],
+          actions: [],
+        });
+      } else {
+        const result = await response.json();
+        setError(result.error || 'Failed to create rule');
+      }
+    } catch (err) {
+      console.error('Failed to create rule:', err);
+      setError('Failed to create rule');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const addCondition = () => {
+    if (!newCondition.field || !newCondition.value) return;
+    setNewRule(prev => ({
+      ...prev,
+      conditions: [...prev.conditions, { ...newCondition, logicalOperator: 'AND' as const }],
+    }));
+    setNewCondition({ field: '', operator: 'eq', value: '' });
+  };
+
+  const removeCondition = (index: number) => {
+    setNewRule(prev => ({
+      ...prev,
+      conditions: prev.conditions.filter((_, i) => i !== index),
+    }));
+  };
+
+  const toggleAction = (actionType: string) => {
+    setNewRule(prev => ({
+      ...prev,
+      actions: prev.actions.includes(actionType)
+        ? prev.actions.filter(a => a !== actionType)
+        : [...prev.actions, actionType],
+    }));
   };
 
   const deleteRule = async (ruleId: string) => {
@@ -557,21 +649,26 @@ export default function AlertsPage() {
             <h3 className="text-xl font-bold mb-4">Create Alert Rule</h3>
             <form onSubmit={(e) => {
               e.preventDefault();
-              setShowNewRuleModal(false);
+              createRule();
             }}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Rule Name</label>
+                  <label className="block text-sm text-gray-400 mb-1">Rule Name *</label>
                   <input
                     type="text"
+                    value={newRule.name}
+                    onChange={(e) => setNewRule(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full px-4 py-2 bg-[#1a1a24] border border-gray-700 rounded-lg focus:border-cyan-500 focus:outline-none"
                     placeholder="e.g., High Error Rate Alert"
+                    required
                   />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Description</label>
                   <textarea
                     rows={2}
+                    value={newRule.description}
+                    onChange={(e) => setNewRule(prev => ({ ...prev, description: e.target.value }))}
                     className="w-full px-4 py-2 bg-[#1a1a24] border border-gray-700 rounded-lg focus:border-cyan-500 focus:outline-none resize-none"
                     placeholder="Describe what this rule monitors..."
                   />
@@ -579,7 +676,11 @@ export default function AlertsPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Type</label>
-                    <select className="w-full px-4 py-2 bg-[#1a1a24] border border-gray-700 rounded-lg focus:border-cyan-500 focus:outline-none">
+                    <select 
+                      value={newRule.type}
+                      onChange={(e) => setNewRule(prev => ({ ...prev, type: e.target.value as 'threshold' | 'pattern' | 'anomaly' | 'correlation' }))}
+                      className="w-full px-4 py-2 bg-[#1a1a24] border border-gray-700 rounded-lg focus:border-cyan-500 focus:outline-none"
+                    >
                       <option value="threshold">📊 Threshold</option>
                       <option value="pattern">🔍 Pattern</option>
                       <option value="anomaly">🤖 Anomaly</option>
@@ -588,7 +689,11 @@ export default function AlertsPage() {
                   </div>
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Severity</label>
-                    <select className="w-full px-4 py-2 bg-[#1a1a24] border border-gray-700 rounded-lg focus:border-cyan-500 focus:outline-none">
+                    <select 
+                      value={newRule.severity}
+                      onChange={(e) => setNewRule(prev => ({ ...prev, severity: e.target.value as 'critical' | 'high' | 'medium' | 'low' }))}
+                      className="w-full px-4 py-2 bg-[#1a1a24] border border-gray-700 rounded-lg focus:border-cyan-500 focus:outline-none"
+                    >
                       <option value="critical">Critical</option>
                       <option value="high">High</option>
                       <option value="medium">Medium</option>
@@ -599,7 +704,8 @@ export default function AlertsPage() {
                     <label className="block text-sm text-gray-400 mb-1">Cooldown (sec)</label>
                     <input
                       type="number"
-                      defaultValue={300}
+                      value={newRule.cooldown}
+                      onChange={(e) => setNewRule(prev => ({ ...prev, cooldown: parseInt(e.target.value) || 300 }))}
                       className="w-full px-4 py-2 bg-[#1a1a24] border border-gray-700 rounded-lg focus:border-cyan-500 focus:outline-none"
                     />
                   </div>
@@ -608,14 +714,40 @@ export default function AlertsPage() {
                 {/* Conditions Builder */}
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">Conditions</label>
-                  <div className="p-4 bg-[#1a1a24] border border-gray-700 rounded-lg space-y-2">
+                  <div className="p-4 bg-[#1a1a24] border border-gray-700 rounded-lg space-y-3">
+                    {/* Existing conditions */}
+                    {newRule.conditions.length > 0 && (
+                      <div className="space-y-2 mb-3">
+                        {newRule.conditions.map((cond, idx) => (
+                          <div key={idx} className="flex items-center gap-2 p-2 bg-[#0a0a0f] rounded-lg">
+                            <span className="text-cyan-400 font-mono text-sm">{cond.field}</span>
+                            <span className="text-gray-500">{cond.operator}</span>
+                            <span className="text-green-400 font-mono text-sm">{String(cond.value)}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeCondition(idx)}
+                              className="ml-auto text-red-400 hover:text-red-300 text-sm"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* Add new condition */}
                     <div className="grid grid-cols-4 gap-2">
                       <input
                         type="text"
                         placeholder="Field (e.g., level)"
+                        value={newCondition.field}
+                        onChange={(e) => setNewCondition(prev => ({ ...prev, field: e.target.value }))}
                         className="px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-sm"
                       />
-                      <select className="px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-sm">
+                      <select 
+                        value={newCondition.operator}
+                        onChange={(e) => setNewCondition(prev => ({ ...prev, operator: e.target.value }))}
+                        className="px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-sm"
+                      >
                         <option value="eq">=</option>
                         <option value="neq">≠</option>
                         <option value="gt">&gt;</option>
@@ -628,9 +760,15 @@ export default function AlertsPage() {
                       <input
                         type="text"
                         placeholder="Value"
+                        value={newCondition.value}
+                        onChange={(e) => setNewCondition(prev => ({ ...prev, value: e.target.value }))}
                         className="px-3 py-2 bg-[#0a0a0f] border border-gray-700 rounded-lg text-sm"
                       />
-                      <button type="button" className="px-3 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-sm">
+                      <button 
+                        type="button" 
+                        onClick={addCondition}
+                        className="px-3 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-sm hover:bg-cyan-500/30"
+                      >
                         + Add
                       </button>
                     </div>
@@ -641,23 +779,59 @@ export default function AlertsPage() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">Actions</label>
                   <div className="grid grid-cols-2 gap-2">
-                    <label className="flex items-center gap-3 p-3 bg-[#1a1a24] border border-gray-700 rounded-lg cursor-pointer hover:border-cyan-500/50">
-                      <input type="checkbox" className="w-4 h-4 accent-cyan-500" />
+                    <label 
+                      className={`flex items-center gap-3 p-3 bg-[#1a1a24] border rounded-lg cursor-pointer transition-all ${
+                        newRule.actions.includes('email') ? 'border-cyan-500/50 bg-cyan-500/10' : 'border-gray-700 hover:border-cyan-500/50'
+                      }`}
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={newRule.actions.includes('email')}
+                        onChange={() => toggleAction('email')}
+                        className="w-4 h-4 accent-cyan-500" 
+                      />
                       <span className="text-xl">📧</span>
                       <span>Email Notification</span>
                     </label>
-                    <label className="flex items-center gap-3 p-3 bg-[#1a1a24] border border-gray-700 rounded-lg cursor-pointer hover:border-cyan-500/50">
-                      <input type="checkbox" className="w-4 h-4 accent-cyan-500" />
+                    <label 
+                      className={`flex items-center gap-3 p-3 bg-[#1a1a24] border rounded-lg cursor-pointer transition-all ${
+                        newRule.actions.includes('incident') ? 'border-cyan-500/50 bg-cyan-500/10' : 'border-gray-700 hover:border-cyan-500/50'
+                      }`}
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={newRule.actions.includes('incident')}
+                        onChange={() => toggleAction('incident')}
+                        className="w-4 h-4 accent-cyan-500" 
+                      />
                       <span className="text-xl">🚨</span>
                       <span>Create Incident</span>
                     </label>
-                    <label className="flex items-center gap-3 p-3 bg-[#1a1a24] border border-gray-700 rounded-lg cursor-pointer hover:border-cyan-500/50">
-                      <input type="checkbox" className="w-4 h-4 accent-cyan-500" />
+                    <label 
+                      className={`flex items-center gap-3 p-3 bg-[#1a1a24] border rounded-lg cursor-pointer transition-all ${
+                        newRule.actions.includes('slack') ? 'border-cyan-500/50 bg-cyan-500/10' : 'border-gray-700 hover:border-cyan-500/50'
+                      }`}
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={newRule.actions.includes('slack')}
+                        onChange={() => toggleAction('slack')}
+                        className="w-4 h-4 accent-cyan-500" 
+                      />
                       <span className="text-xl">💬</span>
                       <span>Slack Message</span>
                     </label>
-                    <label className="flex items-center gap-3 p-3 bg-[#1a1a24] border border-gray-700 rounded-lg cursor-pointer hover:border-cyan-500/50">
-                      <input type="checkbox" className="w-4 h-4 accent-cyan-500" />
+                    <label 
+                      className={`flex items-center gap-3 p-3 bg-[#1a1a24] border rounded-lg cursor-pointer transition-all ${
+                        newRule.actions.includes('webhook') ? 'border-cyan-500/50 bg-cyan-500/10' : 'border-gray-700 hover:border-cyan-500/50'
+                      }`}
+                    >
+                      <input 
+                        type="checkbox" 
+                        checked={newRule.actions.includes('webhook')}
+                        onChange={() => toggleAction('webhook')}
+                        className="w-4 h-4 accent-cyan-500" 
+                      />
                       <span className="text-xl">🔗</span>
                       <span>Webhook</span>
                     </label>
@@ -669,14 +843,16 @@ export default function AlertsPage() {
                   type="button"
                   onClick={() => setShowNewRuleModal(false)}
                   className="flex-1 px-4 py-2 border border-gray-700 rounded-lg hover:bg-gray-800 transition-all"
+                  disabled={creating}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-400 rounded-lg transition-all"
+                  disabled={creating || !newRule.name.trim()}
+                  className="flex-1 px-4 py-2 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-400 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Rule
+                  {creating ? 'Creating...' : 'Create Rule'}
                 </button>
               </div>
             </form>

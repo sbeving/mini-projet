@@ -750,8 +750,20 @@ print(response.json())`}
           </div>
         </div>
       )}
-
+      {/* Toast Notification */}
+      {toast && (
+        <div
+          className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-lg text-sm font-medium z-50 ${
+            toast.type === 'success'
+              ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+              : 'bg-red-500/20 text-red-400 border border-red-500/30'
+          }`}
+          onAnimationEnd={() => setToast(null)}
+        >
+          {toast.message}
+        </div>
       )}
+      
     </div>
   );
 }
