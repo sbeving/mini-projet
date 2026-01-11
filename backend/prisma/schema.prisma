@@ -295,6 +295,9 @@ model LogSource {
   /// Source type
   type        LogSourceType @default(API)
   
+  /// Environment (production, staging, development)
+  environment String?
+  
   /// API Key (visible to user once)
   apiKey      String   @unique
   
@@ -327,6 +330,12 @@ model LogSource {
   
   /// Custom metadata
   metadata    Json?
+  
+  /// Agent configuration (for remote config)
+  config      Json?
+  
+  /// Last seen timestamp (for agent heartbeat)
+  lastSeenAt  DateTime?
   
   /// Creator
   createdById String

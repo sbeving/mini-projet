@@ -1,0 +1,218 @@
+# LogChat Agent Configuration
+# Copy this file to agent.yaml and customize for your environment
+
+# ============================================================================
+# SERVER CONNECTION
+# ============================================================================
+server:
+  # LogChat server URL
+  url: "http://localhost:3001"
+  
+  # API key for authentication (get this from LogChat admin panel)
+  api_key: "${LOGCHAT_API_KEY}"
+  
+  # Connection timeout
+  timeout: 30s
+  
+  # Number of logs to send in each batch
+  batch_size: 100
+  
+  # How often to flush logs to server
+  flush_interval: 5s
+  
+  # Retry settings for failed requests
+  max_retries: 3
+  retry_interval: 10s
+  
+  # TLS settings (optional)
+  insecure_skip_verify: false
+  # ca_cert: "/path/to/ca.pem"
+
+# ============================================================================
+# AGENT IDENTIFICATION
+# ============================================================================
+agent:
+  # Override hostname (defaults to system hostname)
+  # hostname: "my-server"
+  
+  # Environment label
+  environment: "production"
+  
+  # Custom tags added to all logs
+  tags:
+    datacenter: "dc1"
+    team: "platform"
+
+# ============================================================================
+# LOCAL BUFFER
+# ============================================================================
+# Buffer logs locally when server is unavailable
+buffer:
+  # Buffer type: "memory" or "file"
+  type: "memory"
+  
+  # Maximum buffer size in bytes
+  max_size: 104857600  # 100MB
+  
+  # Maximum number of items in buffer
+  max_items: 10000
+  
+  # Path for file-based buffer (used when type is "file")
+  # file_path: "/var/lib/logchat/buffer.json"
+
+# ============================================================================
+# COLLECTORS
+# ============================================================================
+collectors:
+  
+  # --------------------------------------------------------------------------
+  # FILE COLLECTOR
+  # Tail log files in real-time (all platforms)
+  # --------------------------------------------------------------------------
+  files:
+    # Application logs
+    - enabled: true
+      paths:
+        - "/var/log/app/*.log"
+      exclude:
+        - "*.gz"
+        - "*.old"
+        - "*.bak"
+      service: "my-app"
+      parser: "json"  # json, regex, or plain
+      tags:
+        component: "backend"
+    
+    # Nginx access logs
+    - enabled: true
+      paths:
+        - "/var/log/nginx/access.log"
+      service: "nginx"
+      parser: "regex"
+      parse_regex: '^(?P<remote_addr>\S+) - (?P<remote_user>\S+) \[(?P<time_local>[^\]]+)\] "(?P<request>[^"]*)" (?P<status>\d+) (?P<body_bytes_sent>\d+)'
+      tags:
+        type: "access"
+    
+    # Nginx error logs
+    - enabled: true
+      paths:
+        - "/var/log/nginx/error.log"
+      service: "nginx"
+      parser: "plain"
+      tags:
+        type: "error"
+    
+    # System logs (Linux)
+    - enabled: true
+      paths:
+        - "/var/log/syslog"
+        - "/var/log/messages"
+      service: "system"
+      parser: "plain"
+    
+    # Docker container logs
+    - enabled: false
+      paths:
+        - "/var/lib/docker/containers/*/*.log"
+      service: "docker"
+      parser: "json"
+      multiline: false
+
+  # --------------------------------------------------------------------------
+  # JOURNALD COLLECTOR (Linux only)
+  # Collect logs from systemd journal
+  # --------------------------------------------------------------------------
+  journald:
+    enabled: true
+    
+    # Units to collect from (empty = all units)
+    units:
+      - "docker.service"
+      - "nginx.service"
+      - "sshd.service"
+      - "postgresql.service"
+    
+    # How far back to start collecting
+    since: "-1h"
+    
+    # Minimum priority level (0=Emergency to 7=Debug)
+    # 0: Emergency
+    # 1: Alert
+    # 2: Critical
+    # 3: Error
+    # 4: Warning
+    # 5: Notice
+    # 6: Informational
+    # 7: Debug
+    priority: 4
+
+  # --------------------------------------------------------------------------
+  # SYSLOG COLLECTOR (Linux only)
+  # Listen for syslog messages
+  # --------------------------------------------------------------------------
+  syslog:
+    enabled: false
+    
+    # Listen address
+    # Format: protocol://address:port or unix:///path/to/socket
+    address: "udp://0.0.0.0:514"
+    
+    # Syslog protocol: rfc3164 or rfc5424
+    protocol: "rfc3164"
+
+  # --------------------------------------------------------------------------
+  # WINDOWS EVENT LOG COLLECTOR (Windows only)
+  # Collect Windows Event Logs
+  # --------------------------------------------------------------------------
+  eventlog:
+    enabled: true
+    
+    # Event log channels to collect
+    channels:
+      - "Application"
+      - "System"
+      - "Security"
+    
+    # Minimum event level (1=Critical to 5=Verbose)
+    # 1: Critical
+    # 2: Error
+    # 3: Warning
+    # 4: Information
+    # 5: Verbose
+    min_level: 3
+
+  # --------------------------------------------------------------------------
+  # COMMAND COLLECTOR (All platforms)
+  # Execute commands periodically and capture output
+  # --------------------------------------------------------------------------
+  command:
+    # Disk usage
+    - enabled: false
+      command: "df"
+      args: ["-h"]
+      interval: 60s
+      service: "disk-usage"
+      timeout: 10s
+    
+    # Docker container stats
+    - enabled: false
+      command: "docker"
+      args: ["stats", "--no-stream", "--format", "{{json .}}"]
+      interval: 30s
+      service: "docker-stats"
+      parser: "json"
+      timeout: 15s
+    
+    # Network connections
+    - enabled: false
+      command: "netstat"
+      args: ["-tuln"]
+      interval: 300s
+      service: "netstat"
+      timeout: 10s
+
+# ============================================================================
+# LOGGING
+# ============================================================================
+# Agent's own log settings
+log_level: "info"  # debug, info, warn, error

@@ -27,6 +27,7 @@ interface LogSource {
   name: string;
   description: string | null;
   type: string;
+  environment: string | null;
   apiKey: string;
   allowedIps: string[];
   allowedDomains?: string[];
@@ -36,6 +37,9 @@ interface LogSource {
   rateLimit: number;
   rateLimitWindow: number;
   lastUsedAt: string | null;
+  lastSeenAt: string | null;
+  agentStatus: 'online' | 'offline' | 'stale' | 'never_connected';
+  config: any;
   createdAt: string;
   logsReceived?: number;
   createdBy: {

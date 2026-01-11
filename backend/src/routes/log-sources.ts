@@ -62,11 +62,28 @@ router.get('/', requireAdmin, async (req, res) => {
     });
 
     // Don't expose full API keys (already hashed) or secrets
-    const sanitized = sources.map((s) => ({
-      ...s,
-      apiKey: `${s.apiKey.substring(0, 10)}...`,
-      webhookSecret: s.webhookSecret ? '***' : null,
-    }));
+    const sanitized = sources.map((s) => {
+      // Calculate agent status based on lastSeenAt
+      const lastSeen = s.lastSeenAt ? new Date(s.lastSeenAt) : null;
+      const now = new Date();
+      const minutesSinceLastSeen = lastSeen 
+        ? (now.getTime() - lastSeen.getTime()) / (1000 * 60) 
+        : null;
+      
+      let agentStatus: 'online' | 'offline' | 'stale' | 'never_connected' = 'never_connected';
+      if (minutesSinceLastSeen !== null) {
+        if (minutesSinceLastSeen < 2) agentStatus = 'online';
+        else if (minutesSinceLastSeen < 10) agentStatus = 'stale';
+        else agentStatus = 'offline';
+      }
+
+      return {
+        ...s,
+        apiKey: `${s.apiKey.substring(0, 10)}...`,
+        webhookSecret: s.webhookSecret ? '***' : null,
+        agentStatus,
+      };
+    });
 
     res.json({ sources: sanitized });
   } catch (error: any) {
@@ -117,6 +134,7 @@ router.post('/', requireAdmin, async (req, res) => {
       name,
       description,
       type,
+      environment,
       allowedIps,
       allowedDomains,
       allowedHostnames,
@@ -149,6 +167,7 @@ router.post('/', requireAdmin, async (req, res) => {
         name: name.trim(),
         description: description?.trim() || null,
         type: type || 'API',
+        environment: environment || null,
         apiKey,
         apiKeyHash,
         allowedIps: allowedIps || [],
