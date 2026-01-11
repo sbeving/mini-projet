@@ -18,6 +18,7 @@ import logSourcesRouter from './routes/log-sources.js';
 import integrationsRouter from './routes/integrations.js';
 import auditLogsRouter from './routes/audit-logs.js';
 import aiRouter from './routes/ai.js';
+import notificationsRouter from './routes/notifications.js';
 
 // Import services
 import { cleanupExpiredSessions, seedDefaultUsers } from './services/auth.js';
@@ -82,6 +83,7 @@ app.use('/api/log-sources', logSourcesRouter);
 app.use('/api/integrations', integrationsRouter);
 app.use('/api/audit-logs', auditLogsRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/notifications', notificationsRouter);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
@@ -126,7 +128,8 @@ app.listen(PORT, async () => {
 ║  📁 Log Sources:  /api/log-sources (admin)            ║
 ║  🔗 Integrations: /api/integrations (admin)           ║
 ║  📋 Audit Logs:   /api/audit-logs (admin)             ║
-║  📊 Admin:        /api/admin/analytics                ║
+║  � Notifications:/api/notifications (admin)          ║
+║  �📊 Admin:        /api/admin/analytics                ║
 ║  ❤️  Health:       /health                             ║
 ╚═══════════════════════════════════════════════════════╝
   `);

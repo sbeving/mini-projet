@@ -458,4 +458,222 @@ router.delete('/provider/:name', authenticate, requireAdmin, async (req: Request
   }
 });
 
+// ============================================================
+// OLLAMA MODEL MANAGEMENT ROUTES
+// ============================================================
+
+/**
+ * GET /api/ai/ollama/models
+ * Get available models from Ollama (local or remote)
+ */
+router.get('/ollama/models', authenticate, async (req: Request, res: Response) => {
+  try {
+    const baseUrl = (req.query.baseUrl as string) || process.env.OLLAMA_URL || 'http://ollama:11434';
+    
+    const response = await fetch(`${baseUrl}/api/tags`);
+    if (!response.ok) {
+      throw new Error('Failed to connect to Ollama');
+    }
+    
+    const data = await response.json();
+    const models = (data.models || []).map((m: any) => ({
+      name: m.name,
+      size: m.size,
+      digest: m.digest,
+      modifiedAt: m.modified_at,
+      details: m.details
+    }));
+    
+    res.json({
+      success: true,
+      models,
+      baseUrl
+    });
+  } catch (error: any) {
+    console.error('Error fetching Ollama models:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch Ollama models'
+    });
+  }
+});
+
+/**
+ * POST /api/ai/ollama/pull
+ * Pull/download a model to Ollama
+ */
+router.post('/ollama/pull', authenticate, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { model, baseUrl: customBaseUrl } = req.body;
+    
+    if (!model) {
+      return res.status(400).json({
+        success: false,
+        error: 'Model name is required'
+      });
+    }
+    
+    const baseUrl = customBaseUrl || process.env.OLLAMA_URL || 'http://ollama:11434';
+    
+    // Set up streaming response
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    
+    const response = await fetch(`${baseUrl}/api/pull`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: model, stream: true })
+    });
+    
+    if (!response.ok) {
+      res.write(`data: ${JSON.stringify({ error: 'Failed to start model pull', done: true })}\n\n`);
+      res.end();
+      return;
+    }
+    
+    const reader = response.body?.getReader();
+    if (!reader) {
+      res.write(`data: ${JSON.stringify({ error: 'No response stream', done: true })}\n\n`);
+      res.end();
+      return;
+    }
+    
+    const decoder = new TextDecoder();
+    
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const text = decoder.decode(value);
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      for (const line of lines) {
+        try {
+          const data = JSON.parse(line);
+          res.write(`data: ${JSON.stringify(data)}\n\n`);
+          
+          if (data.status === 'success') {
+            res.write(`data: ${JSON.stringify({ done: true, status: 'success' })}\n\n`);
+          }
+        } catch {
+          // Skip invalid JSON lines
+        }
+      }
+    }
+    
+    res.end();
+  } catch (error: any) {
+    console.error('Error pulling Ollama model:', error);
+    res.write(`data: ${JSON.stringify({ error: error.message, done: true })}\n\n`);
+    res.end();
+  }
+});
+
+/**
+ * DELETE /api/ai/ollama/model/:name
+ * Delete a model from Ollama
+ */
+router.delete('/ollama/model/:name', authenticate, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { name } = req.params;
+    const baseUrl = (req.query.baseUrl as string) || process.env.OLLAMA_URL || 'http://ollama:11434';
+    
+    const response = await fetch(`${baseUrl}/api/delete`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || 'Failed to delete model');
+    }
+    
+    res.json({
+      success: true,
+      message: `Model ${name} deleted successfully`
+    });
+  } catch (error: any) {
+    console.error('Error deleting Ollama model:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to delete model'
+    });
+  }
+});
+
+/**
+ * GET /api/ai/ollama/library
+ * Get popular models from Ollama library (hardcoded list since no official API)
+ */
+router.get('/ollama/library', authenticate, async (req: Request, res: Response) => {
+  // Popular models for log analysis and chat
+  const popularModels = [
+    { name: 'qwen2.5:0.5b', description: 'Qwen 2.5 0.5B - Tiny, fast model', size: '395MB', tags: ['fast', 'tiny'] },
+    { name: 'qwen2.5:1.5b', description: 'Qwen 2.5 1.5B - Small balanced model', size: '986MB', tags: ['balanced'] },
+    { name: 'qwen2.5:3b', description: 'Qwen 2.5 3B - Good quality', size: '1.9GB', tags: ['quality'] },
+    { name: 'qwen2.5:7b', description: 'Qwen 2.5 7B - Best quality', size: '4.7GB', tags: ['best'] },
+    { name: 'llama3.2:1b', description: 'Llama 3.2 1B - Meta lightweight', size: '1.3GB', tags: ['meta', 'fast'] },
+    { name: 'llama3.2:3b', description: 'Llama 3.2 3B - Meta balanced', size: '2.0GB', tags: ['meta', 'balanced'] },
+    { name: 'llama3.1:8b', description: 'Llama 3.1 8B - Meta large', size: '4.7GB', tags: ['meta', 'quality'] },
+    { name: 'mistral:7b', description: 'Mistral 7B - Excellent reasoning', size: '4.1GB', tags: ['reasoning'] },
+    { name: 'codellama:7b', description: 'Code Llama 7B - Code focused', size: '3.8GB', tags: ['code'] },
+    { name: 'phi3:mini', description: 'Phi-3 Mini - Microsoft small model', size: '2.3GB', tags: ['microsoft', 'fast'] },
+    { name: 'gemma2:2b', description: 'Gemma 2 2B - Google lightweight', size: '1.6GB', tags: ['google', 'fast'] },
+    { name: 'gemma2:9b', description: 'Gemma 2 9B - Google quality', size: '5.5GB', tags: ['google', 'quality'] },
+    { name: 'deepseek-coder:6.7b', description: 'DeepSeek Coder 6.7B', size: '3.8GB', tags: ['code', 'chinese'] },
+    { name: 'nomic-embed-text', description: 'Nomic Embed - Text embeddings', size: '274MB', tags: ['embeddings'] },
+  ];
+  
+  res.json({
+    success: true,
+    models: popularModels
+  });
+});
+
+/**
+ * POST /api/ai/ollama/configure
+ * Configure Ollama connection (local or remote)
+ */
+router.post('/ollama/configure', authenticate, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { baseUrl, defaultModel } = req.body;
+    
+    // Test connection
+    const testUrl = baseUrl || 'http://ollama:11434';
+    const testResponse = await fetch(`${testUrl}/api/tags`);
+    
+    if (!testResponse.ok) {
+      throw new Error('Cannot connect to Ollama at ' + testUrl);
+    }
+    
+    // Configure the provider
+    await aiManager.configureProvider('ollama' as AIProviderType, {
+      baseUrl: testUrl,
+      model: defaultModel
+    });
+    
+    // Set environment variable for future use (in memory)
+    process.env.OLLAMA_URL = testUrl;
+    if (defaultModel) {
+      process.env.OLLAMA_MODEL = defaultModel;
+    }
+    
+    res.json({
+      success: true,
+      message: 'Ollama configured successfully',
+      baseUrl: testUrl,
+      defaultModel
+    });
+  } catch (error: any) {
+    console.error('Error configuring Ollama:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to configure Ollama'
+    });
+  }
+});
+
 export default router;
