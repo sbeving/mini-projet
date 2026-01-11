@@ -118,6 +118,8 @@ router.post('/', requireAdmin, async (req, res) => {
       description,
       type,
       allowedIps,
+      allowedDomains,
+      allowedHostnames,
       webhookUrl,
       rateLimit,
       rateLimitWindow,
@@ -150,6 +152,8 @@ router.post('/', requireAdmin, async (req, res) => {
         apiKey,
         apiKeyHash,
         allowedIps: allowedIps || [],
+        allowedDomains: allowedDomains || [],
+        allowedHostnames: allowedHostnames || [],
         webhookUrl: webhookUrl || null,
         webhookSecret,
         rateLimit: rateLimit || 1000,
@@ -196,6 +200,8 @@ router.patch('/:id', requireAdmin, async (req, res) => {
       description,
       isActive,
       allowedIps,
+      allowedDomains,
+      allowedHostnames,
       webhookUrl,
       rateLimit,
       rateLimitWindow,
@@ -222,6 +228,8 @@ router.patch('/:id', requireAdmin, async (req, res) => {
     if (description !== undefined) updateData.description = description?.trim() || null;
     if (isActive !== undefined) updateData.isActive = isActive;
     if (allowedIps !== undefined) updateData.allowedIps = allowedIps;
+    if (allowedDomains !== undefined) updateData.allowedDomains = allowedDomains;
+    if (allowedHostnames !== undefined) updateData.allowedHostnames = allowedHostnames;
     if (webhookUrl !== undefined) updateData.webhookUrl = webhookUrl;
     if (rateLimit !== undefined) updateData.rateLimit = rateLimit;
     if (rateLimitWindow !== undefined) updateData.rateLimitWindow = rateLimitWindow;

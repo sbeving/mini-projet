@@ -304,6 +304,12 @@ model LogSource {
   /// IP whitelist (empty = allow all)
   allowedIps  String[] @default([])
   
+  /// Domain whitelist (empty = allow all)
+  allowedDomains String[] @default([])
+  
+  /// Hostname whitelist (empty = allow all)
+  allowedHostnames String[] @default([])
+  
   /// Webhook URL (if type = WEBHOOK)
   webhookUrl  String?
   
