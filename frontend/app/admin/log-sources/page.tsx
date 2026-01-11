@@ -3,8 +3,24 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Key, Plus, Copy, RefreshCw, Trash2, Settings, Activity, ExternalLink } from 'lucide-react';
+import { 
+  Key, Plus, Copy, RefreshCw, Trash2, Activity, ExternalLink, 
+  Server, Globe, Wifi, Webhook, Database, Cloud, Shield, 
+  Terminal, Code, CheckCircle2, XCircle, Clock, Loader2
+} from 'lucide-react';
 import Toast from '@/components/Toast';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+// Source type configuration
+const SOURCE_TYPES = [
+  { value: 'API', label: 'REST API', icon: Code, description: 'Send logs via HTTP POST requests', color: 'primary' },
+  { value: 'WEBHOOK', label: 'Webhook', icon: Webhook, description: 'Receive logs from external webhooks', color: 'purple' },
+  { value: 'SYSLOG', label: 'Syslog', icon: Terminal, description: 'Traditional syslog protocol (RFC 5424)', color: 'green' },
+  { value: 'AGENT', label: 'Agent', icon: Shield, description: 'LogChat agent for Windows/Linux', color: 'orange' },
+  { value: 'CLOUD', label: 'Cloud Service', icon: Cloud, description: 'AWS, Azure, GCP integrations', color: 'blue' },
+  { value: 'DATABASE', label: 'Database', icon: Database, description: 'Database audit logs', color: 'yellow' },
+] as const;
 
 interface LogSource {
   id: string;
@@ -13,12 +29,15 @@ interface LogSource {
   type: string;
   apiKey: string;
   allowedIps: string[];
+  allowedDomains?: string[];
+  allowedHostnames?: string[];
   webhookUrl: string | null;
   isActive: boolean;
   rateLimit: number;
   rateLimitWindow: number;
   lastUsedAt: string | null;
   createdAt: string;
+  logsReceived?: number;
   createdBy: {
     name: string;
     email: string;
@@ -27,21 +46,26 @@ interface LogSource {
 
 export default function LogSourcesPage() {
   const router = useRouter();
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [sources, setSources] = useState<LogSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDocsModal, setShowDocsModal] = useState(false);
+  const [selectedSource, setSelectedSource] = useState<LogSource | null>(null);
   const [newSource, setNewSource] = useState({
     name: '',
     description: '',
     type: 'API',
     allowedIps: '',
+    allowedDomains: '',
+    allowedHostnames: '',
     webhookUrl: '',
     rateLimit: 1000,
     rateLimitWindow: 60,
   });
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'ADMIN')) {
@@ -57,31 +81,32 @@ export default function LogSourcesPage() {
 
   const fetchSources = async () => {
     try {
+      setRefreshing(true);
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3001/api/log-sources', {
+      const res = await fetch(`${API_URL}/api/log-sources`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
-        setSources(data.sources);
+        setSources(data.sources || []);
       }
     } catch (error) {
       console.error('Failed to fetch log sources:', error);
       setToast({ message: 'Failed to fetch log sources', type: 'error' });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   const handleCreate = async () => {
     try {
       const token = localStorage.getItem('token');
-      const allowedIps = newSource.allowedIps
-        .split(',')
-        .map((ip) => ip.trim())
-        .filter(Boolean);
+      const allowedIps = newSource.allowedIps.split(',').map((ip) => ip.trim()).filter(Boolean);
+      const allowedDomains = newSource.allowedDomains.split(',').map((d) => d.trim()).filter(Boolean);
+      const allowedHostnames = newSource.allowedHostnames.split(',').map((h) => h.trim()).filter(Boolean);
 
-      const res = await fetch('http://localhost:3001/api/log-sources', {
+      const res = await fetch(`${API_URL}/api/log-sources`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,6 +115,8 @@ export default function LogSourcesPage() {
         body: JSON.stringify({
           ...newSource,
           allowedIps,
+          allowedDomains,
+          allowedHostnames,
         }),
       });
 
@@ -103,6 +130,8 @@ export default function LogSourcesPage() {
           description: '',
           type: 'API',
           allowedIps: '',
+          allowedDomains: '',
+          allowedHostnames: '',
           webhookUrl: '',
           rateLimit: 1000,
           rateLimitWindow: 60,
@@ -122,7 +151,7 @@ export default function LogSourcesPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3001/api/log-sources/${id}`, {
+      const res = await fetch(`${API_URL}/api/log-sources/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -141,7 +170,7 @@ export default function LogSourcesPage() {
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3001/api/log-sources/${id}`, {
+      const res = await fetch(`${API_URL}/api/log-sources/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -164,6 +193,22 @@ export default function LogSourcesPage() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setToast({ message: 'Copied to clipboard!', type: 'success' });
+  };
+
+  const getSourceTypeConfig = (type: string) => {
+    return SOURCE_TYPES.find(t => t.value === type) || SOURCE_TYPES[0];
+  };
+
+  const getColorClass = (color: string) => {
+    const colors: Record<string, string> = {
+      primary: 'bg-primary/20 text-primary border-primary/30',
+      purple: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+      green: 'bg-green-500/20 text-green-400 border-green-500/30',
+      orange: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+      blue: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+      yellow: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+    };
+    return colors[color] || colors.primary;
   };
 
   if (authLoading || loading) {

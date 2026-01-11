@@ -1,0 +1,273 @@
+@startuml usecase_global
+left to right direction
+actor "Security Analyst" as Analyst
+actor "System Administrator" as Admin
+actor "Background System" as System
+
+rectangle "LogChat SIEM Platform" {
+    package "Core Operations" {
+        usecase "Authenticate (Login/Logout)" as UC1
+        usecase "View Analytics Dashboard" as UC2
+        usecase "Explore & Filter Logs" as UC3
+        usecase "Chat with AI Assistant" as UC4
+    }
+
+    package "Administration" {
+        usecase "Manage Users & Roles" as UC5
+        usecase "Configure Log Sources" as UC6
+        usecase "Manage Alert Rules" as UC7
+        usecase "View Audit Logs" as UC8
+    }
+
+    package "Automated Processes" {
+        usecase "Ingest Logs via API" as UC9
+        usecase "Detect Threats (Real-time)" as UC10
+        usecase "Trigger Alerts" as UC11
+    }
+}
+
+Analyst --> UC1
+Analyst --> UC2
+Analyst --> UC3
+Analyst --> UC4
+Analyst --> UC8
+
+Admin --> UC1
+Admin --> UC5
+Admin --> UC6
+Admin --> UC7
+Admin --> UC8
+
+System --> UC9
+System --> UC10
+System --> UC11
+UC10 .> UC11 : <<include>>
+@enduml
+
+@startuml architecture_component
+skinparam componentStyle uml2
+
+package "Docker Container Host" {
+    
+    package "Frontend Container" {
+        [Next.js App Router] as NextJS
+        [React Components] as React
+        [Tailwind CSS] as UI
+        
+        NextJS *-- React
+        React *-- UI
+    }
+
+    package "Backend Container" {
+        [Express.js Server] as Express
+        [Prisma ORM] as Prisma
+        [Threat Engine] as Engine
+        [AI Service Adapter] as AIService
+        
+        Express *-- Engine
+        Express *-- AIService
+        Express *-- Prisma
+    }
+
+    package "Data Layer" {
+        database "PostgreSQL 16" as DB {
+            [Logs Table]
+            [Users Table]
+            [Alerts Table]
+            [Vectors (planned)]
+        }
+    }
+
+    package "AI Layer" {
+        [Ollama Service] as Ollama
+        [LLM Model: qwen2.5] as Model
+        
+        Ollama *-- Model
+    }
+}
+
+cloud "External World" {
+    [Admin Browser] as Client
+    [Log Sources (Servers/Apps)] as Sources
+}
+
+Client --> NextJS : HTTPS / Port 3000
+Sources --> Express : HTTP POST /api/logs / Port 3001
+
+NextJS --> Express : REST API Requests
+Express --> DB : SQL Queries (Prisma)
+Express --> Ollama : JSON Inference Req
+
+@enduml
+
+@startuml sequence_login
+actor User
+participant "Next.js UI" as UI
+participant "Backend API" as API
+database "PostgreSQL" as DB
+
+User -> UI : Enter Email & Password
+activate UI
+UI -> API : POST /api/auth/login
+activate API
+API -> DB : Find User by Email
+activate DB
+DB --> API : User Record (Hash)
+deactivate DB
+
+API -> API : Compare Password Hash
+alt Password Valid
+    API -> API : Generate JWT Token
+    API --> UI : 200 OK + Token + UserData
+    UI -> UI : Store Token (Context/Cookie)
+    UI -> User : Redirect to Dashboard
+else Password Invalid
+    API --> UI : 401 Unauthorized
+    UI -> User : Show Error Message
+end
+deactivate API
+deactivate UI
+@enduml
+
+@startuml sequence_chat_rag
+actor Analyst
+participant "Chat Interface" as UI
+participant "Backend Service" as Backend
+participant "Prisma DB" as DB
+participant "Ollama AI" as AI
+
+Analyst -> UI : "Why can't users login?"
+activate UI
+UI -> Backend : POST /api/chat {message}
+activate Backend
+
+group RAG Context Retrieval
+    Backend -> DB : Query: SELECT logs WHERE error=true ORDER BY time DESC LIMIT 50
+    activate DB
+    DB --> Backend : List of Login Failed Logs
+    deactivate DB
+end
+
+Backend -> Backend : Build Prompt (System Role + Logs + User Query)
+
+Backend -> AI : POST /api/generate {prompt}
+activate AI
+AI -> AI : Inference (Thinking...)
+AI --> Backend : "Multiple failed login attempts detected from IP..."
+deactivate AI
+
+Backend -> DB : Save Chat History
+Backend --> UI : Return AI Response
+deactivate Backend
+
+UI -> Analyst : Display Response
+deactivate UI
+@enduml
+
+@startuml activity_threat_detection
+start
+:Log Received via API;
+:Parse Log Content;
+:Validate Schema (Zod);
+
+partition "Threat Engine" {
+    if (Matches "SQL Injection" Pattern?) then (yes)
+        :Tag as CRITICAL;
+        :Create "Security Alert";
+    elseif (Matches "Brute Force" Pattern?) then (yes)
+        :Tag as HIGH;
+        :Increment Failed Login Counter;
+        if (Counter > Threshold?) then (yes)
+             :Create "Brute Force Alert";
+        endif
+    elseif (Is System Error?) then (yes)
+        :Tag as WARNING;
+    else (no)
+        :Tag as INFO;
+    endif
+}
+
+:Save to Database (Prisma);
+:Broadcast to Dashboard (WebSocket/SSE);
+stop
+@enduml
+
+@startuml class_diagram_domain
+class User {
+  +uuid id
+  +string email
+  +string passwordHash
+  +Role role
+  +createdAt: Date
+  +login()
+  +viewLogs()
+}
+
+class LogEntry {
+  +uuid id
+  +timestamp: Date
+  +level: LogLevel
+  +service: string
+  +message: string
+  +metadata: Json
+  +sourceIp: string
+}
+
+class ChatSession {
+  +uuid id
+  +userId: uuid
+  +title: string
+  +startedAt: Date
+  +messages: List<Message>
+}
+
+class Message {
+  +uuid id
+  +sessionId: uuid
+  +role: Enum(User, Assistant)
+  +content: string
+}
+
+class Alert {
+  +uuid id
+  +severity: Enum(Low, Medium, Critical)
+  +description: string
+  +status: Enum(Open, Resolved)
+}
+
+User "1" -- "*" LogEntry : views >
+User "1" -- "*" ChatSession : owns >
+ChatSession "1" -- "*" Message : contains >
+LogEntry "*" -- "0..1" Alert : triggers >
+@enduml
+
+@startuml deployment_diagram
+node "Production Server (Ubuntu/Linux)" {
+    component "Docker Engine" {
+        node "Internal Network (logchat-net)" {
+            artifact "Frontend Container" as C1 {
+                component "Next.js Service"
+            }
+            artifact "Backend Container" as C2 {
+                component "Express API"
+            }
+            artifact "Database Container" as C3 {
+                database "Postgres Data Volume"
+            }
+            artifact "AI Container" as C4 {
+                component "Ollama (CPU/GPU)"
+            }
+        }
+    }
+}
+
+node "Client Workstation" {
+    component "Web Browser"
+}
+
+[Web Browser] --> C1 : HTTP/3000
+[Web Browser] --> C2 : HTTP/3001 (API)
+C1 -> C2 : Internal API
+C2 -> C3 : TCP/5432
+C2 -> C4 : HTTP/11434
+@enduml

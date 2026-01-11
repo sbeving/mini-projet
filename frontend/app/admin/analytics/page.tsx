@@ -3,23 +3,9 @@
 import { useToast } from "@/components/Toast";
 import { useAuth } from "@/lib/auth-context";
 import {
-  ActivityAnalytics,
-  ChatAnalytics,
-  fetchActivityAnalytics,
-  fetchChatAnalytics,
-  fetchPlatformAnalytics,
-  fetchUserAnalytics,
-  PlatformAnalytics,
-  UserAnalytics,
-} from "@/lib/api";
-import {
   Activity,
-  ArrowDown,
-  ArrowUp,
   BarChart3,
   Clock,
-  Eye,
-  Filter,
   Loader2,
   MessageSquare,
   MousePointer,
@@ -27,9 +13,13 @@ import {
   TrendingUp,
   UserCheck,
   Users,
+  Eye,
+  Filter,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 type DateRange = "today" | "7d" | "30d" | "90d";
 
@@ -45,6 +35,62 @@ const TABS: TabProps[] = [
   { label: "Activity", icon: <Activity className="h-4 w-4" />, value: "activity" },
   { label: "Chats", icon: <MessageSquare className="h-4 w-4" />, value: "chats" },
 ];
+
+// API Types
+interface PlatformAnalytics {
+  summary: {
+    totalUsers: number;
+    activeUsers: number;
+    newUsers: number;
+    chatSessions: number;
+    chatMessages: number;
+    logsIngested: number;
+  };
+  activityByType: Array<{ type: string; count: number }>;
+  topUsers: Array<{ id: string; name: string; email: string; activityCount: number }>;
+  dailyStats: Array<{ date: string; users: number; activities: number }>;
+}
+
+interface UserAnalytics {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  avgSessionDuration: number;
+  userGrowth: Array<{ date: string; count: number; cumulative: number }>;
+  usersByRole: Array<{ role: string; count: number }>;
+  topActiveUsers: Array<{ id: string; name: string; email: string; role: string; activityCount: number }>;
+}
+
+interface ActivityAnalytics {
+  activityByType: Array<{ type: string; count: number }>;
+  activityByHour: Array<{ hour: number; count: number }>;
+  activityByDayOfWeek: Array<{ dayOfWeek: number; count: number }>;
+  dailyActivity: Array<{ date: string; count: number }>;
+  recentActivities: Array<{
+    id: string;
+    type: string;
+    path?: string;
+    duration?: number;
+    createdAt: string;
+    user?: { id: string; name: string; email: string };
+  }>;
+}
+
+interface ChatAnalytics {
+  totalSessions: number;
+  totalMessages: number;
+  avgMessagesPerSession: number;
+  avgResponseTime: number;
+  totalTokensUsed: number;
+  messagesByRole: Array<{ role: string; count: number }>;
+  topChatters: Array<{ id: string; name: string; email: string; sessionCount: number; totalMessages: number }>;
+  recentSessions: Array<{ id: string; title: string; createdAt: string; messageCount: number; user?: { name: string } }>;
+}
+
+function authHeaders() {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export default function AnalyticsDashboard() {
   const router = useRouter();
@@ -74,17 +120,40 @@ export default function AnalyticsDashboard() {
       setError(null);
       
       const days = dateRange === "today" ? 1 : dateRange === "7d" ? 7 : dateRange === "30d" ? 30 : 90;
+      const headers = { ...authHeaders() };
+
+      const [platformRes, usersRes, activityRes, chatsRes] = await Promise.all([
+        fetch(`${API_URL}/api/admin/analytics/overview?days=${days}`, { headers }),
+        fetch(`${API_URL}/api/admin/analytics/users?days=${days}`, { headers }),
+        fetch(`${API_URL}/api/admin/analytics/activity?days=${days}`, { headers }),
+        fetch(`${API_URL}/api/admin/analytics/chats?days=${days}`, { headers }),
+      ]);
+
+      if (!platformRes.ok || !usersRes.ok || !activityRes.ok || !chatsRes.ok) {
+        throw new Error("Failed to fetch analytics data");
+      }
 
       const [platform, users, activity, chats] = await Promise.all([
-        fetchPlatformAnalytics(days),
-        fetchUserAnalytics(days),
-        fetchActivityAnalytics(days),
-        fetchChatAnalytics(days),
+        platformRes.json(),
+        usersRes.json(),
+        activityRes.json(),
+        chatsRes.json(),
       ]);
 
       setPlatformData(platform);
       setUsersData(users);
-      setActivityData(activity);
+      // Normalize activity data structure
+      setActivityData({
+        ...activity,
+        activityByType: activity.activityByType?.map((a: any) => ({
+          type: a.type,
+          count: a.count ?? a._count?.type ?? 0,
+        })) || [],
+        activityByDayOfWeek: activity.activityByDayOfWeek?.map((d: any) => ({
+          dayOfWeek: d.dayOfWeek ?? d.dow ?? 0,
+          count: d.count ?? 0,
+        })) || [],
+      });
       setChatData(chats);
     } catch (err) {
       console.error("Failed to load analytics:", err);
@@ -124,11 +193,11 @@ export default function AnalyticsDashboard() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl animate-pulse">
-            <BarChart3 className="h-8 w-8 text-white" />
+          <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center">
+            <BarChart3 className="h-8 w-8 text-primary" />
           </div>
-          <Loader2 className="h-6 w-6 animate-spin text-indigo-400" />
-          <p className="text-slate-400 text-sm">Loading analytics...</p>
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <p className="text-muted text-sm">Loading analytics...</p>
         </div>
       </div>
     );
@@ -137,29 +206,29 @@ export default function AnalyticsDashboard() {
   if (!isAdmin) return null;
 
   return (
-    <div className="space-y-6 p-4 md:p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/50 min-h-screen">
+    <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-3 text-white">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <TrendingUp className="h-5 w-5 text-white" />
+          <h1 className="text-2xl font-bold flex items-center gap-3 text-foreground">
+            <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             Analytics Dashboard
           </h1>
-          <p className="text-slate-400 mt-2">Monitor platform usage and engagement</p>
+          <p className="text-muted mt-2">Monitor platform usage and engagement</p>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1 bg-slate-800/50 backdrop-blur border border-white/10 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-surface border border-border rounded-xl p-1">
             {(["today", "7d", "30d", "90d"] as DateRange[]).map((range) => (
               <button
                 key={range}
                 onClick={() => setDateRange(range)}
                 className={`px-4 py-2 text-sm rounded-lg transition-all font-medium ${
                   dateRange === range
-                    ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                    ? "bg-primary text-white"
+                    : "text-muted hover:text-foreground hover:bg-surface-hover"
                 }`}
               >
                 {range === "today" ? "Today" : range}
@@ -169,7 +238,7 @@ export default function AnalyticsDashboard() {
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-2.5 bg-slate-800/50 border border-white/10 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white"
+            className="p-2.5 bg-surface border border-border hover:bg-surface-hover rounded-xl text-muted hover:text-foreground transition-colors"
           >
             <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
           </button>
@@ -177,15 +246,15 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-800/50 border border-white/10 rounded-xl p-1.5 w-fit overflow-x-auto">
+      <div className="flex gap-1 bg-surface border border-border rounded-xl p-1.5 w-fit overflow-x-auto">
         {TABS.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setActiveTab(tab.value)}
             className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
               activeTab === tab.value
-                ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg"
-                : "text-slate-400 hover:text-white hover:bg-white/5"
+                ? "bg-primary text-white"
+                : "text-muted hover:text-foreground hover:bg-surface-hover"
             }`}
           >
             {tab.icon}
@@ -197,12 +266,12 @@ export default function AnalyticsDashboard() {
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-20">
           <p className="text-red-400 mb-4">{error}</p>
-          <button onClick={handleRefresh} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white">
+          <button onClick={handleRefresh} className="px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-white">
             Retry
           </button>
         </div>
@@ -219,10 +288,10 @@ export default function AnalyticsDashboard() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
-                    <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <Activity className="h-4 w-4 text-white" />
+                <div className="bg-surface border border-border rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
+                    <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
+                      <Activity className="h-4 w-4 text-primary" />
                     </div>
                     Activity Breakdown
                   </h3>
@@ -232,60 +301,60 @@ export default function AnalyticsDashboard() {
                         <div key={item.type} className="flex items-center justify-between py-2">
                           <div className="flex items-center gap-3">
                             <ActivityIcon type={item.type} />
-                            <span className="text-sm text-slate-300">{item.type.replace(/_/g, " ")}</span>
+                            <span className="text-sm text-foreground">{item.type.replace(/_/g, " ")}</span>
                           </div>
-                          <span className="font-semibold text-white bg-slate-700/50 px-3 py-1 rounded-lg">{item.count}</span>
+                          <span className="font-semibold text-foreground bg-surface-hover px-3 py-1 rounded-lg">{item.count}</span>
                         </div>
                       ))
                     ) : (
-                      <p className="text-center text-slate-500 py-8">No activity data</p>
+                      <p className="text-center text-muted py-8">No activity data</p>
                     )}
                   </div>
                 </div>
 
-                <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-white">
-                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-                      <Users className="h-4 w-4 text-white" />
+                <div className="bg-surface border border-border rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
+                    <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center">
+                      <Users className="h-4 w-4 text-green-400" />
                     </div>
                     Most Active Users
                   </h3>
                   <div className="space-y-2">
                     {platformData.topUsers.length > 0 ? (
                       platformData.topUsers.slice(0, 5).map((user, i) => (
-                        <div key={user.id} className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-white/5">
+                        <div key={user.id} className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-surface-hover">
                           <div className="flex items-center gap-3">
                             <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white ${
-                              i === 0 ? 'bg-gradient-to-br from-amber-400 to-orange-500' :
-                              i === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400' :
-                              i === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-700' : 'bg-slate-700'
+                              i === 0 ? 'bg-yellow-500' :
+                              i === 1 ? 'bg-gray-400' :
+                              i === 2 ? 'bg-amber-700' : 'bg-gray-600'
                             }`}>{i + 1}</div>
                             <div>
-                              <p className="text-sm font-medium text-white">{user.name}</p>
-                              <p className="text-xs text-slate-400">{user.email}</p>
+                              <p className="text-sm font-medium text-foreground">{user.name}</p>
+                              <p className="text-xs text-muted">{user.email}</p>
                             </div>
                           </div>
-                          <span className="text-sm font-medium text-indigo-400">{user.activityCount} actions</span>
+                          <span className="text-sm font-medium text-primary">{user.activityCount} actions</span>
                         </div>
                       ))
                     ) : (
-                      <p className="text-center text-slate-500 py-8">No users found</p>
+                      <p className="text-center text-muted py-8">No users found</p>
                     )}
                   </div>
                 </div>
               </div>
 
               {platformData.dailyStats.length > 0 && (
-                <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                  <h3 className="text-lg font-semibold mb-4 text-white">Daily Activity Trend</h3>
+                <div className="bg-surface border border-border rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">Daily Activity Trend</h3>
                   <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
                     {platformData.dailyStats.slice(0, 7).reverse().map((day) => (
-                      <div key={day.date} className="bg-slate-700/50 rounded-xl p-3 text-center">
-                        <p className="text-xs text-slate-400">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}</p>
-                        <p className="text-lg font-bold text-white">{day.users}</p>
-                        <p className="text-xs text-slate-400">users</p>
-                        <p className="text-sm font-medium text-indigo-400 mt-1">{day.activities}</p>
-                        <p className="text-xs text-slate-400">actions</p>
+                      <div key={day.date} className="bg-surface-hover rounded-xl p-3 text-center">
+                        <p className="text-xs text-muted">{new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                        <p className="text-lg font-bold text-foreground">{day.users}</p>
+                        <p className="text-xs text-muted">users</p>
+                        <p className="text-sm font-medium text-primary mt-1">{day.activities}</p>
+                        <p className="text-xs text-muted">actions</p>
                       </div>
                     ))}
                   </div>
@@ -304,51 +373,51 @@ export default function AnalyticsDashboard() {
                 <MetricCard title="Avg Session" value={formatDuration(usersData.avgSessionDuration)} icon={<Clock className="h-5 w-5" />} color="accent" isString />
               </div>
 
-              <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-lg font-semibold mb-4 text-white">Users by Role</h3>
+              <div className="bg-surface border border-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Users by Role</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {usersData.usersByRole.map((item) => (
-                    <div key={item.role} className="bg-slate-700/50 rounded-xl p-4 text-center">
-                      <p className="text-3xl font-bold text-white">{item.count}</p>
-                      <p className="text-sm text-slate-400 mt-1">{item.role}</p>
+                    <div key={item.role} className="bg-surface-hover rounded-xl p-4 text-center">
+                      <p className="text-3xl font-bold text-foreground">{item.count}</p>
+                      <p className="text-sm text-muted mt-1">{item.role}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-lg font-semibold mb-4 text-white">Top Active Users</h3>
+              <div className="bg-surface border border-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Top Active Users</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="border-b border-white/10">
+                    <thead className="border-b border-border">
                       <tr>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">Rank</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">User</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">Role</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">Activities</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted">Rank</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted">User</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted">Role</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted">Activities</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-border">
                       {usersData.topActiveUsers.map((user, i) => (
-                        <tr key={user.id} className="hover:bg-white/5">
+                        <tr key={user.id} className="hover:bg-surface-hover">
                           <td className="px-4 py-3">
-                            <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold ${
-                              i === 0 ? 'bg-amber-500/20 text-amber-400' :
-                              i === 1 ? 'bg-slate-400/20 text-slate-300' :
-                              i === 2 ? 'bg-amber-700/20 text-amber-600' : 'bg-slate-700 text-slate-400'
+                            <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold text-white ${
+                              i === 0 ? 'bg-yellow-500' :
+                              i === 1 ? 'bg-gray-400' :
+                              i === 2 ? 'bg-amber-700' : 'bg-gray-600'
                             }`}>{i + 1}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <p className="font-medium text-white">{user.name}</p>
-                            <p className="text-sm text-slate-400">{user.email}</p>
+                            <p className="font-medium text-foreground">{user.name}</p>
+                            <p className="text-sm text-muted">{user.email}</p>
                           </td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded text-xs font-medium ${
-                              user.role === 'ADMIN' ? 'bg-purple-500/20 text-purple-400' :
-                              user.role === 'STAFF' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-600/50 text-slate-300'
+                              user.role === 'ADMIN' ? 'bg-red-500/20 text-red-400' :
+                              user.role === 'STAFF' ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'
                             }`}>{user.role}</span>
                           </td>
-                          <td className="px-4 py-3 font-medium text-indigo-400">{user.activityCount}</td>
+                          <td className="px-4 py-3 font-medium text-primary">{user.activityCount}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -361,22 +430,22 @@ export default function AnalyticsDashboard() {
           {/* Activity Tab */}
           {activeTab === "activity" && activityData && (
             <div className="space-y-6">
-              <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-lg font-semibold mb-4 text-white">Activity by Type</h3>
+              <div className="bg-surface border border-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Activity by Type</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {activityData.activityByType.map((item) => (
-                    <div key={item.type} className="bg-slate-700/50 rounded-xl p-4 text-center hover:bg-slate-700 transition-colors">
+                    <div key={item.type} className="bg-surface-hover rounded-xl p-4 text-center hover:bg-card transition-colors">
                       <ActivityIcon type={item.type} size="lg" />
-                      <p className="text-2xl font-bold mt-3 text-white">{item._count.type}</p>
-                      <p className="text-xs text-slate-400 mt-1">{item.type.replace(/_/g, " ")}</p>
+                      <p className="text-2xl font-bold mt-3 text-foreground">{item.count}</p>
+                      <p className="text-xs text-muted mt-1">{item.type.replace(/_/g, " ")}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
               {activityData.activityByHour.length > 0 && (
-                <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                  <h3 className="text-lg font-semibold mb-4 text-white">Activity by Hour</h3>
+                <div className="bg-surface border border-border rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">Activity by Hour</h3>
                   <div className="flex gap-1 overflow-x-auto pb-2">
                     {Array.from({ length: 24 }, (_, h) => {
                       const hourData = activityData.activityByHour.find((x) => x.hour === h);
@@ -386,9 +455,9 @@ export default function AnalyticsDashboard() {
                       return (
                         <div key={h} className="flex flex-col items-center min-w-[28px]">
                           <div className="h-24 flex items-end">
-                            <div className="w-5 bg-gradient-to-t from-indigo-600 to-purple-500 rounded-t" style={{ height: `${height}%` }} title={`${count} activities`} />
+                            <div className="w-5 bg-primary rounded-t" style={{ height: `${height}%` }} title={`${count} activities`} />
                           </div>
-                          <span className="text-xs text-slate-500 mt-1">{h}</span>
+                          <span className="text-xs text-muted mt-1">{h}</span>
                         </div>
                       );
                     })}
@@ -397,15 +466,15 @@ export default function AnalyticsDashboard() {
               )}
 
               {activityData.activityByDayOfWeek.length > 0 && (
-                <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                  <h3 className="text-lg font-semibold mb-4 text-white">Activity by Day</h3>
+                <div className="bg-surface border border-border rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold mb-4 text-foreground">Activity by Day</h3>
                   <div className="grid grid-cols-7 gap-2">
                     {[0, 1, 2, 3, 4, 5, 6].map((dow) => {
-                      const dayData = activityData.activityByDayOfWeek.find((x) => x.dow === dow);
+                      const dayData = activityData.activityByDayOfWeek.find((x) => x.dayOfWeek === dow);
                       return (
-                        <div key={dow} className="bg-slate-700/50 rounded-xl p-3 text-center">
-                          <p className="text-xs text-slate-400">{getDayName(dow)}</p>
-                          <p className="text-xl font-bold text-white mt-1">{dayData?.count || 0}</p>
+                        <div key={dow} className="bg-surface-hover rounded-xl p-3 text-center">
+                          <p className="text-xs text-muted">{getDayName(dow)}</p>
+                          <p className="text-xl font-bold text-foreground mt-1">{dayData?.count || 0}</p>
                         </div>
                       );
                     })}
@@ -413,24 +482,24 @@ export default function AnalyticsDashboard() {
                 </div>
               )}
 
-              <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-lg font-semibold mb-4 text-white">Recent Activities</h3>
+              <div className="bg-surface border border-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Recent Activities</h3>
                 <div className="space-y-2">
                   {activityData.recentActivities.length > 0 ? (
                     activityData.recentActivities.slice(0, 10).map((activity) => (
-                      <div key={activity.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50">
+                      <div key={activity.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-surface-hover hover:bg-card">
                         <div className="flex items-center gap-3">
                           <ActivityIcon type={activity.type} />
                           <div>
-                            <p className="text-sm font-medium text-white">{activity.user?.name || "Unknown"}</p>
-                            <p className="text-xs text-slate-400">{activity.type.replace(/_/g, " ")}{activity.path && ` • ${activity.path}`}</p>
+                            <p className="text-sm font-medium text-foreground">{activity.user?.name || "Unknown"}</p>
+                            <p className="text-xs text-muted">{activity.type.replace(/_/g, " ")}{activity.path && ` • ${activity.path}`}</p>
                           </div>
                         </div>
-                        <span className="text-xs text-slate-500">{new Date(activity.createdAt).toLocaleString()}</span>
+                        <span className="text-xs text-muted">{new Date(activity.createdAt).toLocaleString()}</span>
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-slate-500 py-8">No recent activities</p>
+                    <p className="text-center text-muted py-8">No recent activities</p>
                   )}
                 </div>
               </div>
@@ -448,71 +517,71 @@ export default function AnalyticsDashboard() {
                 <MetricCard title="Tokens Used" value={chatData.totalTokensUsed} icon={<Activity className="h-5 w-5" />} color="primary" />
               </div>
 
-              <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-lg font-semibold mb-4 text-white">Messages by Role</h3>
+              <div className="bg-surface border border-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Messages by Role</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {chatData.messagesByRole.map((item) => (
-                    <div key={item.role} className="bg-slate-700/50 rounded-xl p-4 flex items-center justify-between">
+                    <div key={item.role} className="bg-surface-hover rounded-xl p-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.role === 'user' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.role === 'user' ? 'bg-primary/20 text-primary' : 'bg-green-500/20 text-green-400'}`}>
                           {item.role === 'user' ? <Users className="h-5 w-5" /> : <MessageSquare className="h-5 w-5" />}
                         </div>
-                        <span className="font-medium text-white capitalize">{item.role}</span>
+                        <span className="font-medium text-foreground capitalize">{item.role}</span>
                       </div>
-                      <span className="text-2xl font-bold text-white">{item.count}</span>
+                      <span className="text-2xl font-bold text-foreground">{item.count}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-lg font-semibold mb-4 text-white">Top Chatters</h3>
+              <div className="bg-surface border border-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Top Chatters</h3>
                 <div className="space-y-3">
                   {chatData.topChatters.length > 0 ? (
                     chatData.topChatters.map((user, i) => (
-                      <div key={user.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50">
+                      <div key={user.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-surface-hover hover:bg-card">
                         <div className="flex items-center gap-3">
-                          <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                            i === 0 ? 'bg-amber-500/20 text-amber-400' :
-                            i === 1 ? 'bg-slate-400/20 text-slate-300' :
-                            i === 2 ? 'bg-amber-700/20 text-amber-600' : 'bg-slate-700 text-slate-400'
+                          <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold text-white ${
+                            i === 0 ? 'bg-yellow-500' :
+                            i === 1 ? 'bg-gray-400' :
+                            i === 2 ? 'bg-amber-700' : 'bg-gray-600'
                           }`}>{i + 1}</span>
                           <div>
-                            <p className="font-medium text-white">{user.name}</p>
-                            <p className="text-xs text-slate-400">{user.email}</p>
+                            <p className="font-medium text-foreground">{user.name}</p>
+                            <p className="text-xs text-muted">{user.email}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-medium text-indigo-400">{user.sessionCount} sessions</p>
-                          <p className="text-xs text-slate-400">{user.messageCount} messages</p>
+                          <p className="font-medium text-primary">{user.sessionCount} sessions</p>
+                          <p className="text-xs text-muted">{user.totalMessages} messages</p>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-center text-slate-500 py-8">No chat data yet</p>
+                    <p className="text-center text-muted py-8">No chat data yet</p>
                   )}
                 </div>
               </div>
 
-              <div className="bg-slate-800/50 border border-white/10 rounded-2xl p-6">
-                <h3 className="text-lg font-semibold mb-4 text-white">Recent Chat Sessions</h3>
+              <div className="bg-surface border border-border rounded-2xl p-6">
+                <h3 className="text-lg font-semibold mb-4 text-foreground">Recent Chat Sessions</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="border-b border-white/10">
+                    <thead className="border-b border-border">
                       <tr>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">Title</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">User</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">Messages</th>
-                        <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">Created</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted">Title</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted">User</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted">Messages</th>
+                        <th className="text-left px-4 py-3 text-sm font-medium text-muted">Created</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-border">
                       {chatData.recentSessions.map((session) => (
-                        <tr key={session.id} className="hover:bg-white/5">
-                          <td className="px-4 py-3"><p className="font-medium text-white truncate max-w-xs">{session.title}</p></td>
-                          <td className="px-4 py-3 text-sm text-slate-300">{session.user?.name || "Unknown"}</td>
-                          <td className="px-4 py-3 font-medium text-indigo-400">{session.messageCount}</td>
-                          <td className="px-4 py-3 text-sm text-slate-400">{new Date(session.createdAt).toLocaleString()}</td>
+                        <tr key={session.id} className="hover:bg-surface-hover">
+                          <td className="px-4 py-3"><p className="font-medium text-foreground truncate max-w-xs">{session.title}</p></td>
+                          <td className="px-4 py-3 text-sm text-muted">{session.user?.name || "Unknown"}</td>
+                          <td className="px-4 py-3 font-medium text-primary">{session.messageCount}</td>
+                          <td className="px-4 py-3 text-sm text-muted">{new Date(session.createdAt).toLocaleString()}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -533,35 +602,28 @@ interface MetricCardProps {
   icon: React.ReactNode;
   color: "primary" | "success" | "warning" | "error" | "accent";
   subtitle?: string;
-  change?: number;
   isString?: boolean;
 }
 
-function MetricCard({ title, value, icon, color, subtitle, change, isString }: MetricCardProps) {
-  const gradients = {
-    primary: "from-indigo-500 to-purple-600",
-    success: "from-emerald-500 to-teal-600",
-    warning: "from-amber-500 to-orange-600",
-    error: "from-rose-500 to-red-600",
-    accent: "from-violet-500 to-fuchsia-600",
+function MetricCard({ title, value, icon, color, subtitle, isString }: MetricCardProps) {
+  const colors = {
+    primary: "bg-primary/20 text-primary",
+    success: "bg-green-500/20 text-green-400",
+    warning: "bg-yellow-500/20 text-yellow-400",
+    error: "bg-red-500/20 text-red-400",
+    accent: "bg-purple-500/20 text-purple-400",
   };
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur border border-white/10 rounded-2xl p-5 hover:bg-slate-800/70 transition-all">
+    <div className="bg-surface border border-border rounded-2xl p-5 hover:bg-surface-hover transition-colors">
       <div className="flex items-center justify-between mb-3">
-        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradients[color]} flex items-center justify-center shadow-lg`}>
-          <div className="text-white">{icon}</div>
+        <div className={`w-10 h-10 rounded-xl ${colors[color]} flex items-center justify-center`}>
+          {icon}
         </div>
-        {change !== undefined && (
-          <div className={`flex items-center gap-1 text-sm font-medium px-2 py-1 rounded-lg ${change >= 0 ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}>
-            {change >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-            {Math.abs(change)}%
-          </div>
-        )}
       </div>
-      <p className="text-2xl font-bold text-white">{isString ? value : typeof value === "number" ? value.toLocaleString() : value}</p>
-      <p className="text-sm text-slate-400 mt-1">{title}</p>
-      {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+      <p className="text-2xl font-bold text-foreground">{isString ? value : typeof value === "number" ? value.toLocaleString() : value}</p>
+      <p className="text-sm text-muted mt-1">{title}</p>
+      {subtitle && <p className="text-xs text-muted mt-0.5">{subtitle}</p>}
     </div>
   );
 }
@@ -594,26 +656,26 @@ function ActivityIcon({ type, size = "sm" }: ActivityIconProps) {
     }
   };
 
-  const getGradient = () => {
+  const getColor = () => {
     switch (type) {
       case "LOGIN":
       case "LOGOUT":
-        return "from-emerald-500 to-teal-600";
+        return "bg-green-500/20 text-green-400";
       case "PAGE_VIEW":
-        return "from-indigo-500 to-purple-600";
+        return "bg-primary/20 text-primary";
       case "CHAT_MESSAGE":
       case "CHAT_START":
-        return "from-violet-500 to-fuchsia-600";
+        return "bg-purple-500/20 text-purple-400";
       case "LOG_VIEW":
       case "LOG_SEARCH":
-        return "from-amber-500 to-orange-600";
+        return "bg-yellow-500/20 text-yellow-400";
       default:
-        return "from-slate-500 to-slate-600";
+        return "bg-gray-500/20 text-gray-400";
     }
   };
 
   return (
-    <div className={`${wrapperSize} rounded-lg bg-gradient-to-br ${getGradient()} flex items-center justify-center shadow text-white`}>
+    <div className={`${wrapperSize} rounded-lg ${getColor()} flex items-center justify-center`}>
       {getIcon()}
     </div>
   );

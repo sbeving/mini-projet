@@ -1,0 +1,26 @@
+@startuml
+skinparam componentStyle uml2
+
+package "Docker Host" {
+    [Next.js Frontend] as Frontend
+    [Node.js Backend] as Backend
+    [PostgreSQL DB] as DB
+    [Ollama AI Service] as AI
+
+    interface "HTTP/3000" as UI_Port
+    interface "HTTP/3001" as API_Port
+    interface "TCP/5432" as DB_Port
+
+    UI_Port - [Frontend]
+    [Frontend] --> API_Port : "REST API Calls"
+    API_Port - [Backend]
+    [Backend] --> DB_Port : "Prisma Client"
+    DB_Port - [DB]
+    
+    [Backend] --> [AI] : "Inference Request (JSON)"
+}
+
+cloud "User Browser" {
+    [Web Client] --> UI_Port : "HTTPS"
+}
+@enduml

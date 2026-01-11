@@ -1,0 +1,39 @@
+@startuml
+actor User
+participant "Frontend UI" as UI
+participant "Backend API" as API
+participant "Auth Service" as Auth
+participant "Ollama Service" as AI
+database "PostgreSQL" as DB
+
+User -> UI : Enters Query ("Analyze error logs")
+UI -> API : POST /api/chat (query, token)
+activate API
+
+API -> Auth : Validate Token
+Auth --> API : Token Valid
+
+API -> DB : Fetch Recent Logs (Limit 100)
+activate DB
+DB --> API : Log List
+deactivate DB
+
+API -> API : Construct Context Prompt
+note right of API
+  Prompt includes:
+  - Role definition
+  - Log snippet
+  - User query
+end note
+
+API -> AI : POST /api/generate
+activate AI
+AI --> API : Generated Response content
+deactivate AI
+
+API -> DB : Save Chat History
+API --> UI : JSON Response (answer)
+deactivate API
+
+UI -> User : Display AI Answer
+@enduml

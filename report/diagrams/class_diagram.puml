@@ -1,0 +1,42 @@
+@startuml
+class User {
+  +String id
+  +String email
+  +String password
+  +Role role
+  +login()
+  +register()
+}
+
+class Log {
+  +String id
+  +DateTime timestamp
+  +String level
+  +String message
+  +Json meta
+}
+
+class Alert {
+  +String id
+  +String title
+  +String severity
+  +trigger()
+}
+
+class ChatSession {
+  +String id
+  +DateTime createdAt
+  +addMessage()
+}
+
+class ChatMessage {
+  +String id
+  +String content
+  +String role
+}
+
+User "1" -- "*" Log : "accesses"
+User "1" -- "*" ChatSession : "owns"
+ChatSession "1" -- "*" ChatMessage : "contains"
+Log "*" -- "1" Alert : "triggers"
+@enduml

@@ -1,0 +1,34 @@
+@startuml
+left to right direction
+actor "Security Analyst" as Analyst
+actor "Admin" as Admin
+actor "System" as System
+
+rectangle "LogChat Platform" {
+  usecase "Login / Authentication" as UC1
+  usecase "View Security Dashboard" as UC2
+  usecase "Search & Filter Logs" as UC3
+  usecase "Chat with AI Assistant" as UC4
+  usecase "Configure Alert Rules" as UC5
+  usecase "Manage Users" as UC6
+  usecase "View System Health" as UC7
+  usecase "Export Reports" as UC8
+}
+
+Analyst --> UC1
+Analyst --> UC2
+Analyst --> UC3
+Analyst --> UC4
+Analyst --> UC8
+
+Admin --> UC1
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+Admin --> UC5
+Admin --> UC6
+Admin --> UC7
+Admin --> UC8
+
+System --> UC2 : "Push Real-time stats"
+@enduml
