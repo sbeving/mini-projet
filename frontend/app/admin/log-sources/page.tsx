@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { 
   Key, Plus, Copy, RefreshCw, Trash2, Activity, ExternalLink, 
   Server, Globe, Wifi, Webhook, Database, Cloud, Shield, 
-  Terminal, Code, CheckCircle2, XCircle, Clock, Loader2
+  Terminal, Code, CheckCircle2, XCircle, Clock, Loader2, Edit
 } from 'lucide-react';
 import Toast from '@/components/Toast';
 
@@ -66,6 +66,17 @@ export default function LogSourcesPage() {
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editSource, setEditSource] = useState<LogSource | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    allowedIps: '',
+    allowedDomains: '',
+    allowedHostnames: '',
+    rateLimit: 1000,
+    rateLimitWindow: 60,
+  });
 
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'ADMIN')) {
@@ -82,7 +93,7 @@ export default function LogSourcesPage() {
   const fetchSources = async () => {
     try {
       setRefreshing(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("logchat_token");
       const res = await fetch(`${API_URL}/api/log-sources`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -101,7 +112,7 @@ export default function LogSourcesPage() {
 
   const handleCreate = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("logchat_token");
       const allowedIps = newSource.allowedIps.split(',').map((ip) => ip.trim()).filter(Boolean);
       const allowedDomains = newSource.allowedDomains.split(',').map((d) => d.trim()).filter(Boolean);
       const allowedHostnames = newSource.allowedHostnames.split(',').map((h) => h.trim()).filter(Boolean);
@@ -150,7 +161,7 @@ export default function LogSourcesPage() {
     if (!confirm(`Delete log source "${name}"? This cannot be undone.`)) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("logchat_token");
       const res = await fetch(`${API_URL}/api/log-sources/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -169,7 +180,7 @@ export default function LogSourcesPage() {
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("logchat_token");
       const res = await fetch(`${API_URL}/api/log-sources/${id}`, {
         method: 'PATCH',
         headers: {
@@ -186,6 +197,57 @@ export default function LogSourcesPage() {
         setToast({ message: 'Failed to update log source', type: 'error' });
       }
     } catch (error) {
+      setToast({ message: 'Failed to update log source', type: 'error' });
+    }
+  };
+
+  const openEditModal = (source: LogSource) => {
+    setEditSource(source);
+    setEditForm({
+      name: source.name,
+      description: source.description || '',
+      allowedIps: (source.allowedIps || []).join(', '),
+      allowedDomains: (source.allowedDomains || []).join(', '),
+      allowedHostnames: (source.allowedHostnames || []).join(', '),
+      rateLimit: source.rateLimit,
+      rateLimitWindow: source.rateLimitWindow,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEdit = async () => {
+    if (!editSource) return;
+    
+    try {
+      const token = localStorage.getItem("logchat_token");
+      const res = await fetch(`${API_URL}/api/log-sources/${editSource.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: editForm.name,
+          description: editForm.description || null,
+          allowedIps: editForm.allowedIps.split(',').map(ip => ip.trim()).filter(Boolean),
+          allowedDomains: editForm.allowedDomains.split(',').map(d => d.trim()).filter(Boolean),
+          allowedHostnames: editForm.allowedHostnames.split(',').map(h => h.trim()).filter(Boolean),
+          rateLimit: editForm.rateLimit,
+          rateLimitWindow: editForm.rateLimitWindow,
+        }),
+      });
+
+      if (res.ok) {
+        setToast({ message: 'Log source updated successfully', type: 'success' });
+        setShowEditModal(false);
+        setEditSource(null);
+        fetchSources();
+      } else {
+        const error = await res.json();
+        setToast({ message: error.error || 'Failed to update log source', type: 'error' });
+      }
+    } catch (error) {
+      console.error('Error updating log source:', error);
       setToast({ message: 'Failed to update log source', type: 'error' });
     }
   };
@@ -335,6 +397,13 @@ export default function LogSourcesPage() {
                       title="View Integration Docs"
                     >
                       <Code className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => openEditModal(source)}
+                      className="p-2 hover:bg-primary/10 rounded-lg transition text-primary"
+                      title="Edit Source"
+                    >
+                      <Edit className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleToggleActive(source.id, source.isActive)}
@@ -750,6 +819,123 @@ print(response.json())`}
           </div>
         </div>
       )}
+
+      {/* Edit Modal */}
+      {showEditModal && editSource && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface border border-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-border">
+              <h2 className="text-xl font-bold text-foreground">Edit Log Source</h2>
+              <p className="text-sm text-muted mt-1">Update configuration for {editSource.name}</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Name *</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="My Application"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Description</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                  rows={2}
+                  placeholder="Optional description..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Allowed IPs</label>
+                <input
+                  type="text"
+                  value={editForm.allowedIps}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, allowedIps: e.target.value }))}
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="192.168.1.1, 10.0.0.0/8 (comma separated, empty = allow all)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Allowed Domains</label>
+                <input
+                  type="text"
+                  value={editForm.allowedDomains}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, allowedDomains: e.target.value }))}
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="example.com, *.internal.net (comma separated)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Allowed Hostnames</label>
+                <input
+                  type="text"
+                  value={editForm.allowedHostnames}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, allowedHostnames: e.target.value }))}
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="server-01, web-*, db-* (comma separated)"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Rate Limit</label>
+                  <input
+                    type="number"
+                    value={editForm.rateLimit}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, rateLimit: parseInt(e.target.value) || 1000 }))}
+                    className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    min={1}
+                  />
+                  <p className="text-xs text-muted mt-1">Requests per window</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Window (sec)</label>
+                  <input
+                    type="number"
+                    value={editForm.rateLimitWindow}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, rateLimitWindow: parseInt(e.target.value) || 60 }))}
+                    className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    min={1}
+                  />
+                  <p className="text-xs text-muted mt-1">Time window in seconds</p>
+                </div>
+              </div>
+
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
+                <p className="text-sm text-yellow-400">
+                  <strong>Note:</strong> The API key and source type cannot be changed. If you need a new API key, delete this source and create a new one.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-border flex gap-3">
+              <button
+                onClick={() => { setShowEditModal(false); setEditSource(null); }}
+                className="flex-1 px-4 py-3 border border-border text-muted rounded-xl hover:bg-surface-hover transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleEdit}
+                disabled={!editForm.name.trim()}
+                className="flex-1 px-4 py-3 bg-primary text-white rounded-xl hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notification */}
       {toast && (
         <div
@@ -763,7 +949,7 @@ print(response.json())`}
           {toast.message}
         </div>
       )}
-      
+
     </div>
   );
 }
