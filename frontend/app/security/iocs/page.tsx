@@ -70,7 +70,7 @@ export default function IOCsPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("logchat_token");
       const headers = { Authorization: `Bearer ${token}` };
 
       const [statsRes, feedsRes] = await Promise.all([
@@ -116,7 +116,7 @@ export default function IOCsPage() {
 
     try {
       setExtracting(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("logchat_token");
       const response = await fetch(`${API_URL}/api/siem/threat-intel/extract`, {
         method: "POST",
         headers: {
@@ -152,7 +152,7 @@ export default function IOCsPage() {
 
   const lookupIOC = async (ioc: IOC) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("logchat_token");
       const response = await fetch(`${API_URL}/api/siem/threat-intel/lookup`, {
         method: "POST",
         headers: {

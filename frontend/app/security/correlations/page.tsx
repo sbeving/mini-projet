@@ -79,7 +79,7 @@ export default function CorrelationsPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("logchat_token");
       const headers = { Authorization: `Bearer ${token}` };
 
       const [rulesRes, eventsRes, statsRes] = await Promise.all([

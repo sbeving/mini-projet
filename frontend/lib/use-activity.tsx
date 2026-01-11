@@ -38,7 +38,7 @@ export function useActivity() {
       if (!isAuthenticated) return;
 
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("logchat_token");
         if (!token) return;
 
         await fetch(`${API_URL}/api/admin/analytics/track`, {

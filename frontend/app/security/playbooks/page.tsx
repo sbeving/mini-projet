@@ -69,7 +69,7 @@ export default function PlaybooksPage() {
   const fetchPlaybooks = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("logchat_token");
       const response = await fetch(`${API_URL}/api/siem/playbooks`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -98,7 +98,7 @@ export default function PlaybooksPage() {
 
   const executePlaybook = async (playbookId: string) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("logchat_token");
       const response = await fetch(
         `${API_URL}/api/siem/soar/playbooks/${playbookId}/execute`,
         {

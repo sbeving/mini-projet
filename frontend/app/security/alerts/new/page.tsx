@@ -120,7 +120,7 @@ export default function NewAlertPage() {
 
     try {
       setSaving(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("logchat_token");
       const response = await fetch(`${API_URL}/api/siem/rules`, {
         method: "POST",
         headers: {
