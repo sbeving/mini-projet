@@ -143,12 +143,6 @@ func (s *Sender) Start(ctx context.Context) {
 	}
 }
 
-		case <-healthTicker.C:
-			s.checkHealth(ctx)
-		}
-	}
-}
-
 // Send queues a log entry for sending
 func (s *Sender) Send(entry buffer.LogEntry) error {
 	// Enrich entry with agent info
