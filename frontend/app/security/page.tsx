@@ -299,10 +299,10 @@ export default function SecurityDashboard() {
         </div>
 
         {/* Threat Severity Distribution */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Severity Breakdown */}
-          <div className="bg-[#12121a] border border-gray-800 rounded-xl p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <div className="bg-surface border border-border rounded-2xl p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
               <span>📊</span> Threat Severity Distribution
             </h3>
             <div className="space-y-4">
@@ -317,10 +317,10 @@ export default function SecurityDashboard() {
                 return (
                   <div key={item.label} className="space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">{item.label}</span>
-                      <span className="text-white font-medium">{item.value}</span>
+                      <span className="text-muted">{item.label}</span>
+                      <span className="text-foreground font-medium">{item.value}</span>
                     </div>
-                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-2 bg-surface-hover rounded-full overflow-hidden">
                       <div 
                         className={`h-full ${item.color} transition-all duration-500`}
                         style={{ width: `${percentage}%` }}
@@ -333,12 +333,12 @@ export default function SecurityDashboard() {
           </div>
 
           {/* Recent Threats */}
-          <div className="lg:col-span-2 bg-[#12121a] border border-gray-800 rounded-xl p-6">
+          <div className="lg:col-span-2 bg-surface border border-border rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
                 <span>🎯</span> Recent Threats
               </h3>
-              <Link href="/security/threats" className="text-sm text-cyan-400 hover:text-cyan-300">
+              <Link href="/security/threats" className="text-sm text-primary hover:underline">
                 View All →
               </Link>
             </div>
@@ -356,12 +356,12 @@ export default function SecurityDashboard() {
                           <span className={`px-2 py-0.5 text-xs rounded border ${getSeverityColor(threat.severity)}`}>
                             {threat.severity.toUpperCase()}
                           </span>
-                          <span className="text-xs text-gray-500">{threat.type}</span>
+                          <span className="text-xs text-muted">{threat.type}</span>
                         </div>
-                        <h4 className="font-medium text-gray-200 line-clamp-1">{threat.title}</h4>
-                        <p className="text-sm text-gray-500 line-clamp-1 mt-1">{threat.description}</p>
+                        <h4 className="font-medium text-foreground line-clamp-1">{threat.title}</h4>
+                        <p className="text-sm text-muted line-clamp-1 mt-1">{threat.description}</p>
                       </div>
-                      <div className="text-right text-xs text-gray-500 ml-4">
+                      <div className="text-right text-xs text-muted ml-4">
                         <p>{new Date(threat.createdAt).toLocaleDateString()}</p>
                         <p className={getStatusColor(threat.status)}>{threat.status}</p>
                       </div>
@@ -371,13 +371,13 @@ export default function SecurityDashboard() {
                         <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/30 rounded">
                           MITRE: {threat.mitreAttack.technique}
                         </span>
-                        <span className="text-gray-600">{threat.mitreAttack.tactic}</span>
+                        <span className="text-muted">{threat.mitreAttack.tactic}</span>
                       </div>
                     )}
                   </Link>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted">
                   <span className="text-4xl mb-2 block">✨</span>
                   No recent threats detected
                 </div>
@@ -389,68 +389,68 @@ export default function SecurityDashboard() {
         {/* Quick Actions & Recent Incidents */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Quick Actions */}
-          <div className="bg-[#12121a] border border-gray-800 rounded-xl p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <div className="bg-surface border border-border rounded-2xl p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-foreground">
               <span>⚡</span> Quick Actions
             </h3>
             <div className="space-y-3">
               <Link
                 href="/security/investigate"
-                className="flex items-center gap-3 p-3 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 hover:from-cyan-500/20 hover:to-purple-500/20 border border-cyan-500/30 rounded-lg transition-all group"
+                className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary/10 to-purple-500/10 hover:from-primary/20 hover:to-purple-500/20 border border-primary/30 rounded-xl transition-all group"
               >
                 <span className="text-2xl group-hover:scale-110 transition-transform">🔍</span>
                 <div>
-                  <p className="font-medium">AI Investigation</p>
-                  <p className="text-xs text-gray-400">Start new AI-powered investigation</p>
+                  <p className="font-medium text-foreground">AI Investigation</p>
+                  <p className="text-xs text-muted">Start new AI-powered investigation</p>
                 </div>
               </Link>
               <Link
                 href="/security/alerts/new"
-                className="flex items-center gap-3 p-3 bg-[#1a1a24] hover:bg-[#22222e] border border-gray-700 rounded-lg transition-all group"
+                className="flex items-center gap-3 p-3 bg-background hover:bg-surface-hover border border-border rounded-xl transition-all group"
               >
                 <span className="text-2xl group-hover:scale-110 transition-transform">➕</span>
                 <div>
-                  <p className="font-medium">Create Alert Rule</p>
-                  <p className="text-xs text-gray-400">Define new detection rules</p>
+                  <p className="font-medium text-foreground">Create Alert Rule</p>
+                  <p className="text-xs text-muted">Define new detection rules</p>
                 </div>
               </Link>
               <Link
                 href="/security/playbooks"
-                className="flex items-center gap-3 p-3 bg-[#1a1a24] hover:bg-[#22222e] border border-gray-700 rounded-lg transition-all group"
+                className="flex items-center gap-3 p-3 bg-background hover:bg-surface-hover border border-border rounded-xl transition-all group"
               >
                 <span className="text-2xl group-hover:scale-110 transition-transform">📚</span>
                 <div>
-                  <p className="font-medium">Response Playbooks</p>
-                  <p className="text-xs text-gray-400">Automated incident response</p>
+                  <p className="font-medium text-foreground">Response Playbooks</p>
+                  <p className="text-xs text-muted">Automated incident response</p>
                 </div>
               </Link>
               <Link
                 href="/security/iocs"
-                className="flex items-center gap-3 p-3 bg-[#1a1a24] hover:bg-[#22222e] border border-gray-700 rounded-lg transition-all group"
+                className="flex items-center gap-3 p-3 bg-background hover:bg-surface-hover border border-border rounded-xl transition-all group"
               >
                 <span className="text-2xl group-hover:scale-110 transition-transform">🔴</span>
                 <div>
-                  <p className="font-medium">IOC Management</p>
-                  <p className="text-xs text-gray-400">Indicators of Compromise</p>
+                  <p className="font-medium text-foreground">IOC Management</p>
+                  <p className="text-xs text-muted">Indicators of Compromise</p>
                 </div>
               </Link>
             </div>
           </div>
 
           {/* Recent Incidents */}
-          <div className="lg:col-span-2 bg-[#12121a] border border-gray-800 rounded-xl p-6">
+          <div className="lg:col-span-2 bg-surface border border-border rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-foreground">
                 <span>🚨</span> Recent Incidents
               </h3>
-              <Link href="/security/incidents" className="text-sm text-cyan-400 hover:text-cyan-300">
+              <Link href="/security/incidents" className="text-sm text-primary hover:underline">
                 View All →
               </Link>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-left text-xs text-gray-500 border-b border-gray-700">
+                  <tr className="text-left text-xs text-muted border-b border-border">
                     <th className="pb-2 font-medium">ID</th>
                     <th className="pb-2 font-medium">Title</th>
                     <th className="pb-2 font-medium">Severity</th>
@@ -458,17 +458,17 @@ export default function SecurityDashboard() {
                     <th className="pb-2 font-medium">Created</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
+                <tbody className="divide-y divide-border">
                   {data?.recentIncidents?.length ? (
                     data.recentIncidents.map((incident) => (
-                      <tr key={incident.id} className="hover:bg-[#1a1a24] transition-colors">
-                        <td className="py-3 font-mono text-xs text-gray-400">
+                      <tr key={incident.id} className="hover:bg-surface-hover transition-colors">
+                        <td className="py-3 font-mono text-xs text-muted">
                           {incident.id.slice(0, 8)}
                         </td>
                         <td className="py-3">
                           <Link 
                             href={`/security/incidents/${incident.id}`}
-                            className="text-gray-200 hover:text-cyan-400 transition-colors"
+                            className="text-foreground hover:text-primary transition-colors"
                           >
                             {incident.title}
                           </Link>
@@ -483,14 +483,14 @@ export default function SecurityDashboard() {
                             {incident.status.replace('_', ' ')}
                           </span>
                         </td>
-                        <td className="py-3 text-sm text-gray-500">
+                        <td className="py-3 text-sm text-muted">
                           {new Date(incident.createdAt).toLocaleDateString()}
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-gray-500">
+                      <td colSpan={5} className="py-8 text-center text-muted">
                         <span className="text-4xl mb-2 block">📋</span>
                         No recent incidents
                       </td>
@@ -503,22 +503,22 @@ export default function SecurityDashboard() {
         </div>
 
         {/* AI-Powered SIEM Features */}
-        <div className="mt-8">
-          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <div className="mt-6">
+          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
             <span>🤖</span> AI-Powered Security Intelligence
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Threat Intelligence */}
             <Link href="/security/threat-intel" className="group">
-              <div className="bg-gradient-to-br from-[#12121a] to-[#1a1a28] border border-purple-500/20 rounded-xl p-6 hover:border-purple-500/50 transition-all hover:scale-[1.02] h-full">
+              <div className="bg-surface border border-purple-500/20 rounded-2xl p-6 hover:border-purple-500/50 transition-all hover:scale-[1.02] h-full">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-3xl">🌐</span>
                   <div>
-                    <h4 className="font-semibold text-white">Threat Intelligence</h4>
-                    <p className="text-xs text-gray-500">IOC enrichment & feeds</p>
+                    <h4 className="font-semibold text-foreground">Threat Intelligence</h4>
+                    <p className="text-xs text-muted">IOC enrichment & feeds</p>
                   </div>
                 </div>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted">
                   Real-time threat feeds, IOC enrichment, and global threat landscape monitoring.
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-xs text-purple-400">
@@ -530,15 +530,15 @@ export default function SecurityDashboard() {
 
             {/* SOAR */}
             <Link href="/security/soar" className="group">
-              <div className="bg-gradient-to-br from-[#12121a] to-[#1a2820] border border-green-500/20 rounded-xl p-6 hover:border-green-500/50 transition-all hover:scale-[1.02] h-full">
+              <div className="bg-surface border border-green-500/20 rounded-2xl p-6 hover:border-green-500/50 transition-all hover:scale-[1.02] h-full">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-3xl">⚡</span>
                   <div>
-                    <h4 className="font-semibold text-white">SOAR Engine</h4>
-                    <p className="text-xs text-gray-500">Automated response</p>
+                    <h4 className="font-semibold text-foreground">SOAR Engine</h4>
+                    <p className="text-xs text-muted">Automated response</p>
                   </div>
                 </div>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted">
                   Security orchestration with automated playbooks and response actions.
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-xs text-green-400">
@@ -550,15 +550,15 @@ export default function SecurityDashboard() {
 
             {/* UEBA */}
             <Link href="/security/ueba" className="group">
-              <div className="bg-gradient-to-br from-[#12121a] to-[#281a1a] border border-orange-500/20 rounded-xl p-6 hover:border-orange-500/50 transition-all hover:scale-[1.02] h-full">
+              <div className="bg-surface border border-orange-500/20 rounded-2xl p-6 hover:border-orange-500/50 transition-all hover:scale-[1.02] h-full">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-3xl">👤</span>
                   <div>
-                    <h4 className="font-semibold text-white">UEBA</h4>
-                    <p className="text-xs text-gray-500">Behavioral analytics</p>
+                    <h4 className="font-semibold text-foreground">UEBA</h4>
+                    <p className="text-xs text-muted">Behavioral analytics</p>
                   </div>
                 </div>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted">
                   User & Entity Behavior Analytics with AI-powered anomaly detection.
                 </p>
                 <div className="mt-4 flex items-center gap-2 text-xs text-orange-400">
@@ -570,20 +570,20 @@ export default function SecurityDashboard() {
 
             {/* ML Anomaly Detection */}
             <Link href="/security/ml-anomaly" className="group">
-              <div className="bg-gradient-to-br from-[#12121a] to-[#1a1a28] border border-cyan-500/20 rounded-xl p-6 hover:border-cyan-500/50 transition-all hover:scale-[1.02] h-full">
+              <div className="bg-surface border border-primary/20 rounded-2xl p-6 hover:border-primary/50 transition-all hover:scale-[1.02] h-full">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-3xl">🧠</span>
                   <div>
-                    <h4 className="font-semibold text-white">ML Detection</h4>
-                    <p className="text-xs text-gray-500">Machine learning</p>
+                    <h4 className="font-semibold text-foreground">ML Detection</h4>
+                    <p className="text-xs text-muted">Machine learning</p>
                   </div>
                 </div>
-                <p className="text-sm text-gray-400">
+                <p className="text-sm text-muted">
                   Advanced ML models for pattern recognition and anomaly detection.
                 </p>
-                <div className="mt-4 flex items-center gap-2 text-xs text-cyan-400">
-                  <span className="px-2 py-1 bg-cyan-500/10 rounded">Multi-model</span>
-                  <span className="px-2 py-1 bg-cyan-500/10 rounded">Auto-learn</span>
+                <div className="mt-4 flex items-center gap-2 text-xs text-primary">
+                  <span className="px-2 py-1 bg-primary/10 rounded">Multi-model</span>
+                  <span className="px-2 py-1 bg-primary/10 rounded">Auto-learn</span>
                 </div>
               </div>
             </Link>
@@ -591,53 +591,28 @@ export default function SecurityDashboard() {
         </div>
 
         {/* System Status Footer */}
-        <div className="mt-8 p-4 bg-[#12121a] border border-gray-800 rounded-xl">
+        <div className="mt-6 p-4 bg-surface border border-border rounded-2xl">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-sm text-gray-400">All Systems Operational</span>
+                <span className="text-sm text-muted">All Systems Operational</span>
               </div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted">
                 Threat Detection: <span className="text-green-400">Active</span>
               </div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted">
                 AI Analysis: <span className="text-green-400">Online</span>
               </div>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-muted">
                 ML Models: <span className="text-green-400">Running</span>
               </div>
             </div>
-            <div className="text-xs text-gray-600">
-              Powered by AI-SIEM v3.0 • Next-Gen Threat Intelligence • Breakthrough AI
+            <div className="text-xs text-muted">
+              Powered by AI-SIEM v3.0 • Next-Gen Threat Intelligence
             </div>
           </div>
         </div>
-      </main>
-
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #1a1a24;
-          border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #333;
-          border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #444;
-        }
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 2s linear infinite;
-        }
-      `}</style>
-    </div>
+      </div>
   );
 }
