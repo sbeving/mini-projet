@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   Activity,
   BarChart3,
+  Bell,
   Bot,
   Database,
   LayoutDashboard,
@@ -165,6 +166,14 @@ export default function Navbar() {
                           >
                             <Bot className="h-4 w-4" />
                             AI Settings
+                          </Link>
+                          <Link
+                            href="/admin/notifications"
+                            onClick={() => setShowUserMenu(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-card-hover transition-colors"
+                          >
+                            <Bell className="h-4 w-4" />
+                            Notifications
                           </Link>
                         </>
                       )}

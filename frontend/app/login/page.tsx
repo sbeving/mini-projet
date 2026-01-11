@@ -2,7 +2,7 @@
 
 import { login } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { AlertCircle, Eye, EyeOff, Loader2, LogIn, Sparkles } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2, LogIn, Sparkles, MessageCircle, BarChart3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 
@@ -19,7 +19,6 @@ export default function LoginPage() {
   // Stable redirect function
   const navigateToDashboard = useCallback(() => {
     setRedirecting(true);
-    // Use window.location for more reliable navigation
     window.location.href = "/dashboard";
   }, []);
 
@@ -39,11 +38,8 @@ export default function LoginPage() {
       const result = await login(email, password);
       
       if (result.success && result.user) {
-        // Update auth context
         setUserDirect(result.user);
         loginComplete();
-        
-        // Navigate immediately using window.location for clean reload
         setRedirecting(true);
         window.location.href = "/dashboard";
       } else {
@@ -60,10 +56,10 @@ export default function LoginPage() {
   // Show loading while checking auth
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-indigo-500 border-t-transparent mx-auto"></div>
-          <p className="text-slate-400 mt-4">Loading...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent mx-auto"></div>
+          <p className="text-muted mt-4">Loading...</p>
         </div>
       </div>
     );
@@ -72,46 +68,46 @@ export default function LoginPage() {
   // Show redirect state
   if (redirecting) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-green-500/30">
+          <div className="w-16 h-16 bg-gradient-to-br from-success to-success-hover rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-success/30">
             <Sparkles className="h-8 w-8 text-white animate-pulse" />
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">Login Successful!</h2>
-          <p className="text-slate-400">Redirecting to dashboard...</p>
-          <div className="animate-spin rounded-full h-6 w-6 border-2 border-indigo-500 border-t-transparent mx-auto mt-4"></div>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Login Successful!</h2>
+          <p className="text-muted">Redirecting to dashboard...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent mx-auto mt-4"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Effects */}
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Effects - Using theme colors */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/15 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-accent/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl"></div>
       </div>
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-indigo-500/30 transform hover:scale-105 transition-transform">
-            <Sparkles className="h-10 w-10 text-white" />
+          <div className="w-20 h-20 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-primary/30 transform hover:scale-105 transition-transform">
+            <MessageCircle className="h-10 w-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold text-foreground">
             Welcome to LogChat
           </h1>
-          <p className="text-slate-400 mt-3 text-lg">AI-powered log analytics platform</p>
+          <p className="text-muted mt-3 text-lg">AI-powered log analytics platform</p>
         </div>
 
         {/* Login Form */}
-        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-surface border border-border rounded-2xl p-8 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Error Alert */}
             {error && (
-              <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl animate-shake">
+              <div className="flex items-center gap-3 p-4 bg-error/10 border border-error/20 text-error rounded-xl animate-shake">
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
                 <span className="text-sm font-medium">{error}</span>
               </div>
@@ -119,7 +115,7 @@ export default function LoginPage() {
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
                 Email Address
               </label>
               <input
@@ -127,7 +123,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                 placeholder="you@example.com"
                 required
                 autoComplete="email"
@@ -137,7 +133,7 @@ export default function LoginPage() {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
                 Password
               </label>
               <div className="relative">
@@ -146,7 +142,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all pr-12"
+                  className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all pr-12"
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
@@ -155,7 +151,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted hover:text-foreground transition-colors"
                   disabled={loading}
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -167,7 +163,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transform hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full py-3.5 bg-gradient-to-r from-primary to-accent text-white rounded-xl font-semibold hover:from-primary-dark hover:to-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 transform hover:-translate-y-0.5 active:translate-y-0"
             >
               {loading ? (
                 <>
@@ -184,8 +180,8 @@ export default function LoginPage() {
           </form>
 
           {/* Demo Credentials */}
-          <div className="mt-8 pt-6 border-t border-white/10">
-            <p className="text-sm text-slate-400 text-center mb-4 font-medium">Quick Login (Demo)</p>
+          <div className="mt-8 pt-6 border-t border-border">
+            <p className="text-sm text-muted text-center mb-4 font-medium">Quick Login (Demo)</p>
             <div className="grid grid-cols-3 gap-3">
               <button
                 type="button"
@@ -194,10 +190,10 @@ export default function LoginPage() {
                   setPassword("admin123");
                 }}
                 disabled={loading}
-                className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl hover:bg-indigo-500/20 hover:border-indigo-500/30 transition-all group disabled:opacity-50"
+                className="p-3 bg-primary/10 border border-primary/20 rounded-xl hover:bg-primary/20 hover:border-primary/30 transition-all group disabled:opacity-50"
               >
-                <div className="font-semibold text-indigo-400 group-hover:text-indigo-300">Admin</div>
-                <div className="text-xs text-slate-500 mt-1">Full access</div>
+                <div className="font-semibold text-primary group-hover:text-primary-light">Admin</div>
+                <div className="text-xs text-muted mt-1">Full access</div>
               </button>
               <button
                 type="button"
@@ -206,10 +202,10 @@ export default function LoginPage() {
                   setPassword("staff123");
                 }}
                 disabled={loading}
-                className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 hover:border-blue-500/30 transition-all group disabled:opacity-50"
+                className="p-3 bg-info/10 border border-info/20 rounded-xl hover:bg-info/20 hover:border-info/30 transition-all group disabled:opacity-50"
               >
-                <div className="font-semibold text-blue-400 group-hover:text-blue-300">Staff</div>
-                <div className="text-xs text-slate-500 mt-1">Team access</div>
+                <div className="font-semibold text-info group-hover:text-info-light">Staff</div>
+                <div className="text-xs text-muted mt-1">Team access</div>
               </button>
               <button
                 type="button"
@@ -218,17 +214,17 @@ export default function LoginPage() {
                   setPassword("test123");
                 }}
                 disabled={loading}
-                className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all group disabled:opacity-50"
+                className="p-3 bg-success/10 border border-success/20 rounded-xl hover:bg-success/20 hover:border-success/30 transition-all group disabled:opacity-50"
               >
-                <div className="font-semibold text-emerald-400 group-hover:text-emerald-300">User</div>
-                <div className="text-xs text-slate-500 mt-1">Basic access</div>
+                <div className="font-semibold text-success group-hover:text-success-light">User</div>
+                <div className="text-xs text-muted mt-1">Basic access</div>
               </button>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-slate-500 text-sm mt-6">Secure login • Powered by AI</p>
+        <p className="text-center text-muted text-sm mt-6">Secure login • Powered by AI</p>
       </div>
     </div>
   );
