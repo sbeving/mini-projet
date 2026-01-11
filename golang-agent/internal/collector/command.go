@@ -1,10 +1,11 @@
 package collector
 
 import (
-	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -101,57 +102,44 @@ func (cc *CommandCollector) runCommand(ctx context.Context) {
 
 	cmd := exec.CommandContext(cmdCtx, cc.config.Command, cc.config.Args...)
 
-	stdout, err := cmd.StdoutPipe()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+
+	// Process stdout as a single log entry
+	if stdout.Len() > 0 {
+		output := strings.TrimSpace(stdout.String())
+		if output != "" {
+			cc.processOutput(output, "stdout", err == nil)
+		}
+	}
+
+	// Process stderr as a single log entry (if any)
+	if stderr.Len() > 0 {
+		output := strings.TrimSpace(stderr.String())
+		if output != "" {
+			cc.processOutput(output, "stderr", false)
+		}
+	}
+
 	if err != nil {
 		cc.mu.Lock()
 		cc.errorsCount++
 		cc.mu.Unlock()
-		return
 	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		cc.mu.Lock()
-		cc.errorsCount++
-		cc.mu.Unlock()
-		return
-	}
-
-	if err := cmd.Start(); err != nil {
-		cc.mu.Lock()
-		cc.errorsCount++
-		cc.mu.Unlock()
-		return
-	}
-
-	// Process stdout
-	go func() {
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			cc.processLine(scanner.Text(), "stdout")
-		}
-	}()
-
-	// Process stderr
-	go func() {
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			cc.processLine(scanner.Text(), "stderr")
-		}
-	}()
-
-	cmd.Wait()
 }
 
-// processLine processes a single output line
-func (cc *CommandCollector) processLine(text, stream string) {
+// processOutput processes the complete command output as a single log entry
+func (cc *CommandCollector) processOutput(text, stream string, success bool) {
 	if text == "" {
 		return
 	}
 
-	level := parseLevel(text)
-	if stream == "stderr" && level == "INFO" {
-		level = "WARN"
+	level := "INFO"
+	if stream == "stderr" || !success {
+		level = "ERROR"
 	}
 
 	entry := createLogEntry(
@@ -160,10 +148,17 @@ func (cc *CommandCollector) processLine(text, stream string) {
 		cc.config.Service,
 		fmt.Sprintf("command:%s", cc.config.Command),
 		map[string]string{
-			"stream":  stream,
 			"command": cc.config.Command,
+			"stream":  stream,
 		},
 	)
+
+	entry.Metadata = map[string]any{
+		"command": cc.config.Command,
+		"args":    cc.config.Args,
+		"stream":  stream,
+		"success": success,
+	}
 
 	if err := cc.sender.Send(entry); err != nil {
 		cc.mu.Lock()
