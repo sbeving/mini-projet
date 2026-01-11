@@ -28,7 +28,13 @@ func main() {
 	showVersion := flag.Bool("version", false, "Show version information")
 	generateConfig := flag.Bool("generate-config", false, "Generate a sample config file")
 	validate := flag.Bool("validate", false, "Validate config file and exit")
+	verbose := flag.Bool("verbose", false, "Enable verbose logging")
 	flag.Parse()
+
+	// Set verbose mode
+	if *verbose {
+		os.Setenv("LOGCHAT_VERBOSE", "1")
+	}
 
 	// Show version
 	if *showVersion {

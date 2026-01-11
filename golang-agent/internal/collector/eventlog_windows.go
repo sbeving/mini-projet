@@ -6,6 +6,7 @@ package collector
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"syscall"
@@ -17,6 +18,12 @@ import (
 
 	"golang.org/x/sys/windows"
 )
+
+func logVerbose(format string, args ...interface{}) {
+	if os.Getenv("LOGCHAT_VERBOSE") == "1" || os.Getenv("LOGCHAT_DEBUG") == "1" {
+		fmt.Printf("[eventlog] "+format+"\n", args...)
+	}
+}
 
 var (
 	advapi32                       = windows.NewLazySystemDLL("advapi32.dll")
@@ -160,11 +167,15 @@ func (ec *EventLogCollector) readEvents(channel string, handle windows.Handle) {
 	)
 
 	if ret == 0 {
+		logVerbose("No new events in %s", channel)
 		return
 	}
 
+	logVerbose("Read %d bytes from %s", bytesRead, channel)
+
 	// Parse events from buffer
 	offset := uint32(0)
+	eventsProcessed := 0
 	for offset < bytesRead {
 		record := (*EVENTLOGRECORD)(unsafe.Pointer(&buffer[offset]))
 
@@ -178,8 +189,13 @@ func (ec *EventLogCollector) readEvents(channel string, handle windows.Handle) {
 
 		// Extract event data
 		ec.processEvent(channel, record, buffer[offset:offset+record.Length])
+		eventsProcessed++
 
 		offset += record.Length
+	}
+
+	if eventsProcessed > 0 {
+		fmt.Printf("  [eventlog] Collected %d events from %s\n", eventsProcessed, channel)
 	}
 }
 

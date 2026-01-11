@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"logchat/agent/internal/buffer"
-	"logchat/agent/internal/config"
 	"logchat/agent/internal/sender"
 )
 
@@ -27,29 +26,6 @@ type BaseCollector struct {
 	errorsCount   int64
 	lastCollected time.Time
 	running       bool
-}
-
-// Initialize creates collectors based on configuration
-func Initialize(cfg config.CollectorsConfig, snd *sender.Sender) []Collector {
-	var collectors []Collector
-
-	// File collectors
-	for _, fileCfg := range cfg.Files {
-		if fileCfg.Enabled {
-			collectors = append(collectors, NewFileCollector(fileCfg, snd))
-		}
-	}
-
-	// Platform-specific collectors are added in platform-specific files
-
-	// Command collectors
-	for _, cmdCfg := range cfg.Command {
-		if cmdCfg.Enabled {
-			collectors = append(collectors, NewCommandCollector(cmdCfg, snd))
-		}
-	}
-
-	return collectors
 }
 
 // createLogEntry creates a log entry with common fields

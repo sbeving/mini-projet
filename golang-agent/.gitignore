@@ -1,0 +1,58 @@
+# Binaries
+logchat-agent
+logchat-agent.exe
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Build directories
+bin/
+dist/
+build/
+release/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.txt
+coverage.html
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Configuration files with secrets
+config.yaml
+config.yml
+agent.yaml
+agent.yml
+!config.example.yaml
+
+# Buffer files
+buffer.json
+*.buffer
+
+# Debug files
+debug/
+__debug_bin*

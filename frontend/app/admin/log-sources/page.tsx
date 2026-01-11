@@ -60,6 +60,7 @@ export default function LogSourcesPage() {
     name: '',
     description: '',
     type: 'API',
+    environment: '',
     allowedIps: '',
     allowedDomains: '',
     allowedHostnames: '',
@@ -144,6 +145,7 @@ export default function LogSourcesPage() {
           name: '',
           description: '',
           type: 'API',
+          environment: '',
           allowedIps: '',
           allowedDomains: '',
           allowedHostnames: '',
@@ -377,6 +379,34 @@ export default function LogSourcesPage() {
                           {source.isActive ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                           {source.isActive ? 'Active' : 'Inactive'}
                         </span>
+                        {/* Agent Status Badge */}
+                        {source.type === 'AGENT' && source.agentStatus && (
+                          <span className={`flex items-center gap-1 px-2 py-0.5 text-xs rounded-full ${
+                            source.agentStatus === 'online'
+                              ? 'bg-green-500/20 text-green-400'
+                              : source.agentStatus === 'stale'
+                              ? 'bg-yellow-500/20 text-yellow-400'
+                              : source.agentStatus === 'offline'
+                              ? 'bg-red-500/20 text-red-400'
+                              : 'bg-gray-500/20 text-gray-400'
+                          }`}>
+                            <span className={`w-2 h-2 rounded-full ${
+                              source.agentStatus === 'online' ? 'bg-green-400 animate-pulse'
+                                : source.agentStatus === 'stale' ? 'bg-yellow-400'
+                                : source.agentStatus === 'offline' ? 'bg-red-400'
+                                : 'bg-gray-400'
+                            }`} />
+                            {source.agentStatus === 'online' ? 'Agent Online'
+                              : source.agentStatus === 'stale' ? 'Agent Stale'
+                              : source.agentStatus === 'offline' ? 'Agent Offline'
+                              : 'Never Connected'}
+                          </span>
+                        )}
+                        {source.environment && (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-surface-hover text-muted border border-border">
+                            {source.environment}
+                          </span>
+                        )}
                       </div>
                       {source.description && (
                         <p className="text-muted text-sm mt-2">{source.description}</p>
@@ -571,6 +601,21 @@ export default function LogSourcesPage() {
                     <option value="AGENT">Agent</option>
                     <option value="CLOUD">Cloud</option>
                     <option value="DATABASE">Database</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">Environment</label>
+                  <select
+                    value={newSource.environment}
+                    onChange={(e) => setNewSource({ ...newSource, environment: e.target.value })}
+                    className="w-full bg-background border border-border rounded-lg px-4 py-2 text-foreground"
+                  >
+                    <option value="">Select Environment...</option>
+                    <option value="production">Production</option>
+                    <option value="staging">Staging</option>
+                    <option value="development">Development</option>
+                    <option value="testing">Testing</option>
                   </select>
                 </div>
 

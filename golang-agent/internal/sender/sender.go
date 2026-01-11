@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -15,9 +16,33 @@ import (
 	"logchat/agent/internal/config"
 )
 
+// Verbose logging flag
+var Verbose = false
+
+func init() {
+	if os.Getenv("LOGCHAT_VERBOSE") == "1" || os.Getenv("LOGCHAT_DEBUG") == "1" {
+		Verbose = true
+	}
+}
+
+func logVerbose(format string, args ...interface{}) {
+	if Verbose {
+		fmt.Printf("[sender] "+format+"\n", args...)
+	}
+}
+
+// AgentInfo represents agent metadata
+type AgentInfo struct {
+	Hostname    string            `json:"hostname"`
+	Environment string            `json:"environment,omitempty"`
+	Version     string            `json:"version,omitempty"`
+	Tags        map[string]string `json:"tags,omitempty"`
+}
+
 // LogPayload represents the payload sent to the server
 type LogPayload struct {
-	Logs []buffer.LogEntry `json:"logs"`
+	Agent AgentInfo         `json:"agent"`
+	Logs  []buffer.LogEntry `json:"logs"`
 }
 
 // Sender handles sending logs to the LogChat server
@@ -90,6 +115,18 @@ func (s *Sender) Start(ctx context.Context) {
 	healthTicker := time.NewTicker(30 * time.Second)
 	defer healthTicker.Stop()
 
+	fmt.Printf("  [sender] Started (flush every %v, batch size %d)\n", s.flushInterval, s.batchSize)
+	logVerbose("Server URL: %s", s.serverURL)
+	logVerbose("API Key: %s...", s.apiKey[:min(20, len(s.apiKey))])
+
+	// Initial health check
+	s.checkHealth(ctx)
+	if s.serverAlive {
+		fmt.Println("  [sender] Server is reachable ✓")
+	} else {
+		fmt.Println("  [sender] Server is not reachable - will buffer logs")
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -99,6 +136,12 @@ func (s *Sender) Start(ctx context.Context) {
 
 		case <-ticker.C:
 			s.flush(ctx)
+
+		case <-healthTicker.C:
+			s.checkHealth(ctx)
+		}
+	}
+}
 
 		case <-healthTicker.C:
 			s.checkHealth(ctx)
@@ -121,7 +164,23 @@ func (s *Sender) Send(entry buffer.LogEntry) error {
 		}
 	}
 
+	logVerbose("Queuing log: [%s] %s - %s", entry.Level, entry.Service, truncate(entry.Message, 50))
+
 	return s.buffer.Push(entry)
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // flush sends buffered logs to the server
@@ -131,8 +190,11 @@ func (s *Sender) flush(ctx context.Context) {
 	s.mu.Unlock()
 
 	if bufLen == 0 {
+		logVerbose("Buffer empty, nothing to flush")
 		return
 	}
+
+	logVerbose("Flushing buffer with %d entries", bufLen)
 
 	// Process in batches
 	for {
@@ -149,6 +211,8 @@ func (s *Sender) flush(ctx context.Context) {
 			break
 		}
 
+		logVerbose("Sending batch of %d logs...", len(entries))
+
 		// Send batch
 		if err := s.sendBatch(ctx, entries); err != nil {
 			s.mu.Lock()
@@ -157,6 +221,7 @@ func (s *Sender) flush(ctx context.Context) {
 			s.serverAlive = false
 			s.mu.Unlock()
 
+			fmt.Printf("  [sender] ❌ Error sending logs: %v\n", err)
 			// Don't remove entries if send failed - they'll be retried
 			break
 		}
@@ -168,16 +233,31 @@ func (s *Sender) flush(ctx context.Context) {
 		s.lastSent = time.Now()
 		s.serverAlive = true
 		s.mu.Unlock()
+
+		fmt.Printf("  [sender] ✓ Sent %d logs (total: %d)\n", len(entries), s.sentCount)
 	}
 }
 
 // sendBatch sends a batch of logs to the server
 func (s *Sender) sendBatch(ctx context.Context, entries []buffer.LogEntry) error {
-	payload := LogPayload{Logs: entries}
+	payload := LogPayload{
+		Agent: AgentInfo{
+			Hostname:    s.hostname,
+			Environment: s.environment,
+			Version:     "1.0.0",
+			Tags:        s.tags,
+		},
+		Logs: entries,
+	}
 
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal logs: %w", err)
+	}
+
+	logVerbose("Request payload size: %d bytes", len(data))
+	if Verbose {
+		fmt.Printf("[sender] Payload: %s\n", string(data[:min(500, len(data))]))
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", s.serverURL+"/api/logs/ingest", bytes.NewReader(data))
@@ -187,10 +267,13 @@ func (s *Sender) sendBatch(ctx context.Context, entries []buffer.LogEntry) error
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "LogChat-Agent/1.0")
+	req.Header.Set("X-API-Key", s.apiKey)
 
 	if s.apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+s.apiKey)
 	}
+
+	logVerbose("POST %s/api/logs/ingest", s.serverURL)
 
 	resp, err := s.client.Do(req)
 	if err != nil {
@@ -198,8 +281,10 @@ func (s *Sender) sendBatch(ctx context.Context, entries []buffer.LogEntry) error
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+	logVerbose("Response: %d - %s", resp.StatusCode, string(body))
+
 	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("server returned %d: %s", resp.StatusCode, string(body))
 	}
 
