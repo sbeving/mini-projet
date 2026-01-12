@@ -1,0 +1,265 @@
+% =========================================================================
+% CHAPTER 1: STATE OF THE ART
+% =========================================================================
+\chapter{State of the Art}
+
+\section{Introduction}
+
+Before embarking on the development of LogChat, a comprehensive analysis of the current log management and SIEM landscape was essential. This chapter surveys existing solutions, evaluates technological alternatives, and provides the rationale for our architectural decisions. The insights gathered during this phase directly influenced the design patterns and technology choices implemented in LogChat.
+
+\section{Historical Evolution of Log Management}
+
+\subsection{Early Approaches (1990s-2000s)}
+
+In the early days of computing, log management was a manual process. System administrators would periodically review text files using command-line tools such as \texttt{grep}, \texttt{awk}, and \texttt{tail}. Figure \ref{fig:log_evolution-timeline} presents the evolution of log management technologies.
+
+\placeholderfiglab{Evolution of Log Management Technologies}{log_evolution_timeline.png}{Timeline from 1990 (manual grep) to 2024 (AI-powered SIEM)}{log-evolution-timeline}
+
+\subsection{Centralized Logging (2005-2015)}
+
+The emergence of distributed systems necessitated centralized logging solutions. Syslog servers became standard, and tools like Splunk (2003) and the ELK Stack (2010) emerged to address the growing complexity.
+
+\subsection{Modern AI-Enhanced SIEM (2020-Present)}
+
+The current generation of SIEM solutions leverages machine learning for anomaly detection and, increasingly, large language models for natural language querying. LogChat positions itself at the forefront of this evolution.
+
+\section{Market Analysis of Existing Solutions}
+
+\subsection{Elastic Stack (ELK)}
+
+The Elastic Stack --- comprising Elasticsearch, Logstash, and Kibana --- represents the industry standard for open-source log management. Figure \ref{fig:elk-architecture} illustrates its architecture.
+
+\placeholderfiglab{Elastic Stack (ELK) Architecture}{elk_architecture.png}{Beats → Logstash → Elasticsearch cluster → Kibana}{elk_architecture}
+
+\begin{table}[H]
+\centering
+\caption{Elastic Stack Comprehensive Evaluation}
+\label{tab:elk-eval}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Strengths} & Highly scalable horizontal architecture, powerful Kibana visualization, extensive plugin ecosystem, large community support \\
+\hline
+\textbf{Weaknesses} & Resource-intensive JVM-based architecture, complex cluster management, steep learning curve for Lucene/DSL queries \\
+\hline
+\textbf{Hardware Requirements} & Minimum 3 nodes, 16GB+ RAM per node, SSD storage recommended \\
+\hline
+\textbf{Licensing} & Open Source (Basic), Commercial (Platinum: \$125/node/month) \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Splunk Enterprise}
+
+Splunk remains the enterprise leader in SIEM, commanding over 30\% market share in the security analytics segment.
+
+\begin{table}[H]
+\centering
+\caption{Splunk Enterprise Evaluation}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Strengths} & Comprehensive ecosystem, advanced ML-based analytics, excellent enterprise support, extensive app marketplace \\
+\hline
+\textbf{Weaknesses} & Proprietary platform, extremely expensive pricing model, vendor lock-in concerns \\
+\hline
+\textbf{Pricing Model} & \$1,800+ per GB/day ingested (perpetual), or subscription model \\
+\hline
+\textbf{Annual Cost (10GB/day)} & Approximately \$180,000 - \$250,000 \\
+\hline
+\end{tabular}
+\end{table}
+
+\placeholderfiglab{Splunk Enterprise Dashboard Example}{splunk_dashboard.png}{Screenshot of Splunk Enterprise security dashboard}{splunk_dashboard}
+
+\subsection{Wazuh}
+
+Wazuh is an open-source security platform focusing on intrusion detection, file integrity monitoring, and compliance.
+
+\begin{table}[H]
+\centering
+\caption{Wazuh Platform Evaluation}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Strengths} & Strong Host-based IDS capabilities, file integrity monitoring, MITRE ATT\&CK mapping, regulatory compliance modules \\
+\hline
+\textbf{Weaknesses} & Complex UI/UX, agent-heavy architecture, challenging customization, limited NLP capabilities \\
+\hline
+\textbf{Deployment} & Requires Elasticsearch backend, complex multi-component setup \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Microsoft Sentinel}
+
+Microsoft Sentinel provides cloud-native SIEM integrated with the Azure ecosystem.
+
+\begin{table}[H]
+\centering
+\caption{Microsoft Sentinel Evaluation}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Strengths} & Cloud-native scalability, tight Azure integration, SOAR capabilities, KQL query language \\
+\hline
+\textbf{Weaknesses} & Azure lock-in, complex pricing, limited on-premises support, data residency concerns \\
+\hline
+\textbf{Pricing} & Pay-per-use: \$2.46/GB ingested + \$0.10/GB retained \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Comparative Analysis}
+
+Table \ref{tab:comprehensive-comparison} provides a comprehensive comparison of evaluated solutions against LogChat's proposed capabilities.
+
+\begin{table}[H]
+\centering
+\caption{Comprehensive SIEM Solution Comparison}
+\label{tab:comprehensive-comparison}
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Criterion} & \textbf{ELK} & \textbf{Splunk} & \textbf{Wazuh} & \textbf{Sentinel} & \textbf{LogChat} \\
+\hline
+Open Source & \cmark & \xmark & \cmark & \xmark & \cmark \\
+Natural Language Query & \xmark & Partial & \xmark & \xmark & \cmark \\
+Single-Binary Agent & \xmark & \xmark & \xmark & N/A & \cmark \\
+Local AI (Privacy) & \xmark & \xmark & \xmark & \xmark & \cmark \\
+One-Command Deploy & \xmark & \xmark & \xmark & \xmark & \cmark \\
+Real-time Streaming & \cmark & \cmark & \cmark & \cmark & \cmark \\
+MITRE ATT\&CK Mapping & Plugin & \cmark & \cmark & \cmark & \cmark \\
+Min. RAM Requirement & 16GB & 8GB & 8GB & N/A & 4GB \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure \ref{fig:siem_comparison-radar} presents a radar chart visualization of the comparison.
+
+\placeholderfiglab{SIEM Solutions Radar Comparison}{siem_comparison_radar.png}{Radar chart comparing features: Cost, Ease of Use, NLP, Privacy, Scalability}{siem-comparison-radar}
+
+\section{Technology Stack Selection}
+
+Based on the market analysis
+and project requirements, the following technology stack was selected. Each choice was driven by specific technical and business considerations.
+
+\subsection{Backend: Node.js with TypeScript}
+
+Node.js was selected for the backend API server for the following reasons:
+
+\begin{successbox}[Node.js Selection Rationale]
+\begin{itemize}
+    \item \textbf{Event-Driven Architecture:} Non-blocking I/O model perfectly suited for handling high-concurrency log ingestion and SSE streaming
+    \item \textbf{npm Ecosystem:} Access to mature libraries including Express, Prisma, and Zod
+    \item \textbf{TypeScript Integration:} Compile-time type safety critical for maintaining data integrity
+    \item \textbf{Shared Language:} Same language as frontend reduces context switching and enables code sharing
+\end{itemize}
+\end{successbox}
+
+Figure \ref{fig:nodejs_event-loop} illustrates the Node.js event loop architecture.
+
+\placeholderfiglab{Node.js Event Loop Architecture}{nodejs_event_loop.png}{Diagram showing event loop phases: timers, pending callbacks, poll, check, close}{nodejs-event-loop}
+
+\subsection{Frontend: Next.js 14 with React 18}
+
+Next.js 14 was chosen for its hybrid rendering capabilities and modern React features.
+
+\begin{table}[H]
+\centering
+\caption{Frontend Technology Comparison}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Feature} & \textbf{Next.js} & \textbf{Remix} & \textbf{Vite+React} & \textbf{Angular} \\
+\hline
+SSR/SSG & \cmark & \cmark & Plugin & \cmark \\
+App Router & \cmark & \cmark & \xmark & \cmark \\
+Bundle Size & Small & Small & Custom & Large \\
+Learning Curve & Moderate & Moderate & Low & High \\
+Community & Large & Growing & Large & Large \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Database: PostgreSQL 16 with Prisma ORM}
+
+PostgreSQL was selected as the primary database for its robustness and advanced features.
+
+\begin{infobox}[PostgreSQL 16 Key Features]
+\begin{itemize}
+    \item \textbf{JSONB Columns:} Native support for semi-structured log metadata
+    \item \textbf{Full-Text Search:} Built-in text search for log message querying
+    \item \textbf{Time-Series Indexing:} Efficient B-tree and BRIN indexes for timestamp queries
+    \item \textbf{pgvector Compatibility:} Future-proof for semantic search implementation
+    \item \textbf{ACID Compliance:} Guaranteed data integrity for audit requirements
+\end{itemize}
+\end{infobox}
+
+Figure \ref{fig:postgres-indexing} illustrates the indexing strategy employed for log queries.
+
+\placeholderfiglab{PostgreSQL Indexing Strategy for Logs}{postgres_indexing.png}{Diagram showing composite index on (timestamp, level, service)}{postgres_indexing}
+
+\subsection{Agent: Golang}
+
+For the distributed log collector, Golang was selected over Python, Java, and Rust:
+
+\begin{table}[H]
+\centering
+\caption{Agent Runtime Comparison}
+\label{tab:agent-comparison}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Feature} & \textbf{Python} & \textbf{Java} & \textbf{Rust} & \textbf{Go} \\
+\hline
+Single Binary & \xmark & \xmark & \cmark & \cmark \\
+No Runtime Dependencies & \xmark & \xmark & \cmark & \cmark \\
+Windows API Access & Complex & Complex & Moderate & \cmark \\
+Memory Footprint & High & High & Low & Low \\
+Goroutine/Async & asyncio & Threads & async & \cmark \\
+Cross-Compilation & Complex & Complex & Moderate & Built-in \\
+Learning Curve & Low & Moderate & High & Moderate \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure \ref{fig:go_binary-size} compares binary sizes across languages for equivalent functionality.
+
+\placeholderfiglab{Binary Size Comparison by Language}{go_binary_size.png}{Bar chart: Python (50MB+venv), Java (100MB+JRE), Rust (3MB), Go (5MB)}{go-binary-size}
+
+\subsection{AI Engine: Ollama with Local LLMs}
+
+To ensure data privacy, cloud-based AI APIs were ruled out for sensitive environments. Ollama enables running quantized models locally without internet connectivity.
+
+\begin{table}[H]
+\centering
+\caption{Supported LLM Models}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Model} & \textbf{Parameters} & \textbf{VRAM Required} & \textbf{Use Case} \\
+\hline
+Qwen 2.5:0.5b & 0.5B & 1GB & Fast responses, basic analysis \\
+Qwen 2.5:3b & 3B & 4GB & Balanced performance \\
+Llama 3.1:8b & 8B & 8GB & Complex analysis \\
+Mistral 7B & 7B & 6GB & European compliant \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure \ref{fig:ollama-architecture} shows the Ollama integration architecture.
+
+\placeholderfiglab{Ollama Local LLM Architecture}{ollama_architecture.png}{Diagram showing Backend → Ollama API → Model inference → Response}{ollama_architecture}
+
+\section{Development Methodology}
+
+The project followed \textbf{Scrum}, an Agile methodology well-suited for iterative development:
+
+\begin{itemize}
+    \item \textbf{Sprint Duration:} 1 week
+    \item \textbf{Total Sprints:} 12 (3 months)
+    \item \textbf{Team Size:} 2 developers
+    \item \textbf{Tools:} Git, GitHub, Docker, VS Code
+\end{itemize}
+
+Figure \ref{fig:scrum-timeline} presents the sprint timeline and deliverables.
+
+\placeholderfiglab{Scrum Sprint Timeline and Milestones}{scrum_timeline.png}{Gantt chart showing 12 sprints with milestones: Agent, Backend, Frontend, Integration}{scrum_timeline}
+
+\section{Conclusion}
+
+This state-of-the-art analysis confirmed the viability of building a competitive, open-source SIEM alternative. The selected technology stack balances developer productivity, runtime performance, and deployment simplicity. The following chapter details the functional and non-functional requirements derived from this analysis.
+

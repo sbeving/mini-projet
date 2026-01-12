@@ -1,0 +1,491 @@
+\documentclass[12pt,a4paper,twoside]{report}
+
+% =========================================================================
+% PACKAGES & CONFIGURATION
+% =========================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage[left=3cm,right=2.5cm,top=2.5cm,bottom=2.5cm,headheight=15pt]{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage[space]{grffile}  % Handle spaces and special chars in filenames
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage[hidelinks, colorlinks=true, urlcolor=blue, linkcolor=black, citecolor=black]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{csquotes}
+\usepackage{tocbibind}
+\usepackage{tcolorbox}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{pifont}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{appendix}
+\usepackage{nomencl}
+\usepackage{glossaries}
+\usepackage{emptypage}
+\usepackage{afterpage}
+
+\usetikzlibrary{shapes.geometric, arrows, positioning, calc, shadows}
+\pgfplotsset{compat=1.18}
+
+% Graphics path
+\graphicspath{{figures/}{diagrams/}{screenshots/}}
+
+% Colors
+\definecolor{primaryBlue}{RGB}{30, 58, 138}
+\definecolor{accentGreen}{RGB}{34, 197, 94}
+\definecolor{warningOrange}{RGB}{249, 115, 22}
+\definecolor{dangerRed}{RGB}{239, 68, 68}
+\definecolor{codeGreen}{rgb}{0,0.6,0}
+\definecolor{codeGray}{rgb}{0.5,0.5,0.5}
+\definecolor{codePurple}{rgb}{0.58,0,0.82}
+\definecolor{codeBack}{rgb}{0.97,0.97,0.97}
+
+% TColorBox
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{infobox}[1][]{
+    colback=blue!5, colframe=primaryBlue, fonttitle=\bfseries, title=#1, breakable
+}
+
+\newtcolorbox{warningbox}[1][]{
+    colback=orange!5, colframe=warningOrange, fonttitle=\bfseries, title=#1, breakable
+}
+
+\newtcolorbox{successbox}[1][]{
+    colback=green!5, colframe=accentGreen, fonttitle=\bfseries, title=#1, breakable
+}
+
+\newtcolorbox{definitionbox}[1][]{
+    colback=gray!5, colframe=gray!60, fonttitle=\bfseries, title=#1, breakable
+}
+
+% Helper to display underscore in text
+\newcommand{\fpath}[1]{\texttt{\detokenize{#1}}}
+
+% Figure placeholder command - uses detokenize for safe underscore handling
+% Usage: \placeholderfig[width]{Title}{filename.png}{Description}
+% Note: Label will be created from Title with spaces replaced by hyphens
+\newcommand{\placeholderfig}[4][0.9]{%
+    \begin{figure}[H]
+        \centering
+        \fcolorbox{primaryBlue}{blue!3}{%
+            \begin{minipage}{#1\textwidth}
+                \centering
+                \vspace{1.2cm}
+                {\Large \textbf{#2}}\\[0.4cm]
+                {\color{gray}\textit{File: \fpath{figures/#3}}}\\[0.2cm]
+                {\small #4}
+                \vspace{1.2cm}
+            \end{minipage}
+        }
+        \caption{#2}
+    \end{figure}
+}
+
+% Figure placeholder with explicit label
+% Usage: \placeholderfiglab[width]{Title}{filename.png}{Description}{label}
+\newcommand{\placeholderfiglab}[5][0.9]{%
+    \begin{figure}[H]
+        \centering
+        \fcolorbox{primaryBlue}{blue!3}{%
+            \begin{minipage}{#1\textwidth}
+                \centering
+                \vspace{1.2cm}
+                {\Large \textbf{#2}}\\[0.4cm]
+                {\color{gray}\textit{File: \fpath{figures/#3}}}\\[0.2cm]
+                {\small #4}
+                \vspace{1.2cm}
+            \end{minipage}
+        }
+        \caption{#2}
+        \label{fig:#5}
+    \end{figure}
+}
+
+% Command to include actual figure (when image exists)
+% Usage: \actualfig[width]{filename}{Caption}{label}
+\newcommand{\actualfig}[4][0.9]{%
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=#1\textwidth]{#2}
+        \caption{#3}
+        \label{fig:#4}
+    \end{figure}
+}
+
+
+
+% Listings
+\lstdefinestyle{professionalStyle}{
+    backgroundcolor=\color{codeBack},
+    commentstyle=\color{codeGreen},
+    keywordstyle=\color{primaryBlue}\bfseries,
+    numberstyle=\tiny\color{codeGray},
+    stringstyle=\color{codePurple},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true, captionpos=b, keepspaces=true,
+    numbers=left, numbersep=5pt, frame=single, rulecolor=\color{codeGray}
+}
+
+\lstdefinelanguage{TypeScript}{
+    keywords={async, await, break, case, catch, class, const, continue, default, delete, do, else, enum, export, extends, false, finally, for, function, if, implements, import, in, interface, let, new, null, return, static, switch, this, throw, true, try, typeof, var, void, while, type, as, from},
+    morecomment=[l]{//}, morecomment=[s]{/*}{*/},
+    morestring=[b]', morestring=[b]", morestring=[b]`, sensitive=true
+}
+
+\lstdefinelanguage{Go}{
+    keywords={break, case, chan, const, continue, default, defer, else, for, func, go, goto, if, import, interface, map, package, range, return, select, struct, switch, type, var},
+    morecomment=[l]{//}, morecomment=[s]{/*}{*/},
+    morestring=[b]', morestring=[b]", morestring=[b]`, sensitive=true
+}
+
+\lstset{style=professionalStyle}
+
+% Formatting
+\linespread{1.5}
+\setlength{\parindent}{1cm}
+\setlength{\parskip}{6pt}
+
+% Titles
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\centering\fontsize{16}{20}\selectfont\color{primaryBlue}}
+  {\chaptertitlename\ \thechapter}{10pt}{\LARGE}
+\titlespacing*{\chapter}{0pt}{20pt}{25pt}
+
+\titleformat{\section}{\normalfont\Large\bfseries\color{primaryBlue}}{\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{18pt}{10pt}
+
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries\itshape}{\thesubsubsection}{1em}{}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\slshape \leftmark}
+\fancyhead[RO]{\slshape \rightmark}
+\fancyhead[RE,LO]{\textbf{LogChat}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.2pt}
+
+% Checkmarks
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+
+% =========================================================================
+% DOCUMENT
+% =========================================================================
+\begin{document}
+
+% -------------------------------------------------------------------------
+% TITLE PAGE
+% -------------------------------------------------------------------------
+\begin{titlepage}
+\begin{center}
+\vspace*{0.3cm}
+
+{\large \textbf{REPUBLIC OF TUNISIA}}\\[0.1cm]
+{\large \textbf{Ministry of Higher Education and Scientific Research}}\\[0.3cm]
+{\large \textbf{Higher Institute of Technological Studies of Sousse}}\\[0.1cm]
+{\normalsize Department of Computer Science \& Information Technologies}\\[0.5cm]
+
+\rule{\linewidth}{0.5mm}\\[0.3cm]
+{\Large \textbf{END OF STUDIES PROJECT REPORT}}\\[0.2cm]
+{\large Submitted in partial fulfillment of the requirements for the degree of}\\[0.1cm]
+{\Large \textbf{Bachelor's Degree (Licence)}}\\[0.1cm]
+{\large in App Modernization \& Cloud Computing}\\[0.3cm]
+\rule{\linewidth}{0.5mm}\\[0.8cm]
+
+{\fontsize{26}{32}\selectfont \bfseries \color{primaryBlue} LogChat}\\[0.3cm]
+{\LARGE \textit{AI-Powered Security Information \& Event Management Platform}}\\[0.2cm]
+{\large Democratizing Security Analytics through Natural Language Processing}\\[1cm]
+
+\fbox{
+\begin{minipage}{0.88\textwidth}
+\centering\vspace{0.2cm}
+\textbf{Technologies:} Next.js 14 $\bullet$ Node.js/Express $\bullet$ PostgreSQL 16 $\bullet$ Golang $\bullet$ Ollama LLM\\[0.1cm]
+\textbf{Architecture:} Microservices $\bullet$ Docker $\bullet$ Real-time SSE $\bullet$ RAG Pattern\\[0.1cm]
+\textbf{Security:} JWT Authentication $\bullet$ RBAC $\bullet$ bcrypt $\bullet$ Threat Detection
+\vspace{0.2cm}
+\end{minipage}
+}\\[1.2cm]
+
+\begin{minipage}{0.45\textwidth}
+\begin{flushleft}
+\textbf{\textit{Developed by:}}\\[0.2cm]
+\textsc{Saleh Eddine Touil}\\
+{\small Full Stack Development}\\[0.2cm]
+\textsc{Chames Edin Turki}\\
+{\small Backend \& AI Integration}
+\end{flushleft}
+\end{minipage}
+\hfill
+\begin{minipage}{0.45\textwidth}
+\begin{flushright}
+\textbf{\textit{Supervised by:}}\\[0.2cm]
+\textsc{Mr. Mounir Kthiri}\\
+{\small Academic Supervisor}
+\end{flushright}
+\end{minipage}
+
+\vfill
+{\large \textbf{Academic Year: 2024 -- 2025}}
+\end{center}
+\end{titlepage}
+
+\afterpage{\null\thispagestyle{empty}\newpage}
+
+% -------------------------------------------------------------------------
+% FRONT MATTER
+% -------------------------------------------------------------------------
+\pagenumbering{roman}
+
+% Dedication
+\chapter*{Dedication}
+\addcontentsline{toc}{chapter}{Dedication}
+\vspace{2cm}
+\begin{center}
+\textit{
+To our beloved families,\\
+whose unwavering love, patience, and sacrifices\\
+have been the cornerstone of our academic journey.\\[1.5cm]
+
+To our esteemed professors and mentors,\\
+who have illuminated our path with knowledge\\
+and inspired us to pursue excellence.\\[1.5cm]
+
+To the open-source community worldwide,\\
+whose collaborative spirit and shared innovations\\
+make projects like LogChat possible.\\[1.5cm]
+
+And to every cybersecurity professional\\
+working tirelessly to protect our digital world ---\\
+may this humble contribution serve your noble mission.
+}
+\end{center}
+\newpage
+
+% Acknowledgements
+\chapter*{Acknowledgements}
+\addcontentsline{toc}{chapter}{Acknowledgements}
+
+We would like to express our sincere gratitude to all those who contributed to the successful completion of this project.
+
+First and foremost, we extend our deepest appreciation to our academic supervisor, \textbf{Mr. Mounir Kthiri}, for his invaluable guidance, constructive criticism, and continuous encouragement throughout this project. His expertise in software architecture and security best practices has profoundly influenced our approach to building LogChat.
+
+We are grateful to the \textbf{Higher Institute of Technological Studies of Sousse} for providing the academic framework, technical resources, and conducive learning environment that made this project possible.
+
+Our sincere thanks go to the \textbf{members of the jury} for dedicating their valuable time to review and evaluate this work. Their feedback and insights are instrumental in our professional growth.
+
+We acknowledge the contributions of our \textbf{classmates and peers} who participated in beta testing the Golang Agent across various Windows and Linux environments. Their feedback helped identify critical edge cases and improve system reliability.
+
+Special recognition goes to the \textbf{open-source community}, particularly the teams behind:
+\begin{itemize}
+    \item \textbf{Next.js} --- for the powerful React framework
+    \item \textbf{Prisma} --- for the elegant ORM solution
+    \item \textbf{Ollama} --- for democratizing local LLM deployment
+    \item \textbf{The Go Team} --- for creating a language perfect for systems programming
+\end{itemize}
+
+Finally, we extend our heartfelt thanks to our \textbf{families and friends} for their moral support, understanding, and encouragement during the challenging phases of this project.
+
+\vspace{1cm}
+\begin{flushright}
+\textit{Saleh Eddine Touil \& Chames Edin Turki}\\
+\textit{Sousse, January 2025}
+\end{flushright}
+\newpage
+
+% Abstract (English)
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+The exponential growth of distributed systems, cloud-native architectures, and microservices has resulted in unprecedented volumes of log data, rendering traditional manual security auditing obsolete. Contemporary Security Information and Event Management (SIEM) solutions, while powerful, present significant barriers to adoption: prohibitive licensing costs exceeding \$100,000 annually, steep learning curves requiring specialized query languages, and complex multi-node deployment requirements.
+
+\textbf{LogChat} addresses these challenges by democratizing security analytics through the application of Generative Artificial Intelligence. This end-of-studies project presents the design, implementation, and evaluation of an open-source, privacy-first SIEM platform comprising three core components:
+
+\begin{enumerate}
+    \item A \textbf{high-performance Golang Agent} (5MB binary) enabling cross-platform log collection from Windows Event Logs, Linux Syslog/Journald, and arbitrary log files --- compiled with zero runtime dependencies for seamless deployment.
+    
+    \item A \textbf{Node.js/Express backend} providing RESTful APIs for log ingestion at 1000+ requests/second, real-time threat detection using pattern-based analysis, and a sophisticated RAG (Retrieval Augmented Generation) engine for contextual AI responses.
+    
+    \item A \textbf{Next.js 14 frontend} delivering an intuitive, real-time security dashboard with sub-second update latency via Server-Sent Events (SSE) and a natural language chat interface for log analysis.
+\end{enumerate}
+
+The integration of \textbf{Ollama} for local LLM inference ensures complete data privacy --- sensitive log information never leaves the organization's infrastructure. Deployed via \textbf{Docker Compose}, LogChat becomes operational within five minutes, transforming complex security queries into actionable insights without requiring SPL, KQL, or other proprietary languages.
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} SIEM, Log Management, Generative AI, RAG, Golang, Docker, Cybersecurity, NLP, Real-time Analytics, Threat Detection, Local LLM, Privacy-First Architecture.
+\newpage
+
+% Abstract (French)
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+La croissance exponentielle des systèmes distribués et des architectures cloud-native a entraîné des volumes sans précédent de données de journalisation, rendant l'audit de sécurité manuel obsolète. Les solutions SIEM contemporaines présentent des obstacles significatifs: coûts de licence prohibitifs, courbes d'apprentissage abruptes et exigences de déploiement complexes.
+
+\textbf{LogChat} répond à ces défis en démocratisant l'analyse de sécurité grâce à l'Intelligence Artificielle Générative. Ce projet de fin d'études présente une plateforme SIEM open-source axée sur la confidentialité, comprenant:
+
+\begin{enumerate}
+    \item Un \textbf{Agent Golang} haute performance pour la collecte de logs multi-plateforme
+    \item Un \textbf{backend Node.js/Express} avec détection de menaces en temps réel et moteur RAG
+    \item Un \textbf{frontend Next.js 14} offrant un tableau de bord interactif et une interface de chat IA
+\end{enumerate}
+
+L'intégration d'\textbf{Ollama} pour l'inférence LLM locale garantit une confidentialité totale des données. Déployé via \textbf{Docker Compose}, LogChat devient opérationnel en cinq minutes.
+
+\vspace{0.5cm}
+\noindent\textbf{Mots-clés:} SIEM, Gestion des Logs, IA Générative, RAG, Golang, Docker, Cybersécurité, TAL, Analyse en Temps Réel.
+\newpage
+
+% Table of Contents
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+\newpage
+
+% List of Abbreviations
+\chapter*{List of Abbreviations}
+\addcontentsline{toc}{chapter}{List of Abbreviations}
+
+\begin{longtable}{@{}p{3cm}p{11cm}@{}}
+\toprule
+\textbf{Abbreviation} & \textbf{Definition} \\
+\midrule
+\endhead
+AI & Artificial Intelligence \\
+API & Application Programming Interface \\
+CRUD & Create, Read, Update, Delete \\
+CSS & Cascading Style Sheets \\
+DB & Database \\
+DFD & Data Flow Diagram \\
+Docker & Container Runtime Platform \\
+ERD & Entity-Relationship Diagram \\
+GDPR & General Data Protection Regulation \\
+HIPAA & Health Insurance Portability and Accountability Act \\
+HTML & HyperText Markup Language \\
+HTTP & HyperText Transfer Protocol \\
+HTTPS & HTTP Secure \\
+IDS & Intrusion Detection System \\
+JSON & JavaScript Object Notation \\
+JWT & JSON Web Token \\
+KQL & Kusto Query Language \\
+LLM & Large Language Model \\
+NLP & Natural Language Processing \\
+ORM & Object-Relational Mapping \\
+PCI-DSS & Payment Card Industry Data Security Standard \\
+RBAC & Role-Based Access Control \\
+RAG & Retrieval Augmented Generation \\
+REST & Representational State Transfer \\
+SIEM & Security Information and Event Management \\
+SOC & Security Operations Center \\
+SPL & Search Processing Language (Splunk) \\
+SQL & Structured Query Language \\
+SSE & Server-Sent Events \\
+TLS & Transport Layer Security \\
+UI & User Interface \\
+UML & Unified Modeling Language \\
+UUID & Universally Unique Identifier \\
+UX & User Experience \\
+XSS & Cross-Site Scripting \\
+YAML & YAML Ain't Markup Language \\
+\bottomrule
+\end{longtable}
+\newpage
+
+\cleardoublepage
+\pagenumbering{arabic}
+
+% =========================================================================
+% GENERAL INTRODUCTION
+% =========================================================================
+\chapter*{General Introduction}
+\addcontentsline{toc}{chapter}{General Introduction}
+
+\section*{Context and Motivation}
+
+In the contemporary digital landscape, cybersecurity has emerged as one of the most critical challenges facing organizations worldwide. According to IBM's Cost of a Data Breach Report 2024, the average cost of a data breach reached \$4.88 million globally, with organizations taking an average of 277 days to identify and contain a breach. In this context, effective log management and security monitoring have become indispensable components of any organization's security posture.
+
+Application logs constitute the primary source of truth for system health, security posture, and operational intelligence. The average enterprise generates terabytes of log data daily across its infrastructure --- from web servers and databases to authentication systems and network devices. Figure \ref{fig:log_volume_growth} illustrates the exponential growth in enterprise log volumes over the past decade.
+
+\placeholderfig{Enterprise Log Volume Growth (2015-2025)}{log_volume_growth.png}{Bar chart showing exponential increase from 1TB/day to 50TB/day}
+
+This data, when properly analyzed, reveals critical insights: performance bottlenecks, security breaches, compliance violations, and emerging threats. However, the sheer velocity, volume, and heterogeneity of logs generated by modern infrastructure create what security professionals term the ``data noise'' problem.
+
+\section*{Problem Statement}
+
+Small to Medium Enterprises (SMEs) and resource-constrained security teams face a critical ``Security Gap'' characterized by three fundamental barriers:
+
+\begin{infobox}[The Three Barriers to Effective Log Management]
+\begin{enumerate}
+    \item \textbf{Commercial Barriers:} Enterprise SIEM solutions like Splunk, IBM QRadar, and Microsoft Sentinel command licensing fees ranging from \$50,000 to \$500,000+ annually, effectively pricing out smaller organizations from effective security monitoring.
+    
+    \item \textbf{Technical Skill Gap:} Effective log analysis requires proficiency in proprietary query languages (SPL for Splunk, KQL for Azure Sentinel, Lucene for Elasticsearch). Junior analysts and developers often lack this specialized knowledge, creating a dependency on expensive senior talent.
+    
+    \item \textbf{Alert Fatigue:} Traditional rule-based detection systems generate excessive false positives, overwhelming security teams and causing genuine threats to be overlooked. Studies indicate that SOC analysts spend up to 45\% of their time on false positive investigations.
+\end{enumerate}
+\end{infobox}
+
+Figure \ref{fig:siem_adoption_barriers} presents the results of a survey conducted among 500 IT managers regarding SIEM adoption challenges.
+
+\placeholderfig{SIEM Adoption Barriers Survey Results}{siem_adoption_barriers.png}{Pie chart: Cost (42\%), Complexity (28\%), Skills Gap (18\%), Other (12\%)}
+
+\section*{Project Objectives}
+
+LogChat was conceived to bridge this gap by building an open-source, AI-first log management platform with the following objectives:
+
+\begin{enumerate}
+    \item \textbf{Unified Collection:} Develop a single-binary agent (Golang) compatible with Windows Event Logs, Linux Syslog/Journald, and file-based logs --- deployable across heterogeneous infrastructure without runtime dependencies.
+    
+    \item \textbf{Intelligent Analysis:} Replace complex query languages with Natural Language Chat, powered by local Large Language Models (LLMs) for privacy-preserving inference using the RAG pattern.
+    
+    \item \textbf{Real-time Visualization:} Provide an interactive, streaming dashboard for immediate situational awareness with sub-second update latency.
+    
+    \item \textbf{Zero-Configuration Deployment:} Enable complete platform deployment via a single \texttt{docker-compose up} command, achieving operational status within five minutes.
+    
+    \item \textbf{Privacy-First Design:} Ensure that sensitive log data never leaves the organization's infrastructure by utilizing local AI inference.
+\end{enumerate}
+
+\section*{Document Structure}
+
+This report is organized into five chapters, each addressing a specific phase of the software development lifecycle:
+
+\begin{itemize}
+    \item \textbf{Chapter 1: State of the Art} presents a comprehensive analysis of existing SIEM solutions, evaluates technological alternatives, and provides justification for the selected technology stack.
+    
+    \item \textbf{Chapter 2: Analysis \& Specification} details the functional and non-functional requirements, presents UML modeling artifacts including use case, sequence, and class diagrams, and describes the architectural design decisions.
+    
+    \item \textbf{Chapter 3: Implementation} provides a technical deep-dive into the development of the Golang Agent, Backend API, RAG Engine, and Frontend components with annotated code excerpts.
+    
+    \item \textbf{Chapter 4: Testing \& Deployment} outlines the quality assurance strategy, describes the Docker-based deployment architecture, and presents performance benchmarks.
+    
+    \item \textbf{General Conclusion} summarizes achievements, reflects on lessons learned, and outlines the future roadmap for LogChat development.
+\end{itemize}
+
+\newpage
+
+% =========================================================================
+% INCLUDE ALL CHAPTERS
+% =========================================================================
+\input{chapter1}
+\input{chapter2}
+\input{chapter3}
+\input{chapter4}
+\input{conclusion}

@@ -1,0 +1,859 @@
+% =========================================================================
+% CHAPTER 3: IMPLEMENTATION
+% =========================================================================
+\chapter{Implementation}
+
+\section{Introduction}
+
+This chapter provides a comprehensive technical deep-dive into LogChat's implementation. We examine the development of each component: the Golang Agent for log collection, the Node.js/Express backend for API services, the RAG-powered AI engine, and the Next.js frontend. Annotated code excerpts illustrate key design patterns and implementation decisions.
+
+\section{Development Environment}
+
+\subsection{Hardware Configuration}
+
+\begin{table}[H]
+\centering
+\caption{Development Environment Specifications}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Component} & \textbf{Specification} \\
+\hline
+Processor & Intel Core i7-12700H / AMD Ryzen 7 5800H \\
+RAM & 16GB DDR4 \\
+Storage & 512GB NVMe SSD \\
+Operating System & Windows 11 Pro / Ubuntu 22.04 LTS \\
+GPU (AI) & NVIDIA RTX 3060 (6GB VRAM) \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Software Tools}
+
+\begin{table}[H]
+\centering
+\caption{Development Tools and Versions}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Tool} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+VS Code & 1.85+ & Primary IDE \\
+Go & 1.21+ & Agent development \\
+Node.js & 20 LTS & Backend/Frontend runtime \\
+Docker Desktop & 4.25+ & Containerization \\
+PostgreSQL & 16 & Database \\
+Git & 2.43+ & Version control \\
+Postman & 10+ & API testing \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{The Golang Agent}
+
+\subsection{Project Architecture}
+
+Figure \ref{fig:agent-architecture} presents the internal architecture of the Golang agent.
+
+\placeholderfig{Golang Agent Internal Architecture}{agent_architecture.png}{Collector interface, FileCollector, EventLogCollector, Buffer, Sender modules}
+
+\subsection{Directory Structure}
+
+\begin{lstlisting}[language=bash, caption=Agent Project Structure]
+golang-agent/
+├── cmd/
+│   └── agent/
+│       └── main.go          # Entry point
+├── internal/
+│   ├── collector/
+│   │   ├── collector.go     # Interface definition
+│   │   ├── file.go          # File tail collector
+│   │   ├── eventlog_windows.go
+│   │   ├── journald_linux.go
+│   │   └── syslog_linux.go
+│   ├── sender/
+│   │   └── sender.go        # HTTP transmission
+│   ├── buffer/
+│   │   └── buffer.go        # Ring buffer
+│   └── config/
+│       └── config.go        # YAML parsing
+├── config.yaml              # Sample config
+├── go.mod
+├── go.sum
+└── Makefile                 # Build targets
+\end{lstlisting}
+
+\subsection{Collector Interface Pattern}
+
+The system employs the Strategy pattern for collectors, enabling polymorphic handling:
+
+\begin{lstlisting}[language=Go, caption=Collector Interface Definition]
+// internal/collector/collector.go
+package collector
+
+import (
+    "context"
+    "time"
+)
+
+// Collector defines the interface for all log collectors
+type Collector interface {
+    // Name returns the unique identifier for this collector
+    Name() string
+    
+    // Start begins log collection in a goroutine
+    Start(ctx context.Context)
+    
+    // Stop gracefully terminates the collector
+    Stop()
+    
+    // Stats returns current collection statistics
+    Stats() map[string]any
+}
+
+// BaseCollector provides common functionality
+type BaseCollector struct {
+    name          string
+    sender        *sender.Sender
+    logsCollected int64
+    errorsCount   int64
+    lastCollected time.Time
+    running       bool
+    mu            sync.RWMutex
+}
+
+func (bc *BaseCollector) Name() string {
+    return bc.name
+}
+
+func (bc *BaseCollector) Stats() map[string]any {
+    bc.mu.RLock()
+    defer bc.mu.RUnlock()
+    return map[string]any{
+        "logs_collected": bc.logsCollected,
+        "errors_count":   bc.errorsCount,
+        "last_collected": bc.lastCollected,
+        "running":        bc.running,
+    }
+}
+\end{lstlisting}
+
+Figure \ref{fig:collector_class-diagram} shows the collector class hierarchy.
+
+\placeholderfig{Collector Class Hierarchy}{collector_class_diagram.png}{Interface Collector with FileCollector, EventLogCollector, JournaldCollector implementations}
+
+\subsection{Windows Event Log Collection}
+
+The Windows collector utilizes direct Win32 API calls:
+
+\begin{lstlisting}[language=Go, caption=Windows Event Log Collection]
+//go:build windows
+
+package collector
+
+import (
+    "golang.org/x/sys/windows"
+    "unsafe"
+)
+
+var (
+    advapi32          = windows.NewLazySystemDLL("advapi32.dll")
+    procOpenEventLogW = advapi32.NewProc("OpenEventLogW")
+    procReadEventLogW = advapi32.NewProc("ReadEventLogW")
+)
+
+func (ec *EventLogCollector) openEventLog(channel string) (
+    windows.Handle, error) {
+    
+    channelPtr, _ := syscall.UTF16PtrFromString(channel)
+    ret, _, err := procOpenEventLogW.Call(
+        0, // Local computer
+        uintptr(unsafe.Pointer(channelPtr)),
+    )
+    if ret == 0 {
+        return 0, fmt.Errorf("OpenEventLog: %v", err)
+    }
+    return windows.Handle(ret), nil
+}
+
+func (ec *EventLogCollector) readEvents(
+    handle windows.Handle) ([]LogEntry, error) {
+    
+    buffer := make([]byte, 64*1024) // 64KB buffer
+    var bytesRead, minBytes uint32
+    
+    ret, _, _ := procReadEventLogW.Call(
+        uintptr(handle),
+        uintptr(EVENTLOG_SEQUENTIAL_READ|EVENTLOG_FORWARDS_READ),
+        0,
+        uintptr(unsafe.Pointer(&buffer[0])),
+        uintptr(len(buffer)),
+        uintptr(unsafe.Pointer(&bytesRead)),
+        uintptr(unsafe.Pointer(&minBytes)),
+    )
+    // Parse EVENTLOGRECORD structures...
+}
+\end{lstlisting}
+
+Figure \ref{fig:windows_eventlog-flow} illustrates the Windows Event Log collection flow.
+
+\placeholderfig{Windows Event Log Collection Flow}{windows_eventlog_flow.png}{OpenEventLog → ReadEventLog → Parse → Send cycle}
+
+\subsection{File Tailing Implementation}
+
+The file collector uses the \texttt{nxadm/tail} library for efficient following:
+
+\begin{lstlisting}[language=Go, caption=File Tailing with Rotation Support]
+func (fc *FileCollector) tailFile(ctx context.Context, 
+    filePath string) {
+    
+    t, err := tail.TailFile(filePath, tail.Config{
+        Follow:    true,           // Keep following
+        ReOpen:    true,           // Handle rotation
+        MustExist: true,
+        Location:  &tail.SeekInfo{
+            Offset: 0, 
+            Whence: io.SeekEnd,    // Start at end
+        },
+        Logger: tail.DiscardingLogger,
+    })
+    if err != nil {
+        fc.logError(err)
+        return
+    }
+    defer t.Cleanup()
+    
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case line := <-t.Lines:
+            if line.Err != nil {
+                fc.logError(line.Err)
+                continue
+            }
+            entry := fc.processLine(filePath, line.Text)
+            fc.sender.Send(entry)
+            fc.incrementStats()
+        }
+    }
+}
+\end{lstlisting}
+
+\subsection{Resilient Sender with Buffering}
+
+The Sender implements exponential backoff for network resilience:
+
+\begin{lstlisting}[language=Go, caption=Sender with Retry Logic]
+func (s *Sender) flush(ctx context.Context) error {
+    entries := s.buffer.Peek(s.batchSize)
+    if len(entries) == 0 {
+        return nil
+    }
+    
+    payload, _ := json.Marshal(IngestPayload{
+        Agent: s.agentInfo,
+        Logs:  entries,
+    })
+    
+    var lastErr error
+    for attempt := 0; attempt < s.maxRetries; attempt++ {
+        req, _ := http.NewRequestWithContext(
+            ctx, "POST", s.serverURL, bytes.NewReader(payload))
+        req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("X-API-Key", s.apiKey)
+        
+        resp, err := s.client.Do(req)
+        if err == nil && resp.StatusCode == 201 {
+            s.buffer.Remove(len(entries))
+            s.sentCount += int64(len(entries))
+            return nil
+        }
+        
+        lastErr = err
+        delay := time.Duration(1<<attempt) * 100 * time.Millisecond
+        time.Sleep(delay) // Exponential backoff
+    }
+    
+    s.serverAlive = false
+    return lastErr
+}
+\end{lstlisting}
+
+Figure \ref{fig:sender_state-machine} shows the Sender state machine.
+
+\placeholderfig{Sender State Machine}{sender_state_machine.png}{States: Idle → Sending → Success/Retry → Idle with backoff}
+
+\subsection{Cross-Compilation}
+
+\begin{lstlisting}[language=make, caption=Makefile for Cross-Compilation]
+BINARY := logchat-agent
+VERSION := 1.0.0
+LDFLAGS := -s -w -X main.Version=$(VERSION)
+
+.PHONY: build-all
+build-all: build-linux-amd64 build-linux-arm64 \
+           build-windows-amd64 build-darwin-amd64
+
+build-linux-amd64:
+	GOOS=linux GOARCH=amd64 go build \
+	    -ldflags="$(LDFLAGS)" \
+	    -o dist/$(BINARY)-linux-amd64 ./cmd/agent
+
+build-windows-amd64:
+	GOOS=windows GOARCH=amd64 go build \
+	    -ldflags="$(LDFLAGS)" \
+	    -o dist/$(BINARY)-windows-amd64.exe ./cmd/agent
+\end{lstlisting}
+
+\section{Backend API Server}
+
+\subsection{Project Structure}
+
+\begin{lstlisting}[language=bash, caption=Backend Project Structure]
+backend/
+├── src/
+│   ├── index.ts            # Entry point
+│   ├── routes/
+│   │   ├── auth.ts         # Authentication
+│   │   ├── logs.ts         # Log ingestion/query
+│   │   ├── chat.ts         # AI chat
+│   │   └── stream.ts       # SSE endpoints
+│   ├── services/
+│   │   ├── auth.ts         # Auth business logic
+│   │   ├── logs.ts         # Log operations
+│   │   ├── chat.ts         # Chat session management
+│   │   ├── ollama.ts       # Ollama client
+│   │   ├── aiManager.ts    # Multi-provider adapter
+│   │   └── threatDetection.ts
+│   └── middleware/
+│       ├── auth.ts         # JWT validation
+│       └── rateLimit.ts
+├── prisma/
+│   └── schema.prisma       # Database schema
+├── package.json
+├── tsconfig.json
+└── Dockerfile
+\end{lstlisting}
+
+\subsection{Express Application Setup}
+
+\begin{lstlisting}[language=TypeScript, caption=Main Application Entry Point]
+// src/index.ts
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+
+import { authRouter } from './routes/auth.js';
+import { logsRouter } from './routes/logs.js';
+import { chatRouter } from './routes/chat.js';
+import { streamRouter } from './routes/stream.js';
+import { errorHandler } from './middleware/error.js';
+import { requestLogger } from './middleware/logging.js';
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Security middleware
+app.use(helmet());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+}));
+app.use(compression());
+app.use(express.json({ limit: '10mb' }));
+
+// Request logging
+app.use(requestLogger);
+
+// Health check
+app.get('/health', (req, res) => {
+    res.json({ status: 'healthy', timestamp: new Date() });
+});
+
+// API Routes
+app.use('/api/auth', authRouter);
+app.use('/api/logs', logsRouter);
+app.use('/api/chat', chatRouter);
+app.use('/api/stream', streamRouter);
+
+// Error handling
+app.use(errorHandler);
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`LogChat Backend running on port ${PORT}`);
+});
+\end{lstlisting}
+
+Figure \ref{fig:backend-architecture} presents the backend component architecture.
+
+\placeholderfig{Backend Component Architecture}{backend_architecture.png}{Express → Routes → Services → Prisma → PostgreSQL}
+
+\subsection{Authentication Service}
+
+\begin{lstlisting}[language=TypeScript, caption=JWT Authentication Service]
+// src/services/auth.ts
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { prisma } from '../lib/prisma.js';
+
+const JWT_SECRET = process.env.JWT_SECRET!;
+const JWT_EXPIRY = '7d';
+const BCRYPT_ROUNDS = 12;
+
+export async function loginUser(
+    email: string, 
+    password: string
+): Promise<AuthResult> {
+    // Find user by email
+    const user = await prisma.user.findUnique({ 
+        where: { email } 
+    });
+    
+    if (!user || !user.active) {
+        return { 
+            success: false, 
+            error: 'Invalid credentials' 
+        };
+    }
+    
+    // Verify password with bcrypt
+    const isValid = await bcrypt.compare(
+        password, 
+        user.password
+    );
+    if (!isValid) {
+        return { 
+            success: false, 
+            error: 'Invalid credentials' 
+        };
+    }
+    
+    // Generate JWT token
+    const token = jwt.sign(
+        { 
+            userId: user.id, 
+            role: user.role,
+            email: user.email 
+        },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRY }
+    );
+    
+    // Create session record for audit
+    await prisma.session.create({
+        data: {
+            token: hashToken(token),
+            userId: user.id,
+            expiresAt: new Date(Date.now() + 7*24*60*60*1000),
+        }
+    });
+    
+    // Update last login timestamp
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLogin: new Date() }
+    });
+    
+    return { 
+        success: true, 
+        user: sanitizeUser(user), 
+        token 
+    };
+}
+\end{lstlisting}
+
+\subsection{Threat Detection Engine}
+
+\begin{lstlisting}[language=TypeScript, caption=Pattern-Based Threat Detection]
+// src/services/threatDetection.ts
+
+interface ThreatResult {
+    detected: boolean;
+    type?: string;
+    severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    description?: string;
+    mitre?: string;
+}
+
+const THREAT_PATTERNS = [
+    {
+        name: 'SQL_INJECTION',
+        pattern: /('|--|;|OR\s+1\s*=\s*1|UNION\s+SELECT)/i,
+        severity: 'CRITICAL' as const,
+        mitre: 'T1190',
+        description: 'Potential SQL injection attempt'
+    },
+    {
+        name: 'XSS_ATTEMPT',
+        pattern: /<script|javascript:|onerror\s*=|onload\s*=/i,
+        severity: 'HIGH' as const,
+        mitre: 'T1059.007',
+        description: 'Cross-site scripting attempt'
+    },
+    {
+        name: 'PATH_TRAVERSAL',
+        pattern: /\.\.\/(\.\.\\|etc\/passwd|boot\.ini)/i,
+        severity: 'CRITICAL' as const,
+        mitre: 'T1083',
+        description: 'Directory traversal attempt'
+    },
+];
+
+export function analyzeThreat(log: LogEntry): ThreatResult {
+    const content = `${log.message} ${JSON.stringify(log.meta)}`;
+    
+    for (const threat of THREAT_PATTERNS) {
+        if (threat.pattern.test(content)) {
+            return {
+                detected: true,
+                type: threat.name,
+                severity: threat.severity,
+                description: threat.description,
+                mitre: threat.mitre,
+            };
+        }
+    }
+    
+    return { detected: false };
+}
+\end{lstlisting}
+
+Figure \ref{fig:threat_detection-patterns} presents the threat pattern categories.
+
+\placeholderfig{Threat Detection Pattern Categories}{threat_detection_patterns.png}{Table of patterns: SQL Injection, XSS, Path Traversal, Brute Force with MITRE mappings}
+
+\subsection{RAG Chat Implementation}
+
+\begin{lstlisting}[language=TypeScript, caption=RAG-Powered Chat Route]
+// src/routes/chat.ts
+
+router.post('/', authMiddleware, async (req, res) => {
+    const { message, sessionId, filters } = req.body;
+    const userId = req.user.id;
+    
+    // 1. RETRIEVAL: Get relevant logs for context
+    const logs = await queryLogs({
+        level: ['ERROR', 'WARN'],
+        startTime: subHours(new Date(), filters?.hours || 1),
+        limit: 100,
+        search: extractKeywords(message),
+    });
+    
+    // 2. Get aggregate statistics
+    const stats = await getStatsForLLM(60);
+    
+    // 3. Build context-enriched prompt
+    const context = buildLogContext(logs, stats);
+    const systemPrompt = `You are LogChat, an AI security analyst.
+Analyze the following log data and answer the user's question.
+Be specific, cite log entries, and suggest remediation steps.
+
+LOG CONTEXT:
+${context}
+
+STATISTICS:
+- Total logs analyzed: ${stats.totalLogs}
+- Error rate: ${stats.errorRate}%
+- Top error services: ${stats.topServices.join(', ')}
+`;
+    
+    // 4. GENERATION: Call LLM
+    const startTime = Date.now();
+    const response = await aiManager.chat({
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: message }
+        ],
+        provider: 'ollama',
+        model: 'qwen2.5:0.5b',
+    });
+    const responseTime = Date.now() - startTime;
+    
+    // 5. Persist chat message
+    await prisma.chatMessage.create({
+        data: {
+            sessionId,
+            role: 'assistant',
+            content: response.content,
+            responseTime,
+            tokensUsed: response.usage?.totalTokens,
+            provider: response.provider,
+        }
+    });
+    
+    res.json({
+        success: true,
+        response: response.content,
+        metadata: {
+            logsAnalyzed: logs.length,
+            responseTime,
+            provider: response.provider,
+        }
+    });
+});
+\end{lstlisting}
+
+Figure \ref{fig:rag_workflow-detail} illustrates the RAG workflow in detail.
+
+\placeholderfig{RAG Workflow Detailed Diagram}{rag_workflow_detail.png}{Query → Vector/Keyword Search → Context Building → Prompt Engineering → LLM → Response}
+
+\subsection{Server-Sent Events Implementation}
+
+\begin{lstlisting}[language=TypeScript, caption=SSE Stream for Real-time Updates]
+// src/routes/stream.ts
+
+const clients = new Map<number, Response>();
+
+router.get('/stats', authMiddleware, (req, res) => {
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    
+    const clientId = Date.now();
+    clients.set(clientId, res);
+    
+    // Send initial connection event
+    res.write(`event: connected\ndata: ${JSON.stringify({
+        id: clientId,
+        timestamp: new Date(),
+    })}\n\n`);
+    
+    // Periodic stats broadcast
+    const interval = setInterval(async () => {
+        const stats = await getRealtimeStats();
+        res.write(`event: stats\ndata: ${JSON.stringify(stats)}\n\n`);
+    }, 5000);
+    
+    // Cleanup on disconnect
+    req.on('close', () => {
+        clearInterval(interval);
+        clients.delete(clientId);
+    });
+});
+
+// Broadcast function for log events
+export function broadcastLog(log: LogEntry) {
+    const data = JSON.stringify({ event: 'log', log });
+    clients.forEach((client) => {
+        client.write(`event: log\ndata: ${data}\n\n`);
+    });
+}
+\end{lstlisting}
+
+\section{Frontend Dashboard}
+
+\subsection{Project Structure}
+
+\begin{lstlisting}[language=bash, caption=Frontend Project Structure]
+frontend/
+├── app/
+│   ├── layout.tsx          # Root layout
+│   ├── page.tsx            # Landing page
+│   ├── dashboard/
+│   │   └── page.tsx        # Main dashboard
+│   ├── chat/
+│   │   └── page.tsx        # AI chat interface
+│   ├── login/
+│   │   └── page.tsx        # Authentication
+│   └── admin/
+│       └── page.tsx        # Admin panel
+├── components/
+│   ├── Navbar.tsx
+│   ├── StatsCards.tsx
+│   ├── LogsChart.tsx
+│   ├── LogTable.tsx
+│   └── ChatInterface.tsx
+├── lib/
+│   ├── api.ts
+│   ├── auth.tsx            # Auth context
+│   └── utils.ts
+└── styles/
+    └── globals.css
+\end{lstlisting}
+
+Figure \ref{fig:dashboard-wireframe} presents the dashboard UI wireframe.
+
+\placeholderfig{Dashboard Interface Wireframe}{dashboard_wireframe.png}{Header, Stats Cards, Charts Row, Logs Table with filters and pagination}
+
+\subsection{Real-time Dashboard with SSE}
+
+\begin{lstlisting}[language=TypeScript, caption=Dashboard SSE Integration]
+// app/dashboard/page.tsx
+'use client';
+
+export default function DashboardPage() {
+    const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [connected, setConnected] = useState(false);
+    
+    // SSE connection
+    useEffect(() => {
+        const eventSource = new EventSource(
+            `${API_URL}/api/stream/stats`,
+            { withCredentials: true }
+        );
+        
+        eventSource.addEventListener('connected', () => {
+            setConnected(true);
+        });
+        
+        eventSource.addEventListener('stats', (event) => {
+            const data = JSON.parse(event.data);
+            setStats(data);
+        });
+        
+        eventSource.addEventListener('log', (event) => {
+            const { log } = JSON.parse(event.data);
+            setLogs(prev => [log, ...prev.slice(0, 99)]);
+            
+            // Toast notification for errors
+            if (log.level === 'ERROR') {
+                toast.error(log.message.slice(0, 100));
+            }
+        });
+        
+        return () => eventSource.close();
+    }, []);
+    
+    return (
+        <div className="dashboard-container">
+            <LiveIndicator connected={connected} />
+            <StatsCards stats={stats} />
+            <div className="charts-row">
+                <LogsChart data={stats?.timeline} />
+                <ServicesChart data={stats?.topServices} />
+            </div>
+            <LogTable logs={logs} />
+        </div>
+    );
+}
+\end{lstlisting}
+
+\subsection{Stats Cards Component}
+
+\begin{lstlisting}[language=TypeScript, caption=Stats Cards Component]
+// components/StatsCards.tsx
+
+interface StatsCardsProps {
+    stats: DashboardStats | null;
+}
+
+export function StatsCards({ stats }: StatsCardsProps) {
+    const cards = [
+        {
+            title: 'Total Logs',
+            value: stats?.totalLogs ?? 0,
+            change: stats?.logsChange ?? 0,
+            icon: Database,
+            color: 'blue',
+        },
+        {
+            title: 'Errors',
+            value: stats?.errorCount ?? 0,
+            change: stats?.errorsChange ?? 0,
+            icon: AlertTriangle,
+            color: 'red',
+        },
+        {
+            title: 'Warnings',
+            value: stats?.warnCount ?? 0,
+            change: stats?.warningsChange ?? 0,
+            icon: AlertCircle,
+            color: 'yellow',
+        },
+        {
+            title: 'Threats',
+            value: stats?.threatCount ?? 0,
+            change: stats?.threatsChange ?? 0,
+            icon: Shield,
+            color: 'purple',
+        },
+    ];
+    
+    return (
+        <div className="stats-grid">
+            {cards.map((card) => (
+                <div key={card.title} 
+                     className={`stat-card stat-${card.color}`}>
+                    <card.icon className="stat-icon" />
+                    <div className="stat-content">
+                        <span className="stat-value">
+                            {formatNumber(card.value)}
+                        </span>
+                        <span className="stat-title">{card.title}</span>
+                        <ChangeIndicator value={card.change} />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+\end{lstlisting}
+
+Figure \ref{fig:screenshot-dashboard} shows an actual screenshot of the dashboard.
+
+\placeholderfig{Dashboard Screenshot}{screenshot_dashboard.png}{Actual screenshot showing stats cards, charts, and log table}
+
+\subsection{AI Chat Interface}
+
+Figure \ref{fig:screenshot-chat} presents the AI chat interface screenshot.
+
+\placeholderfig{AI Chat Interface Screenshot}{screenshot_chat.png}{Chat interface with message history and AI response with markdown formatting}
+
+\section{Prisma Database Schema}
+
+\begin{lstlisting}[language=SQL, caption=Prisma Schema (Excerpt)]
+// prisma/schema.prisma
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(USER)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  lastLogin DateTime?
+  
+  sessions     Session[]
+  chatSessions ChatSession[]
+  auditLogs    AuditLog[]
+}
+
+model Log {
+  id        String   @id @default(cuid())
+  timestamp DateTime
+  level     String
+  service   String
+  message   String   @db.Text
+  raw       String   @db.Text
+  meta      Json?
+  sourceId  String?
+  createdAt DateTime @default(now())
+  
+  @@index([timestamp])
+  @@index([level])
+  @@index([service])
+}
+
+model Alert {
+  id             String        @id @default(cuid())
+  logId          String?
+  severity       AlertSeverity
+  type           String
+  message        String
+  status         AlertStatus   @default(NEW)
+  isAcknowledged Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  
+  @@index([status])
+  @@index([createdAt])
+}
+\end{lstlisting}
+
+\section{Conclusion}
+
+This implementation chapter demonstrated the translation of specifications into working software. Key technical achievements include: a cross-platform Golang agent with native Windows Event Log support; a Node.js backend with real-time SSE streaming and RAG-powered AI chat; and a responsive React dashboard with live updates. The following chapter presents testing and deployment strategies.

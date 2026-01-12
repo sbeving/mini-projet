@@ -319,74 +319,146 @@ We have identified a gap in the market for a lightweight, AI-first SIEM. We have
 \section{Introduction}
 This chapter bridges the gap between the idea and the code. We define \textit{what} the system must do (requirements) and \textit{how} it will be structured (architecture).
 
+\section{Feasibility Study}
+Before commencing development, we analyzed the feasibility of the project:
+\begin{itemize}
+    \item \textbf{Technical Feasibility:} The chosen stack (Node/Next/Postgres) is mature. The AI component (Ollama) is experimental but proven to work on consumer hardware with 8GB+ RAM.
+    \item \textbf{Operational Feasibility:} The system is designed to be "Docker-first", meaning deployment is standardized across environments.
+    \item \textbf{Economic Feasibility:} Utilizing open-source software (OSS) eliminates licensing costs, making this accessible for SMEs.
+\end{itemize}
+
 \section{Requirement Specification}
 
 \subsection{Functional Requirements}
 Functionalities the user interacts with directly:
 \begin{enumerate}
-    \item \textbf{Log Ingestion:} The system must accept JSON logs via HTTP POST.
-    \item \textbf{Threat Detection:} Incoming logs must be scanned for patterns (e.g., 'SQL Syntax Error').
-    \item \textbf{Dashboarding:} Real-time counters for Total Logs, Error Rates, and Threat Levels.
-    \item \textbf{Chat Assistant:} Users must be able to ask questions in plain English.
-    \item \textbf{User Management:} Admin can create analyst accounts.
+    \item \textbf{Log Ingestion Module:}
+    \begin{itemize}
+        \item The system must expose a REST API to accept logs in JSON format.
+        \item Validates incoming data against a schema (Zod).
+        \item Rejects malformed requests with 400 Bad Request.
+    \end{itemize}
+    \item \textbf{Threat Detection Engine:}
+    \begin{itemize}
+        \item Incoming logs must be scanned against a library of RegEx patterns.
+        \item Automatically tag logs with severity (INFO, WARNING, HIGH, CRITICAL).
+    \end{itemize}
+    \item \textbf{Analyst Dashboard:}
+    \begin{itemize}
+        \item Display real-time counters for Total Logs, Error Rates, and Threat Levels.
+        \item Visualize log volume trends over time (Line Chart).
+        \item Show distribution of logs by service (Pie/Bar Chart).
+    \end{itemize}
+    \item \textbf{AI Chat Assistant (RAG):}
+    \begin{itemize}
+        \item Users must be able to ask questions in plain English.
+        \item The system must retrieve relevant recent logs to inject as context.
+        \item Supports "Conversation Memory" (remembering previous questions).
+    \end{itemize}
+    \item \textbf{User Management:}
+    \begin{itemize}
+        \item Admin can create analyst accounts.
+        \item Role-based protection (Admins can delete logs; Analysts can only view).
+    \end{itemize}
 \end{enumerate}
 
 \subsection{Non-Functional Requirements}
 Qualities of the system:
 \begin{enumerate}
-    \item \textbf{Performance:} Must handle at least 100 logs/second without crashing.
-    \item \textbf{Security:} Logs must be protected behind authentication (JWT).
-    \item \textbf{Usability:} Dark mode UI, responsive design.
-    \item \textbf{Privacy:} AI processing must occur locally (no data leaving the server).
+    \item \textbf{Performance:}
+    \begin{itemize}
+        \item API Response time < 50ms for ingestion.
+        \item Dashboard load time < 1s.
+        \item Support at least 100 concurrent log requests/second.
+    \end{itemize}
+    \item \textbf{Security:}
+    \begin{itemize}
+        \item All API endpoints protected by JWT (JSON Web Tokens).
+        \item Passwords hashed using bcrypt (salt rounds = 10).
+        \item No sensitive data (API keys) exposed in frontend bundles.
+    \end{itemize}
+    \item \textbf{Usability:}
+    \begin{itemize}
+        \item Interface must follow "clean UI" principles (shadcn/ui style).
+        \item Dark mode support for eye comfort in SOC (Security Operations Center) environments.
+        \item Mobile-responsive layout.
+    \end{itemize}
+    \item \textbf{Privacy:}
+    \begin{itemize}
+        \item \textbf{Local AI Processing:} No log data shall be sent to external APIs (like OpenAI). All inference happens on the local server via Ollama.
+    \end{itemize}
 \end{enumerate}
+
+\section{Data Dictionary}
+To ensure consistent data structures, we defined the following core entities:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|l|}
+    \hline
+    \textbf{Entity} & \textbf{Field} & \textbf{Description} \\ \hline
+    \textbf{Log} & \texttt{id} (UUID) & Unique identifier for the event. \\ \hline
+     & \texttt{level} (Enum) & INFO, WARN, ERROR, CRITICAL. \\ \hline
+     & \texttt{message} (String) & The content of the log (e.g., "Failed login"). \\ \hline
+     & \texttt{source} (String) & The service name (e.g., "Payment-API"). \\ \hline
+     & \texttt{metadata} (JSON) & Extra details (IP address, user agents). \\ \hline
+    \textbf{User} & \texttt{role} (Enum) & ADMIN, USER, AUDITOR. \\ \hline
+    \textbf{Audit} & \texttt{action} (String) & What the user did (e.g., "DELETED\_LOG"). \\ \hline
+    \end{tabular}
+    \caption{Data Dictionary for Core Entities}
+\end{table}
 
 \section{Use Case Analysis}
 The Use Case diagram identifies the main actors and their interactions.
 
 \subsection{Actors}
 \begin{itemize}
-    \item \textbf{Security Analyst (User):} Reviews logs, investigates alerts, chats with AI.
-    \item \textbf{Administrator:} Configuring system sources, managing users.
-    \item \textbf{External System (Log Source):} A server/app sending log data automatically.
+    \item \textbf{Security Analyst (User):} The primary operator. Reviews logs, investigates alerts, chats with AI.
+    \item \textbf{Administrator:} Has elevated privileges. Can configure system sources, manage users, and flush databases.
+    \item \textbf{External System (Log Source):} A server, container, or application sending log data automatically via the Agent.
 \end{itemize}
 
 \subsection{Global Use Case Diagram}
 \placeholderImage{usecase_global.png}{Global Use Case Diagram}
-\textit{Figure shows Users logging in, viewing dashboards, and Systems pushing logs automatically.}
+\textit{The diagram illustrates the central role of the Platform in mediating between Human Analysts and Machine Data sources.}
 
 \section{System Architecture}
 We chose a \textbf{Dockerized Microservices-like} architecture. While essentially a monolith in logic, the services are containerized separately.
 
 \subsection{Component Diagram}
-The architecture separates the User Interface from the Logic and Data.
+The architecture separates the User Interface from the Logic and Data to allow independent scaling.
 
 \placeholderImage{architecture_component.png}{System Component Architecture}
 
-\begin{infobox}{Why Containers?}
-    Docker containers wrap our software with everything it needs to run. This ensures that LogChat works on my laptop, your laptop, and the production server exactly the same way.
-\end{infobox}
+\subsection{Architectural Decisions}
+\begin{itemize}
+    \item \textbf{Why Next.js App Router?} It merges the Backend-for-Frontend (BFF) pattern with the UI, simplifying data fetching.
+    \item \textbf{Why Prisma?} It provides type safety. If the database schema changes, the frontend code fails at compile time, preventing runtime errors.
+    \item \textbf{Why Ollama?} It abstracts the complexity of running GGML/GGUF models (like Llama 3 or Qwen) into a simple HTTP API.
+\end{itemize}
 
 \section{Sequence Diagrams}
 To understand the flow of data, we model specific scenarios.
 
 \subsection{Scenario 1: User Login}
 \placeholderImage{sequence_login.png}{Sequence Diagram: User Authentication}
-The user sends credentials, the backend validates against PostgreSQL, and issues a JWT (JSON Web Token).
+The user sends credentials, the backend validates against PostgreSQL, and issues a JWT (JSON Web Token) which is stored in HTTP-Only cookies.
 
 \subsection{Scenario 2: AI Chat (RAG Flow)}
-This is the core innovation of our project. 
+This is the core innovation of our project and the most complex interaction.
 \begin{enumerate}
     \item User asks "Show me errors".
-    \item Backends searches DB for recent logs with level='ERROR'.
-    \item Backend formats a prompt: \textit{"Here are the logs: [LOG\_DATA]. QA: Show me errors"}.
-    \item Ollama generates a summary.
-    \item Backend returns summary to UI.
+    \item Backend receives request at \texttt{/api/chat}.
+    \item \textbf{Retrieval:} Backend searches DB for recent logs where \texttt{level='ERROR'}.
+    \item \textbf{Augmentation:} Backend formats a prompt: \textit{"Here are the logs: [LOG\_DATA]. Q: Show me errors"}.
+    \item \textbf{Generation:} Ollama receives the huge prompt and generates a summary.
+    \item Backend returns the synthesized text to UI.
 \end{enumerate}
 
 \placeholderImage{sequence_chat_rag.png}{Sequence Diagram: AI Chat Interaction}
 
 \section{Activity Diagrams}
-How does the "Threat Engine" decide if a log is dangerous?
+How does the "Threat Engine" decide if a log is dangerous? This logic runs synchronously for every incoming HTTP POST.
 
 \placeholderImage{activity_threat_detection.png}{Activity Diagram: Log Ingestion \& Threat Logic}
 
@@ -415,139 +487,206 @@ We have mapped out the requirements and modeled the system using UML. The design
 \chapter{Implementation}
 
 \section{Introduction}
-This chapter documents the coding phase. We will look at the project structure, the backend logic, the frontend components, and the integration of the AI model.
+This chapter takes a deep dive into the code. We will explore the backend logic for threat detection, the frontend React components for visualization, and the integration with the Ollama AI model.
 
-\section{Development Environment}
-\begin{itemize}
-    \item \textbf{OS:} Windows 11 / Linux (Ubuntu 22.04 on Server)
-    \item \textbf{IDE:} VS Code with ESLint and Prettier
-    \item \textbf{Version Control:} Git \& GitHub
-    \item \textbf{API Testing:} Postman \& Thunder Client
-\end{itemize}
+\section{Project Structure}
+The project is organized as a monorepo containing both the Frontend and Backend services.
 
-\section{Backend Implementation}
-The backend is the brain of LogChat. It lives in the \texttt{/backend} folder.
-
-\subsection{Project Structure}
 \begin{lstlisting}[language=bash]
-backend/
-|-- src/
-|   |-- index.ts          # Entry point
-|   |-- services/         # Business Logic
-|   |   |-- logs.ts       # Log storage logic
-|   |   |-- ollama.ts     # AI wrappers
-|   |-- routes/           # API Endpoints
-|   |-- prisma/           # Database Schema
-|-- Dockerfile
+/logchat
+|-- backend/
+|   |-- src/
+|   |   |-- index.ts          # Express App Entry point
+|   |   |-- config/           # Environment variables (JWT_SECRET)
+|   |   |-- middleware/       # Auth Middleware
+|   |   |-- services/         # Business Logic Layer
+|   |   |   |-- logs.ts       # Log storage & Filtering
+|   |   |   |-- ollama.ts     # AI API Wrapper
+|   |   |   |-- threats.ts    # Regex Pattern Matcher
+|   |   |-- routes/           # REST API Definitions
+|   |-- prisma/               # Database Schema (ORM)
+|   |-- Dockerfile            # Container definition
+|
+|-- frontend/
+|   |-- app/                  # Next.js 14 App Router
+|   |   |-- dashboard/        # Protected Dashboard routes
+|   |   |-- chat/             # Chat Interface route
+|   |-- components/           # Reusable UI Components
+|   |   |-- ui/               # Shadcn/UI primitives (Button, Card)
+|   |   |-- LogsChart.tsx     # Recharts Visualization
+|   |   |-- LogTable.tsx      # Data Table
+|   |-- lib/                  # Utility functions
+|   |-- Dockerfile
+|
+|-- docker-compose.yml        # Orchestration Config
 \end{lstlisting}
 
-\subsection{Data Access Layer (Prisma)}
-We define our database schema in \texttt{schema.prisma}. This allows us to automatically generate TypeScript types.
+\section{Backend Implementation}
+The backend uses **Express.js** for its simplicity and speed.
 
-\begin{lstlisting}[language=JavaScript, caption=Prisma Schema Snippet]
+\subsection{Data Access Layer (Prisma)}
+We chose Prisma as our ORM (Object-Relational Mapper). It allows us to define our schema in a readable format (`schema.prisma`) and handles all SQL migrations automatically.
+
+\begin{lstlisting}[language=JavaScript, caption=Prisma Schema Definition]
+// prisma/schema.prisma
+
 model Log {
   id        String   @id @default(uuid())
-  level     String   // INFO, WARN, ERROR
+  level     String   // INFO, WARN, ERROR, CRITICAL
   message   String
-  source    String   // e.g., "PaymentService"
+  source    String   // Service Name (e.g., 'PaymentGateway')
   timestamp DateTime @default(now())
-  metadata  Json?    // Flexible JSON storage
+  metadata  Json?    // Flexible JSON storage for headers/IPs
+
+  @@index([timestamp]) // Index for faster range queries
+  @@index([level])     // Index for faster filtering
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  role          String   @default("USER")
 }
 \end{lstlisting}
 
-\subsection{The Threat Detection Engine}
-This service runs on every incoming log. It uses fast string matching (RegEx) to tag suspicious activities. 
+\subsection{Role of the Threat Engine}
+This service acts as a middleware for incoming logs. Before a log is saved, it passes through `scanLog()`.
 
-\begin{lstlisting}[language=JavaScript, caption=Threat Detection Logic]
-// services/threats.ts
-const PATTERNS = [
-  { name: 'SQL_INJECTION', regex: /' OR '1'='1/i, severity: 'CRITICAL' },
-  { name: 'XSS_ATTEMPT', regex: /<script>/i, severity: 'HIGH' },
-  { name: 'password_dump', regex: /passwd/i, severity: 'HIGH' }
+\begin{lstlisting}[language=JavaScript, caption=Threat Detection Logic (backend/src/services/threats.ts)]
+// Pre-compiled regex for performance
+const THREAT_PATTERNS = [
+  { 
+    name: 'SQL_INJECTION', 
+    regex: /(\%27)|(\')|(\-\-)|(\%23)|(#)/i, 
+    level: 'CRITICAL' 
+  },
+  { 
+    name: 'XSS_ATTEMPT', 
+    regex: /((%3C)|<)((%2F)|\/)*[a-z0-9%]+((%3E)|>)/i, 
+    level: 'HIGH' 
+  }
 ];
 
 export function scanLog(message: string) {
-  for (const pattern of PATTERNS) {
-    if (pattern.regex.test(message)) {
-      return { detected: true, type: pattern.name };
+  for (const p of THREAT_PATTERNS) {
+    if (p.regex.test(message)) {
+      return { 
+        detected: true, 
+        type: p.name, 
+        severity: p.level 
+      };
     }
   }
   return { detected: false };
 }
 \end{lstlisting}
 
-When a log matches, we mark it as "Flagged" in the database so it appears red in the dashboard.
+\subsection{API Endpoints}
+We expose RESTful endpoints documented below:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Method} & \textbf{Endpoint} & \textbf{Description} \\ \hline
+POST & \texttt{/api/auth/login} & Returns JWT token. \\ \hline
+GET & \texttt{/api/logs} & Returns paginated logs. Supports ?level=ERROR. \\ \hline
+POST & \texttt{/api/logs/ingest} & Internal endpoint for agents to push logs. \\ \hline
+POST & \texttt{/api/chat} & RAG Endpoint. Sends question to Ollama. \\ \hline
+\end{tabular}
+\caption{Key API Endpoints}
+\end{table}
 
 \section{AI Integration (Ollama)}
-This is the most complex part. We communicate with the local LLM running on port 11434.
+The integration with the Large Language Model is handled in `services/ollama.ts`. We use the `axios` library to call the Ollama local API.
 
-\subsection{The Prompt Engineering}
-We cannot just send the user question to the AI; it doesn't know context. We inject the context dynamically.
+\begin{lstlisting}[language=JavaScript, caption=Connecting to Ollama]
+import axios from "axios";
 
-\begin{lstlisting}[language=JavaScript, caption=RAG Prompt Construction]
-const contextLogs = await prisma.log.findMany({ take: 20 });
-const contextString = JSON.stringify(contextLogs);
+const OLLAMA_URL = process.env.OLLAMA_HOST || "http://ollama:11434";
 
-const prompt = `
-SYSTEM: You are a cybersecurity analyst. 
-Use the following logs to answer the user.
-LOGS: ${contextString}
-
-USER QUESTION: ${userMessage}
-`;
+export async function askAI(prompt: string, context: string) {
+  try {
+    const response = await axios.post(`${OLLAMA_URL}/api/generate`, {
+      model: "qwen2.5:0.5b", // We use a small model for speed
+      prompt: `CONTEXT:\n${context}\n\nUSER QUESTION:\n${prompt}`,
+      stream: false
+    });
+    return response.data.response;
+  } catch (error) {
+    console.error("AI Service Error:", error);
+    return "I'm sorry, I cannot access the brain right now.";
+  }
+}
 \end{lstlisting}
-This allows the AI to "read" the database before answering.
 
 \section{Frontend Implementation}
-The frontend uses Next.js 14 \texttt{App Router}. 
+The frontend acts as the control center.
 
-\subsection{Dashboard Page}
-The dashboard displays aggregated stats. We use \texttt{useSWR} for data fetching (stale-while-revalidate) to ensure charts update near real-time.
+\subsection{Dashboard \& Data Visualization}
+We use **Recharts** for drawing graphs. The data flow is:
+1. `StatsCards` component fetches summary numbers.
+2. `LogsChart` component fetches time-series data.
 
-\placeholderImage{dashboard_full.png}{The Main Dashboard UI showing stats cards and charts}
+\placeholderImage{dashboard_full.png}{Full Admin Dashboard with Dark Mode}
 
 \subsection{Live Log Viewer}
-We implemented a table that auto-refreshes. Security analysts can watch logs stream in.
+The log table supports real-time updates. We use a polling mechanism (refreshing every 5 seconds) to keep the display fresh without overloading the server with WebSockets.
 
-\begin{lstlisting}[language=JavaScript, caption=React Log Table Component]
+\begin{lstlisting}[language=JavaScript, caption=React Log Table with Highlighting]
 export default function LogTable({ logs }) {
   return (
-    <table className="w-full text-left">
-      <thead>
-        <tr><th>Time</th><th>Level</th><th>Message</th></tr>
-      </thead>
-      <tbody>
-        {logs.map(log => (
-          <tr key={log.id} className={log.level === 'ERROR' ? 'bg-red-100' : ''}>
-            <td>{new Date(log.timestamp).toLocaleTimeString()}</td>
-            <td>{log.level}</td>
-            <td>{log.message}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+           <TableRow>
+             <TableHead>Timestamp</TableHead>
+             <TableHead>Level</TableHead>
+             <TableHead>Message</TableHead>
+           </TableRow>
+        </TableHeader>
+        <TableBody>
+          {logs.map((log) => (
+            <TableRow key={log.id} 
+              className={log.level === 'ERROR' ? 'bg-red-950/20' : ''}>
+              <TableCell>{format(log.timestamp, "HH:mm:ss")}</TableCell>
+              <TableCell>
+                <Badge variant={log.level}>{log.level}</Badge>
+              </TableCell>
+              <TableCell className="font-mono">{log.message}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 \end{lstlisting}
 
-\placeholderImage{log_table_view.png}{The Log Explorer Interface}
-
-\subsection{The Chat Interface}
-A familiar chat UI (like ChatGPT). It maintains state of the conversation array.
+\subsection{Chat Interface (Chatbot.tsx)}
+The chat interface maintains a local state array `messages[]`. When the user types:
+1. The message is pushed to the array with `role: 'user'`.
+2. A loading spinner appears.
+3. The API call is made to the backend.
+4. The response is pushed with `role: 'ai'`.
 
 \placeholderImage{chat_interface.png}{Chat Interface interacting with Log Data}
 
-\section{Docker Implementation}
-To simplify deployment, we use \texttt{docker-compose.yml}.
+\section{Docker Deployment Architecture}
+The entire stack is defined in `docker-compose.yml`. This allows the application to be brought up with a single command.
 
-\begin{lstlisting}[language=yml, caption=Docker Compose Configuration]
+\begin{lstlisting}[language=yaml]
+version: '3.8'
+
 services:
   backend:
     build: ./backend
     ports: ["3001:3001"]
+    depends_on: [db, ollama]
     environment:
-      - DATABASE_URL=postgresql://user:pass@db:5432/logs
-  
+      - DATABASE_URL=postgresql://user:password@db:5432/logs
+
   frontend:
     build: ./frontend
     ports: ["3000:3000"]
@@ -556,10 +695,18 @@ services:
     image: ollama/ollama
     volumes:
       - ollama_data:/root/.ollama
+    # API exposed on port 11434 by default
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: logs
 \end{lstlisting}
 
 \section{Conclusion}
-The implementation phase successfully delivered a functional MVP (Minimum Viable Product). The pieces—Database, API, UI, and AI—talk to each other seamlessly within the Docker network.
+The implementation focuses on modularity. By using industry-standard tools like Prisma and Express, we ensure the codebase is maintainable. The Docker integration ensures that checking out the code and running it is a seamless experience.
 
 \cleardoublepage
 
@@ -837,6 +984,69 @@ Backend --> UI : Return AI Response
 deactivate Backend
 
 UI -> Analyst : Display Response
+deactivate UI
+@enduml
+\end{lstlisting}
+
+\section{Activity Diagram: Threat Detection}
+\begin{lstlisting}
+@startuml activity_threat_detection
+start
+:Log Received via API;
+:Parse Log Content;
+:Validate Schema (Zod);
+
+partition "Threat Engine" {
+    if (Matches "SQL Injection" Pattern?) then (yes)
+        :Tag as CRITICAL;
+        :Create "Security Alert";
+    elseif (Matches "Brute Force" Pattern?) then (yes)
+        :Tag as HIGH;
+        :Increment Failed Login Counter;
+        if (Counter > Threshold?) then (yes)
+             :Create "Brute Force Alert";
+        endif
+    elseif (Is System Error?) then (yes)
+        :Tag as WARNING;
+    else (no)
+        :Tag as INFO;
+    endif
+}
+
+:Save to Database (Prisma);
+:Broadcast to Dashboard (WebSocket/SSE);
+stop
+@enduml
+\end{lstlisting}
+
+\section{Sequence Diagram: Login}
+\begin{lstlisting}
+@startuml sequence_login
+actor User
+participant "Next.js UI" as UI
+participant "Backend API" as API
+database "PostgreSQL" as DB
+
+User -> UI : Enter Email & Password
+activate UI
+UI -> API : POST /api/auth/login
+activate API
+API -> DB : Find User by Email
+activate DB
+DB --> API : User Record (Hash)
+deactivate DB
+
+API -> API : Compare Password Hash
+alt Password Valid
+    API -> API : Generate JWT Token
+    API --> UI : 200 OK + Token + UserData
+    UI -> UI : Store Token (Context/Cookie)
+    UI -> User : Redirect to Dashboard
+else Password Invalid
+    API --> UI : 401 Unauthorized
+    UI -> User : Show Error Message
+end
+deactivate API
 deactivate UI
 @enduml
 \end{lstlisting}

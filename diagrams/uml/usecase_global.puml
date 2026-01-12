@@ -1,0 +1,50 @@
+@startuml
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam usecase {
+    BackgroundColor DarkSeaGreen
+    BorderColor DarkSlateGray
+    ArrowColor Olive
+}
+
+actor "Security Analyst" as Analyst
+actor "Administrator" as Admin
+actor "LogChat Agent" as Agent <<System>>
+actor "Ollama LLM" as AI <<External>>
+
+rectangle "LogChat System" {
+    usecase "Authenticate" as UC_Auth
+    
+    package "Log Management" {
+        usecase "Ingest Logs" as UC_Ingest
+        usecase "View Live Dashboard" as UC_Dash
+        usecase "Filter & Search Logs" as UC_Search
+    }
+
+    package "Intelligence" {
+        usecase "Chat with Logs" as UC_Chat
+        usecase "Detect Threats" as UC_Threat
+    }
+
+    package "Admin Ops" {
+        usecase "Manage Users" as UC_Users
+        usecase "Generate API Keys" as UC_Keys
+    }
+}
+
+' Relationships
+Agent --> UC_Ingest : HTTP POST
+UC_Ingest ..> UC_Threat : <<include>>
+
+Analyst --> UC_Auth
+Analyst --> UC_Dash
+Analyst --> UC_Search
+Analyst --> UC_Chat
+
+Admin --> UC_Auth
+Admin --> UC_Users
+Admin --> UC_Keys
+
+UC_Chat ..> AI : <<uses>>
+
+@enduml

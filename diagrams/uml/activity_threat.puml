@@ -1,0 +1,32 @@
+@startuml
+skinparam activity {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor Black
+}
+
+start
+:Agent sends POST /ingest;
+:Validate API Key;
+if (Valid Key?) then (no)
+    :Return 403 Forbidden;
+    stop
+else (yes)
+    :Parse JSON Body;
+    :Start Transaction;
+    
+    while (For Each Log Entry)
+        :Analyze Message;
+        if (Matches Threat Signature?) then (yes)
+            :Tag Threat Level (HIGH/CRITICAL);
+            :Create Alert Object;
+        else (no)
+            :Tag as INFO;
+        endif
+    endwhile
+    
+    :Bulk Insert into PostgreSQL;
+    :Return 201 Created;
+endif
+stop
+@enduml

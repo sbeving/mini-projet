@@ -169,6 +169,7 @@ EOF
   # Send to API
   response=$(curl -s -w "%{http_code}" -o /dev/null -X POST "$API_URL/api/logs" \
     -H "Content-Type: application/json" \
+    -H "X-API-KEY: ls_5462e3b66cd403859176aab2b5303f0b9f4705f6125b1d25ed4353fe1ef3d6f7" \
     -d "$payload")
   
   # Display result

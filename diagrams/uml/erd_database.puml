@@ -1,0 +1,49 @@
+@startuml
+skinparam linetype ortho
+
+entity "User" {
+  *id : UUID <<generated>>
+  --
+  *email : VARCHAR
+  *password_hash : VARCHAR
+  role : ENUM ['ADMIN', 'USER']
+  created_at : TIMESTAMP
+}
+
+entity "Log" {
+  *id : UUID <<generated>>
+  --
+  *timestamp : TIMESTAMP
+  *level : VARCHAR
+  *message : TEXT
+  *source : VARCHAR
+  metadata : JSONB
+}
+
+entity "Alert" {
+  *id : UUID <<generated>>
+  --
+  *severity : ENUM ['LOW', 'HIGH', 'CRITICAL']
+  description : TEXT
+  created_at : TIMESTAMP
+}
+
+entity "ChatSession" {
+  *id : UUID <<generated>>
+  --
+  created_at : TIMESTAMP
+}
+
+entity "Message" {
+  *id : UUID <<generated>>
+  --
+  role : ENUM ['user', 'ai']
+  content : TEXT
+  created_at : TIMESTAMP
+}
+
+User ||..o{ ChatSession : "has many"
+ChatSession ||..o{ Message : "contains"
+Log |o..o{ Alert : "triggers"
+
+@enduml

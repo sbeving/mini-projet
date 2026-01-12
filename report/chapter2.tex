@@ -1,0 +1,426 @@
+% =========================================================================
+% CHAPTER 2: ANALYSIS AND SPECIFICATION
+% =========================================================================
+\chapter{Analysis and Specification}
+
+\section{Introduction}
+
+This chapter translates business requirements into formal technical specifications using UML (Unified Modeling Language). We present the actors, use cases, data models, sequence diagrams, and architectural blueprints that guide the implementation phase. The artifacts produced in this chapter serve as the contractual specification between stakeholders.
+
+\section{Actors Identification}
+
+The system interacts with three primary actors, each with distinct roles and permissions:
+
+\begin{table}[H]
+\centering
+\caption{System Actors and Responsibilities}
+\label{tab:actors}
+\begin{tabular}{|l|l|p{6.5cm}|}
+\hline
+\textbf{Actor} & \textbf{Type} & \textbf{Responsibilities} \\
+\hline
+Security Analyst & Human (Primary) & Monitor dashboards, investigate alerts, query logs via AI chat, export reports \\
+\hline
+System Administrator & Human (Primary) & Configure log sources, manage users, define alert rules, review audit trails \\
+\hline
+LogChat Agent & System (Automated) & Collect logs from sources, transmit to server, buffer during outages \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure \ref{fig:actors-context} presents the context diagram showing actor interactions.
+
+\placeholderfig{System Context Diagram with Actors}{actors_context.png}{Security Analyst and Admin interact with LogChat Platform; Agents send logs}
+
+\section{Functional Requirements}
+
+\subsection{Agent Requirements (RF-AGT)}
+
+\begin{table}[H]
+\centering
+\caption{Golang Agent Functional Requirements}
+\label{tab:rf-agt}
+\begin{tabular}{|l|p{9.5cm}|c|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+RF-AGT-01 & Compile to static binaries for Windows (amd64, 386) and Linux (amd64, arm64) & High \\
+\hline
+RF-AGT-02 & Monitor log files using tail-like behavior (follow mode with rotation support) & High \\
+\hline
+RF-AGT-03 & Collect Windows Event Logs from Application, System, Security channels & High \\
+\hline
+RF-AGT-04 & Collect Linux logs via Journald (systemd) and traditional Syslog & High \\
+\hline
+RF-AGT-05 & Buffer logs locally using ring buffer if server is unreachable (resilience) & Medium \\
+\hline
+RF-AGT-06 & Authenticate with server via X-API-Key header & High \\
+\hline
+RF-AGT-07 & Support JSON, regex, and raw log parsing formats & Medium \\
+\hline
+RF-AGT-08 & Provide health endpoint for monitoring agent status & Low \\
+\hline
+RF-AGT-09 & Support hot configuration reload without restart & Low \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Backend Server Requirements (RF-SRV)}
+
+\begin{table}[H]
+\centering
+\caption{Backend Server Functional Requirements}
+\label{tab:rf-srv}
+\begin{tabular}{|l|p{9.5cm}|c|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+RF-SRV-01 & Provide REST API endpoints for single and batch log ingestion & High \\
+\hline
+RF-SRV-02 & Implement real-time threat detection using regex pattern matching & High \\
+\hline
+RF-SRV-03 & Support natural language queries via AI chat endpoint with RAG context & High \\
+\hline
+RF-SRV-04 & Provide SSE (Server-Sent Events) for real-time dashboard updates & High \\
+\hline
+RF-SRV-05 & Implement JWT-based authentication with configurable expiry & High \\
+\hline
+RF-SRV-06 & Enforce role-based access control (ADMIN, STAFF, USER) & High \\
+\hline
+RF-SRV-07 & Maintain immutable audit logs for all administrative actions & Medium \\
+\hline
+RF-SRV-08 & Support log export in CSV and JSON formats & Medium \\
+\hline
+RF-SRV-09 & Provide API rate limiting per source & Medium \\
+\hline
+RF-SRV-10 & Support multiple AI providers (Ollama, OpenAI, Anthropic, Gemini) & Medium \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Frontend Requirements (RF-UI)}
+
+\begin{table}[H]
+\centering
+\caption{Frontend Functional Requirements}
+\label{tab:rf-ui}
+\begin{tabular}{|l|p{9.5cm}|c|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+RF-UI-01 & Display real-time statistics cards (total logs, errors, warnings, threats) & High \\
+\hline
+RF-UI-02 & Provide interactive time-series chart for log volume visualization & High \\
+\hline
+RF-UI-03 & Implement paginated log table with inline expansion & High \\
+\hline
+RF-UI-04 & Support filtering by time range, log level, service name, and text search & High \\
+\hline
+RF-UI-05 & Provide AI chat interface with markdown rendering & High \\
+\hline
+RF-UI-06 & Display toast notifications for real-time alerts & Medium \\
+\hline
+RF-UI-07 & Implement dark mode toggle & Low \\
+\hline
+RF-UI-08 & Provide responsive design for tablet devices & Medium \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Non-Functional Requirements}
+
+\begin{table}[H]
+\centering
+\caption{Non-Functional Requirements Specification}
+\label{tab:nfr}
+\begin{tabular}{|l|l|p{7cm}|c|}
+\hline
+\textbf{Category} & \textbf{ID} & \textbf{Requirement} & \textbf{Target} \\
+\hline
+Performance & RNF-01 & Log ingestion throughput & 1000+ req/s \\
+\hline
+Performance & RNF-02 & Dashboard update latency & $<$ 500ms \\
+\hline
+Performance & RNF-03 & AI response time (local) & $<$ 5 seconds \\
+\hline
+Availability & RNF-04 & System uptime & 99.9\% \\
+\hline
+Security & RNF-05 & Password hashing algorithm & bcrypt (cost 12) \\
+\hline
+Security & RNF-06 & API authentication mechanism & JWT (RS256) \\
+\hline
+Security & RNF-07 & TLS version for external APIs & TLS 1.2+ \\
+\hline
+Portability & RNF-08 & Deployment method & Docker Compose \\
+\hline
+Portability & RNF-09 & Supported agent platforms & Windows, Linux \\
+\hline
+Usability & RNF-10 & Dashboard responsiveness & Desktop, Tablet \\
+\hline
+Maintainability & RNF-11 & Code documentation coverage & 80\%+ \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Use Case Modeling}
+
+\subsection{Global Use Case Diagram}
+
+Figure \ref{fig:usecase-global} presents the comprehensive use case diagram depicting all actors and their interactions with the LogChat platform.
+
+\placeholderfig{Global Use Case Diagram}{usecase_global.png}{Three actors (Analyst, Admin, Agent) with Core Operations, Administration, and Automated Processes packages}
+
+\subsection{Detailed Use Case Descriptions}
+
+\subsubsection{UC-01: User Authentication}
+
+\begin{table}[H]
+\centering
+\caption{Use Case UC-01: User Authentication}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Use Case ID} & UC-01 \\
+\hline
+\textbf{Name} & User Authentication \\
+\hline
+\textbf{Actor} & Security Analyst, Administrator \\
+\hline
+\textbf{Precondition} & User has valid credentials in the system \\
+\hline
+\textbf{Main Flow} & 
+1. User navigates to login page \newline
+2. User enters email and password \newline
+3. System validates credentials \newline
+4. System generates JWT token \newline
+5. System creates session record \newline
+6. User is redirected to dashboard \\
+\hline
+\textbf{Alternative Flow} & A1. Invalid credentials: Display error, remain on login \newline A2. Account disabled: Display account status message \\
+\hline
+\textbf{Postcondition} & User is authenticated with valid session \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{UC-04: Chat with AI Assistant}
+
+\begin{table}[H]
+\centering
+\caption{Use Case UC-04: Chat with AI Assistant}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Use Case ID} & UC-04 \\
+\hline
+\textbf{Name} & Chat with AI Assistant \\
+\hline
+\textbf{Actor} & Security Analyst \\
+\hline
+\textbf{Precondition} & User is authenticated; AI service is available \\
+\hline
+\textbf{Main Flow} & 
+1. User navigates to Chat interface \newline
+2. User enters natural language query \newline
+3. System retrieves relevant logs (RAG) \newline
+4. System constructs context-enriched prompt \newline
+5. System sends prompt to LLM \newline
+6. LLM generates analysis response \newline
+7. System displays formatted response \\
+\hline
+\textbf{Alternative Flow} & A1. AI unavailable: Display offline message with suggestions \\
+\hline
+\textbf{Postcondition} & Chat message and response are persisted \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Use Case Prioritization Matrix}
+
+\begin{table}[H]
+\centering
+\caption{Use Case Prioritization (MoSCoW)}
+\begin{tabular}{|l|l|c|}
+\hline
+\textbf{Use Case} & \textbf{Category} & \textbf{Sprint} \\
+\hline
+UC-01: Authentication & Must Have & 1-2 \\
+UC-02: View Dashboard & Must Have & 3-4 \\
+UC-03: Explore Logs & Must Have & 3-4 \\
+UC-04: AI Chat & Must Have & 5-6 \\
+UC-10: Ingest Logs & Must Have & 2-3 \\
+UC-11: Threat Detection & Should Have & 4-5 \\
+UC-06: Manage Users & Should Have & 7-8 \\
+UC-05: Export Reports & Could Have & 9 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Behavioral Modeling}
+
+\subsection{Sequence Diagram: Authentication Flow}
+
+Figure \ref{fig:sequence-login} details the complete authentication sequence from user input to dashboard redirect.
+
+\placeholderfig{Authentication Sequence Diagram}{sequence_login.png}{User → UI → Backend → Database → JWT generation → Redirect}
+
+\subsection{Sequence Diagram: RAG Chat Workflow}
+
+Figure \ref{fig:sequence_rag-chat} illustrates the RAG (Retrieval Augmented Generation) process, which is central to LogChat's AI capabilities.
+
+\placeholderfig{RAG Chat Workflow Sequence Diagram}{sequence_rag_chat.png}{Analyst → UI → Backend → DB (context) → Ollama → Response}
+
+\subsection{Sequence Diagram: Log Ingestion with Threat Detection}
+
+Figure \ref{fig:sequence_log-ingestion} presents the complete flow from agent transmission to threat detection and dashboard notification.
+
+\placeholderfig{Log Ingestion Sequence Diagram}{sequence_log_ingestion.png}{Agent → API → Validate → Threat Engine → DB → SSE broadcast}
+
+\subsection{Activity Diagram: Threat Detection Engine}
+
+Figure \ref{fig:activity_threat-detection} models the decision flow within the threat detection engine.
+
+\placeholderfig{Threat Detection Activity Diagram}{activity_threat_detection.png}{Decision nodes for SQL injection, XSS, brute force, with severity tagging}
+
+\section{Structural Modeling}
+
+\subsection{Class Diagram: Domain Model}
+
+Figure \ref{fig:class_diagram-erd} presents the domain model with all entities, attributes, and relationships.
+
+\placeholderfig{Domain Model Class Diagram}{class_diagram_erd.png}{User, Session, LogEntry, ChatSession, ChatMessage, Alert, LogSource, AuditLog entities}
+
+\subsection{Entity Descriptions}
+
+\begin{table}[H]
+\centering
+\caption{Entity Attribute Specifications}
+\begin{tabular}{|l|p{8cm}|}
+\hline
+\textbf{Entity} & \textbf{Key Attributes} \\
+\hline
+User & id (CUID), email (unique), passwordHash, name, role (enum), active, lastLogin \\
+\hline
+Session & id, token (unique), userId (FK), expiresAt, ipAddress, userAgent \\
+\hline
+LogEntry & id, timestamp, level (enum), service, message, raw, meta (JSONB) \\
+\hline
+ChatSession & id, userId (FK), title, messageCount, archived, createdAt \\
+\hline
+ChatMessage & id, sessionId (FK), role (enum), content, responseTime, tokensUsed \\
+\hline
+Alert & id, logId (FK), severity (enum), type, message, status, acknowledgedBy \\
+\hline
+LogSource & id, name, apiKey (unique), apiKeyHash, rateLimit, isActive \\
+\hline
+AuditLog & id, userId (FK), action, resource, resourceId, details (JSON), timestamp \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Architectural Design}
+
+\subsection{High-Level Architecture}
+
+Figure \ref{fig:architecture-global} presents the global system architecture showing all components and their interactions.
+
+\placeholderfig{Global System Architecture}{architecture_global.png}{Agents → Docker Stack (Frontend, Backend, DB, Ollama) → Browser clients}
+
+\subsection{Component Architecture}
+
+Figure \ref{fig:component-diagram} details the internal structure of each containerized service.
+
+\placeholderfig{Component Architecture Diagram}{component_diagram.png}{Detailed view of frontend, backend, database, and AI container components}
+
+\subsection{Deployment Architecture}
+
+Figure \ref{fig:deployment-diagram} illustrates the production deployment topology.
+
+\placeholderfig{Deployment Architecture Diagram}{deployment_diagram.png}{Production server with Docker, Windows/Linux agents, analyst workstations}
+
+\subsection{Data Flow Diagram}
+
+Figure \ref{fig:data_flow-diagram} presents the end-to-end data flow from log sources to end users.
+
+\placeholderfig{Data Flow Diagram (DFD Level 1)}{data_flow_diagram.png}{Sources → Agent → Backend → DB → Dashboard/Chat/Reports → Users}
+
+\section{Database Design}
+
+\subsection{Physical Database Schema}
+
+Figure \ref{fig:database-schema} presents the physical database schema with all tables and relationships.
+
+\placeholderfig{PostgreSQL Physical Database Schema}{database_schema.png}{ERD with all tables, primary/foreign keys, and relationship cardinalities}
+
+\subsection{Indexing Strategy}
+
+\begin{table}[H]
+\centering
+\caption{Database Indexing Strategy}
+\begin{tabular}{|l|l|p{5cm}|}
+\hline
+\textbf{Table} & \textbf{Index} & \textbf{Purpose} \\
+\hline
+logs & idx\_logs\_timestamp & Time-range queries \\
+logs & idx\_logs\_level & Filter by severity \\
+logs & idx\_logs\_service & Filter by service \\
+logs & idx\_logs\_composite & Combined filtering \\
+users & idx\_users\_email & Unique login lookup \\
+sessions & idx\_sessions\_token & Token validation \\
+alerts & idx\_alerts\_status & Dashboard filtering \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Security Architecture}
+
+\subsection{Authentication Flow}
+
+Figure \ref{fig:auth-architecture} illustrates the JWT-based authentication architecture.
+
+\placeholderfig{JWT Authentication Architecture}{auth_architecture.png}{Login → bcrypt verify → JWT sign → Cookie/Header → Middleware validation}
+
+\subsection{Role-Based Access Control}
+
+\begin{table}[H]
+\centering
+\caption{RBAC Permission Matrix}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Resource/Action} & \textbf{USER} & \textbf{STAFF} & \textbf{ADMIN} \\
+\hline
+View Dashboard & \cmark & \cmark & \cmark \\
+Query Logs & \cmark & \cmark & \cmark \\
+Use AI Chat & \cmark & \cmark & \cmark \\
+Export Data & \xmark & \cmark & \cmark \\
+Manage Log Sources & \xmark & \cmark & \cmark \\
+Manage Users & \xmark & \xmark & \cmark \\
+View Audit Logs & \xmark & \xmark & \cmark \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{API Design}
+
+\subsection{RESTful Endpoint Summary}
+
+\begin{table}[H]
+\centering
+\caption{API Endpoint Overview}
+\begin{tabular}{|l|l|p{4.5cm}|c|}
+\hline
+\textbf{Method} & \textbf{Endpoint} & \textbf{Description} & \textbf{Auth} \\
+\hline
+POST & /api/auth/login & Authenticate user & No \\
+POST & /api/auth/register & Register new user & No \\
+GET & /api/auth/me & Get current user & Yes \\
+POST & /api/logs & Ingest single log & API Key \\
+POST & /api/logs/ingest & Agent batch ingest & API Key \\
+GET & /api/logs & Query logs & Yes \\
+POST & /api/chat & Send chat message & Yes \\
+GET & /api/stream/stats & SSE stats stream & Yes \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Conclusion}
+
+This analysis and specification phase produced comprehensive documentation guiding the implementation: functional requirements covering 27 features across agent, backend, and frontend; 11 non-functional requirements ensuring quality attributes; UML artifacts modeling behavior and structure; and detailed architectural blueprints. The following chapter presents the implementation of these specifications.

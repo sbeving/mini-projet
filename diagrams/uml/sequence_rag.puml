@@ -1,0 +1,46 @@
+@startuml
+skinparam sequence {
+    ArrowColor DeepSkyBlue
+    ActorBorderColor DeepSkyBlue
+    LifeLineBorderColor blue
+    LifeLineBackgroundColor #A9DCDF
+    ParticipantBorderColor DeepSkyBlue
+    ParticipantBackgroundColor DodgerBlue
+    ParticipantFontName Impact
+    ParticipantFontSize 17
+    ParticipantFontColor #A9DCDF
+}
+
+actor User
+participant "Next.js UI" as UI
+participant "Backend API" as API
+database "PostgreSQL" as DB
+participant "Ollama (LLM)" as AI
+
+group User Interaction
+    User -> UI: "Why is the payment service failing?"
+    UI -> API: POST /chat (query)
+end
+
+group RAG Context Retrieval
+    API -> API: Extract Keywords ["payment", "fail", "error"]
+    API -> DB: SELECT * FROM logs WHERE message LIKE '%payment%'
+    activate DB
+    DB --> API: Return 20 relevant log entries
+    deactivate DB
+    API -> API: Construct Prompt with Context
+end
+
+group AI Inference
+    API -> AI: Generate(Prompt + Context)
+    activate AI
+    AI --> API: Stream Response "The payment service is failing due to..."
+    deactivate AI
+end
+
+group Response
+    API --> UI: Streamed Text
+    UI --> User: Display Answer
+end
+
+@enduml

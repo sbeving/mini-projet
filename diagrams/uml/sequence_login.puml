@@ -1,0 +1,32 @@
+@startuml
+skinparam sequenceMessageAlign center
+
+actor User
+participant "Frontend (Next.js)" as FE
+participant "Backend (Node.js)" as BE
+database "PostgreSQL" as DB
+
+User -> FE: Click Login
+FE -> FE: Validate Form
+FE -> BE: POST /api/auth/login \n{email, password}
+activate BE
+
+BE -> DB: Find User by Email
+activate DB
+DB --> BE: User Record (Hash)
+deactivate DB
+
+BE -> BE: bcrypt.compare(password, hash)
+
+alt Valid Credentials
+    BE -> BE: Sign JWT (UserId, Role)
+    BE --> FE: 200 OK {token: "ey..."}
+    FE -> FE: Store Token (LocalStorage)
+    FE -> User: Redirect to Dashboard
+else Invalid Password
+    BE --> FE: 401 Unauthorized
+    FE -> User: Show Error "Invalid Credentials"
+end
+
+deactivate BE
+@enduml

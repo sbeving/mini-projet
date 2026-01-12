@@ -1,0 +1,981 @@
+\documentclass[12pt,a4paper]{report}
+
+% --- PACKAGES ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{fancyhdr}
+\usepackage{tocbibind}
+\usepackage[style=ieee, backend=biber]{biblatex}
+\usepackage{csquotes}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+\usepackage{amsmath}
+
+\addbibresource{references.bib}
+
+% --- PAGE CONFIGURATION ---
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm,
+    headheight=15pt,
+    footskip=1.25cm
+}
+\linespread{1.15}
+
+% --- COLORS & LISTINGS ---
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{infoboxcolor}{rgb}{0.9,0.95,1.0}
+
+% Custom Listings
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+\lstdefinelanguage{json}{
+    basicstyle=\normalfont\ttfamily\footnotesize,
+    numbers=left,
+    stepnumber=1,
+    showstringspaces=false,
+    breaklines=true,
+    stringstyle=\color{codepurple},
+    identifierstyle=\color{blue!80!black},
+    keywords={true, false, null},
+    keywordstyle=\color{magenta},
+}
+
+% --- HEADER/FOOTER ---
+\fancypagestyle{fancy}{
+  \fancyhf{}
+  \fancyhead[L]{\bfseries\ifnum\value{chapter}>0 Chapter \thechapter\fi}
+  \fancyhead[R]{\bfseries\ifnum\value{chapter}>0 \leftmark\fi}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0.4pt}
+  \renewcommand{\footrulewidth}{0pt}
+}
+
+\fancypagestyle{chapterplain}{ 
+  \fancyhf{} 
+  \fancyfoot[C]{\thepage} 
+  \renewcommand{\headrulewidth}{0pt} 
+  \renewcommand{\footrulewidth}{0pt} 
+}
+
+\makeatletter
+\renewcommand{\chaptermark}[1]{\markboth{#1}{#1}}
+\makeatother
+
+\pagestyle{fancy}
+
+% Patch chapter opening pages
+\makeatletter
+\patchcmd{\@makechapterhead}{\thispagestyle{plain}}{\thispagestyle{chapterplain}}{}{}
+\patchcmd{\@makeschapterhead}{\thispagestyle{plain}}{\thispagestyle{chapterplain}}{}{}
+\makeatother
+
+% --- TITLE FORMATTING ---
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\centering\fontsize{14}{17}\selectfont\vspace{24pt}}
+  {CHAPTER \thechapter}
+  {18pt}
+  {}
+\titlespacing*{\chapter}{0pt}{24pt}{18pt}
+
+\titleformat{\section}
+  {\normalfont\bfseries\fontsize{12}{14.5}\selectfont}
+  {\thesection}
+  {1em}
+  {}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+% --- MACROS ---
+\newcommand{\placeholderImage}[2]{
+    \begin{figure}[H]
+        \centering
+        \fbox{
+            \begin{minipage}{0.9\textwidth}
+                \centering
+                \vspace{2cm}
+                \textbf{#1} \\
+                \textit{Insert Screenshot Here} \\
+                \footnotesize{(Recommended Tool: \href{https://app.diagrams.net/}{draw.io} or App Screenshot)}
+                \vspace{2cm}
+            \end{minipage}
+        }
+        \caption{#2}
+        \label{fig:#1}
+    \end{figure}
+}
+
+\newtcolorbox{infobox}[1]{
+    colback=infoboxcolor,
+    colframe=blue!30!black,
+    title=\textbf{#1},
+    fonttitle=\bfseries
+}
+
+% =========================================================================
+% DOCUMENT BEGINS
+% =========================================================================
+\begin{document}
+
+% -------------------------------------------------------------------------
+% TITLE PAGE
+% -------------------------------------------------------------------------
+\begin{titlepage}
+    \begin{center}
+        \vspace*{1cm}
+        {\Large \textbf{Higher Institute of Technological Studies}}\\[0.5cm]
+        {\large Department of Computer Technologies}\\[2cm]
+
+        {\Huge \textbf{LogChat: AI-Powered SIEM Platform}}\\[0.5cm]
+        {\Large \textit{Design and Implementation of an Intelligent Security System}}\\[2cm]
+
+        \textbf{End of Studies Project Report}\\[2cm]
+
+        \begin{minipage}{0.4\textwidth}
+            \begin{flushleft} \large
+                \emph{Authors:}\\
+                Saleh Eddine \textsc{Touil}\\
+                Chames Edin \textsc{Turki}
+            \end{flushleft}
+        \end{minipage}
+        \begin{minipage}{0.4\textwidth}
+            \begin{flushright} \large
+                \emph{Supervisor:}\\
+                Mr. Mounir \textsc{Kthiri}
+            \end{flushright}
+        \end{minipage}
+
+        \vfill
+        {\large Academic Year: 2024 - 2025}
+    \end{center}
+\end{titlepage}
+
+% -------------------------------------------------------------------------
+% FRONT MATTER
+% -------------------------------------------------------------------------
+\pagenumbering{roman}
+
+\chapter*{Dedication}
+\thispagestyle{chapterplain}
+\textit{To our families, for their unwavering support and patience.\\
+To our professors, for guiding us through the complexities of technology.\\
+And to the open-source community, whose collective wisdom builds the foundation of modern software.}
+\cleardoublepage
+
+\chapter*{Acknowledgements}
+\thispagestyle{chapterplain}
+We would like to express our deepest gratitude to our supervisor, \textbf{Mr. Mounir Kthiri}, for his invaluable guidance, technical insights, and pedagogical support throughout this project.
+
+We also extend our thanks to the jury members for reviewing our work.
+Finally, we thank our colleagues who participated in the testing phases, providing critical feedback that helped shape the final platform.
+\cleardoublepage
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+\thispagestyle{chapterplain}
+In the rapidly evolving landscape of cybersecurity, the volume of machine-generated data has become unmanageable for manual analysis. Traditional Security Information and Event Management (SIEM) systems, while powerful, are often characterized by high cost, steep learning curves, and complexity that alienates non-expert users.
+
+\textbf{LogChat} addresses these challenges by proposing a novel, lightweight SIEM architecture integrated with Generative AI. Leveraging a microservices approach with Go, Node.js, and Next.js, and incorporating the \textbf{Ollama} local LLM runtime, LogChat democratizes security analytics. It implements a Retrieval Augmented Generation (RAG) pipeline to allow natural language interrogation of system logs, effectively bridging the gap between raw data and actionable intelligence.
+
+This report details the end-to-end development of the platform, from the cross-platform \textbf{Golang Agent} for log collection to the \textbf{React-based Dashboard} for visualization, providing a comprehensive blueprint for modern, AI-enhanced security tooling.
+
+\vspace{1cm}
+\textbf{Keywords:} SIEM, Cybersecurity, Retrieval Augmented Generation (RAG), Golang, Docker, Large Language Models.
+\cleardoublepage
+
+\tableofcontents
+\listoffigures
+\listoftables
+\cleardoublepage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% -------------------------------------------------------------------------
+% GENERAL INTRODUCTION
+% -------------------------------------------------------------------------
+\chapter*{General Introduction}
+\addcontentsline{toc}{chapter}{General Introduction}
+\thispagestyle{chapterplain}
+
+\section*{Context}
+The digital transformation of enterprises has led to an exponential increase in telemetry data. Every server, container, and application emits logs that contain vital clues about operational health and security posture. In this context, the \textbf{SIEM (Security Information and Event Management)} market has grown into a multi-billion dollar industry, dominated by complex enterprise solutions like Splunk or IBM QRadar.
+
+\section*{Problem Statement}
+Despite the maturity of the SIEM market, two critical issues persist:
+\begin{enumerate}
+    \item \textbf{High Barrier to Entry:} Traditional tools require specialized knowledge of proprietary query languages (SPL, KQL) to extract value.
+    \item \textbf{Alert Fatigue:} Security analysts are overwhelmed by the sheer volume of low-fidelity alerts, often missing genuine threats buried in the noise.
+\end{enumerate}
+
+\section*{Proposed Solution}
+\textbf{LogChat} transforms the analyst workflow by introducing natural language processing into the critical path of log analysis. By deploying a custom \textbf{Golang Agent} to endpoints, we ensure efficient, low-latency log collection. By integrating a local Large Language Model, we provide an intelligent assistant capable of synthesizing complex log patterns into human-readable summaries, preserving data privacy by keeping all inference on-premise.
+
+\section*{Report Structure}
+This document is organized as follows:
+\begin{enumerate}
+    \item \textbf{Chapter 1: Project Context} outlines the scope, methodology, and objectives of the work.
+    \item \textbf{Chapter 2: State of the Art} reviews existing SIEM solutions and the theoretical foundations of Generative AI in Operations (AIOps).
+    \item \textbf{Chapter 3: Analysis and Design} details the functional requirements, system architecture, and UML modelling.
+    \item \textbf{Chapter 4: Implementation} provides a deep dive into the technical realization of the Backend, Frontend, and Agent.
+    \item \textbf{Chapter 5: Testing and Evaluation} validates the system performance and user experience.
+\end{enumerate}
+\cleardoublepage
+
+% =========================================================================
+% CHAPTER 1: PROJECT CONTEXT
+% =========================================================================
+\chapter{Project Context}
+
+\section{Introduction}
+This chapter defines the general framework of the project, detailing the problem statement, the objectives, and the development methodology adopted to ensure the successful delivery of LogChat.
+
+\section{Project Framework}
+\subsection{Problem Statement}
+In the modern DevSecOps landscape, microservices architectures have distributed application logic across hundreds of containers. This fragmentation makes traditional debugging and security monitoring obsolete. Logs are scattered, formats are inconsistent, and manual correlation is impossible during an incident. LogChat aims to centralize this information into a coherent narrative.
+
+\subsection{Objectives}
+The primary objective is to build a self-hosted SIEM that is:
+\begin{enumerate}
+    \item \textbf{Accessible:} Removing the need for complex query languages like SPL (Search Processing Language).
+    \item \textbf{Intelligent:} Using Generative AI to correlate seemingly unrelated events.
+    \item \textbf{Privacy-First:} Processing all data locally without third-party cloud exposure.
+\end{enumerate}
+
+\section{Methodology: Agile SCRUM}
+To manage the complexity of full-stack development, we adopted the SCRUM framework.
+\begin{itemize}
+    \item \textbf{Sprints:} Organized in 1-week cycles.
+    \item \textbf{Backlog:} Managed via GitHub Projects.
+    \item \textbf{CI/CD:} Automated testing pipelines to ensure regression-free releases.
+\end{itemize}
+
+\placeholderImage{gantt_chart.png}{Project Gantt Chart Timeline}
+
+% =========================================================================
+% CHAPTER 2: STATE OF THE ART
+% =========================================================================
+\chapter{State of the Art}
+
+\section{Introduction}
+This chapter conducts a comparative analysis of existing market solutions and establishes the theoretical foundations of the technologies used, specifically Large Language Models (LLMs) and containerization.
+
+\section{The SIEM Landscape}
+Security Information and Event Management (SIEM) systems are the core of modern Security Operations Centers (SOCs).
+
+\subsection{Splunk}
+The market leader, offering powerful analytics but at a prohibitive cost for SMEs. It uses the Search Processing Language (SPL), which has a steep learning curve.
+
+\subsection{Elastic Stack (ELK)}
+A popular open-source alternative (Elasticsearch, Logstash, Kibana). While powerful, it requires significant Java-based resources (RAM) and complex configuration for alerting.
+
+\subsection{Wazuh}
+An open-source security platform unifying XDR and SIEM capabilities. It excels at endpoint monitoring but can be complex to customize for application-specific logic.
+
+\subsection{Comparative Summary}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Feature} & \textbf{Splunk} & \textbf{ELK} & \textbf{LogChat} \\ \hline
+Cost & High & Medium & Low (Open Source) \\ \hline
+AI/LLM & Add-on & ML Nodes & Native Core \\ \hline
+Complexity & High & High & Low \\ \hline
+\end{tabular}
+\caption{Comparison of SIEM Solutions}
+\end{table}
+
+\section{Generative AI in Operations (AIOps)}
+\subsection{Retrieval Augmented Generation (RAG)}
+RAG is a technique that optimizes the output of an LLM so it references an authoritative knowledge base before generating a response. For LogChat, the "knowledge base" is the live PostgreSQL database of logs.
+
+\begin{figure}[H]
+    \centering
+    \fbox{
+        \begin{minipage}{0.9\textwidth}
+            \centering
+            \vspace{1cm}
+            \textbf{RAG Architecture Diagram} \\
+            \textit{(User Query $\to$ Vector/SQL Search $\to$ Context Injection $\to$ LLM Response)}
+            \vspace{1cm}
+        \end{minipage}
+    }
+    \caption{Conceptual RAG Flow (Source: Author)}
+\end{figure}
+
+% =========================================================================
+% CHAPTER 3: ANALYSIS AND DESIGN
+% =========================================================================
+\chapter{Analysis and Design}
+
+\section{Introduction}
+This chapter bridges the gap between the concept and the code, detailing the functional requirements and the architectural decisions.
+
+\section{Requirement Specification}
+
+\subsection{Functional Requirements}
+\begin{enumerate}
+    \item \textbf{Log Collection:} The system must provide a standalone binary (Agent) capable of reading files and OS event streams.
+    \item \textbf{Ingestion API:} A high-throughput REST endpoint to receive JSON-formatted logs.
+    \item \textbf{Real-time Visualization:} WebSocket or polling-based dashboard updates.
+    \item \textbf{AI Interaction:} A chat interface supporting context-aware queries.
+\end{enumerate}
+
+\subsection{Non-Functional Requirements}
+\begin{itemize}
+    \item \textbf{Performance:} The Agent must consume <50MB RAM.
+    \item \textbf{Security:} All inter-service communication must be authenticated via API Keys or JWT.
+    \item \textbf{Portability:} The entire stack must run via \texttt{docker-compose}.
+\end{itemize}
+
+\section{System Architecture}
+We follow a layered microservices architecture.
+
+\placeholderImage{architecture_component.png}{Global System Architecture}
+
+\subsection{The Golang Agent}
+Unlike many SIEMs that rely on heavy Java agents, we chose Go for its native concurrency and single-binary distribution. The agent runs as a system service.
+
+\section{UML Modelling}
+
+\subsection{Global Use Case}
+\placeholderImage{usecase_global.png}{Global Use Case Diagram}
+
+\subsection{Sequence Diagram: Log Ingestion}
+This critical path describes how a log travels from a file on a remote server to the user's screen.
+\placeholderImage{sequence_ingest.png}{Log Ingestion Sequence}
+
+\subsection{Sequence Diagram: AI Analysis}
+Detailed flow of the RAG pipeline.
+\placeholderImage{sequence_chat_rag.png}{RAG Chat Sequence}
+
+\section{Database Design}
+The relational schema is central to our RAG implementation.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|l|}
+    \hline
+    \textbf{Table} & \textbf{Key Columns} & \textbf{Purpose} \\ \hline
+    \texttt{Log} & \texttt{id, level, source, metadata} & Primary event store. \\ \hline
+    \texttt{User} & \texttt{email, password, role} & Authentication. \\ \hline
+    \texttt{ChatSession} & \texttt{user\_id, title} & Conversation history. \\ \hline
+    \end{tabular}
+    \caption{Database Schema Summary}
+    \label{tab:db-schema}
+\end{table}
+
+\section{Conclusion}
+The design phase has established a robust blueprint. The use of Go for the agent ensures performance, while the RAG architecture addresses the "Alert Fatigue" problem by providing synthesized insights.
+\cleardoublepage
+
+% =========================================================================
+% CHAPTER 3: IMPLEMENTATION
+% =========================================================================
+\chapter{Implementation}
+
+\section{Introduction}
+This chapter takes a deep dive into the code. We will explore the backend logic for threat detection, the frontend React components for visualization, and the integration with the Ollama AI model.
+
+\section{Project Structure}
+The project is organized as a monorepo containing both the Frontend and Backend services.
+
+\begin{lstlisting}[language=bash]
+/logchat
+|-- backend/
+|   |-- src/
+|   |   |-- index.ts          # Express App Entry point
+|   |   |-- config/           # Environment variables (JWT_SECRET)
+|   |   |-- middleware/       # Auth Middleware
+|   |   |-- services/         # Business Logic Layer
+|   |   |   |-- logs.ts       # Log storage & Filtering
+|   |   |   |-- ollama.ts     # AI API Wrapper
+|   |   |   |-- threats.ts    # Regex Pattern Matcher
+|   |   |-- routes/           # REST API Definitions
+|   |-- prisma/               # Database Schema (ORM)
+|   |-- Dockerfile            # Container definition
+|
+|-- frontend/
+|   |-- app/                  # Next.js 14 App Router
+|   |   |-- dashboard/        # Protected Dashboard routes
+|   |   |-- chat/             # Chat Interface route
+|   |-- components/           # Reusable UI Components
+|   |   |-- ui/               # Shadcn/UI primitives (Button, Card)
+|   |   |-- LogsChart.tsx     # Recharts Visualization
+|   |   |-- LogTable.tsx      # Data Table
+|   |-- lib/                  # Utility functions
+|   |-- Dockerfile
+|
+|-- docker-compose.yml        # Orchestration Config
+\end{lstlisting}
+
+\section{Backend Implementation}
+The backend uses **Express.js** for its simplicity and speed.
+
+\subsection{Data Access Layer (Prisma)}
+We chose Prisma as our ORM (Object-Relational Mapper). It allows us to define our schema in a readable format (`schema.prisma`) and handles all SQL migrations automatically.
+
+\begin{lstlisting}[language=JavaScript, caption=Prisma Schema Definition]
+// prisma/schema.prisma
+
+model Log {
+  id        String   @id @default(uuid())
+  level     String   // INFO, WARN, ERROR, CRITICAL
+  message   String
+  source    String   // Service Name (e.g., 'PaymentGateway')
+  timestamp DateTime @default(now())
+  metadata  Json?    // Flexible JSON storage for headers/IPs
+
+  @@index([timestamp]) // Index for faster range queries
+  @@index([level])     // Index for faster filtering
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  role          String   @default("USER")
+}
+\end{lstlisting}
+
+\subsection{Role of the Threat Engine}
+This service acts as a middleware for incoming logs. Before a log is saved, it passes through `scanLog()`.
+
+\begin{lstlisting}[language=JavaScript, caption=Threat Detection Logic (backend/src/services/threats.ts)]
+// Pre-compiled regex for performance
+const THREAT_PATTERNS = [
+  { 
+    name: 'SQL_INJECTION', 
+    regex: /(\%27)|(\')|(\-\-)|(\%23)|(#)/i, 
+    level: 'CRITICAL' 
+  },
+  { 
+    name: 'XSS_ATTEMPT', 
+    regex: /((%3C)|<)((%2F)|\/)*[a-z0-9%]+((%3E)|>)/i, 
+    level: 'HIGH' 
+  }
+];
+
+export function scanLog(message: string) {
+  for (const p of THREAT_PATTERNS) {
+    if (p.regex.test(message)) {
+      return { 
+        detected: true, 
+        type: p.name, 
+        severity: p.level 
+      };
+    }
+  }
+  return { detected: false };
+}
+\end{lstlisting}
+
+\subsection{API Endpoints}
+We expose RESTful endpoints documented below:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Method} & \textbf{Endpoint} & \textbf{Description} \\ \hline
+POST & \texttt{/api/auth/login} & Returns JWT token. \\ \hline
+GET & \texttt{/api/logs} & Returns paginated logs. Supports ?level=ERROR. \\ \hline
+POST & \texttt{/api/logs/ingest} & Internal endpoint for agents to push logs. \\ \hline
+POST & \texttt{/api/chat} & RAG Endpoint. Sends question to Ollama. \\ \hline
+\end{tabular}
+% =========================================================================
+% CHAPTER 4: IMPLEMENTATION
+% =========================================================================
+\chapter{Implementation}
+
+\section{Introduction}
+This chapter provides a comprehensive technical breakdown of the LogChat solution. We detail the implementation of the three primary subsystems: the Golang Agent (Collector), the Node.js Backend (Processor), and the Next.js Frontend (Visualization).
+
+\section{Development Environment}
+The project was developed using a modern cloud-native toolchain:
+\begin{itemize}
+    \item \textbf{IDE:} Visual Studio Code with ESLint, Prettier, and Copilot.
+    \item \textbf{Runtime:} Node.js v20 (LTS) and Go 1.21.
+    \item \textbf{Containerization:} Docker Desktop (Engine v24).
+    \item \textbf{Database:} PostgreSQL 16 (via Docker).
+    \item \textbf{LLM Runtime:} Ollama v0.1.20 serving \texttt{qwen2.5:0.5b}.
+\end{itemize}
+
+\section{Project Structure}
+The repository follows a monorepo structure, ensuring all code related to the project resides in a single version-controlled location.
+
+\begin{lstlisting}[language=bash, caption=Global Project Structure]
+/logchat
+|-- backend/             # Node.js API Service
+|   |-- prisma/          # Database Schema & Migrations
+|   |-- src/
+|   |   |-- services/    # Business Logic (Ollama, Activity)
+|   |   |-- routes/      # Express Route Definitions
+|-- frontend/            # Next.js 14 App Router
+|   |-- app/             # React Server Components
+|   |-- components/      # Shared UI (ShadowCN)
+|-- golang-agent/        # Log Collector Binary
+|   |-- cmd/             # Entry points
+|   |-- internal/        # Private packages (Sender, Scanner)
+|-- docker-compose.yml   # Orchestration Config
+\end{lstlisting}
+
+\section{Subsystem 1: The Golang Agent}
+The agent is the "eyes and ears" of the system. Written in Go, it is designed to be statically linked and portable.
+
+\subsection{Internal Architecture}
+The agent consists of two main goroutines (threads):
+\begin{enumerate}
+    \item \textbf{Collector:} Monitors file paths (e.g., \texttt{/var/log/syslog}) using the \texttt{fsnotify} library.
+    \item \textbf{Sender:} Batches collected logs and transmits them via HTTP POST to the backend to reduce network overhead.
+\end{enumerate}
+
+\begin{lstlisting}[language=Go, caption=Golang Agent Sender Logic (Simplified)]
+func (s *Sender) Start() {
+    ticker := time.NewTicker(s.config.BatchInterval)
+    for {
+        select {
+        case <-ticker.C:
+            if len(s.buffer) > 0 {
+                s.flush() // Sends JSON payload to API
+            }
+        case log := <-s.inputChan:
+            s.buffer = append(s.buffer, log)
+        }
+    }
+}
+\end{lstlisting}
+
+\section{Subsystem 2: The Backend Service}
+The backend is the brain of LogChat. It orchestrates data storage, user authentication, and AI inference.
+
+\subsection{Database Schema (Prisma)}
+We defined our data model using the Prisma Schema Language (PSL).
+
+\begin{lstlisting}[language=JavaScript, caption=Prisma Schema Definition]
+model Log {
+  id        String   @id @default(uuid())
+  level     LogLevel
+  message   String
+  source    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([level])
+  @@index([createdAt])
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+}
+\end{lstlisting}
+
+\subsection{AI Integration (Prompt Engineering)}
+The core logic for the "Chat" feature involves careful prompt engineering to ensure the LLM behaves as a securty analyst. We inject the system prompt dynamically.
+
+\begin{lstlisting}[language=TypeScript, caption=Ollama Service Prompt Contruction]
+const LOG_ANALYST_SYSTEM_PROMPT = `You are a log analysis assistant.
+You are given application logs and high-level statistics.
+Your job is to explain what is happening, highlight anomalies, 
+and answer questions clearly.
+
+You must:
+- Identify main issues, failures, or anomalies
+- Summarize error patterns by service and time
+- Suggest probable root causes based ONLY on provided logs
+- Do NOT invent events not present in the data`;
+
+export async function callOllama(userQuery: string, contextLogs: Log[]) {
+  // RAG: We prepend the retrieved logs to the query
+  const fullPrompt = `Context Logs:\n${JSON.stringify(contextLogs)}\n\nQuery: ${userQuery}`;
+  
+  return await axios.post(OLLAMA_URL + '/api/generate', {
+    model: "qwen2.5:0.5b",
+    system: LOG_ANALYST_SYSTEM_PROMPT,
+    prompt: fullPrompt,
+    stream: false
+  });
+}
+\end{lstlisting}
+
+\section{Subsystem 3: The Frontend Dashboard}
+The frontend provides the visual interface. Built with Next.js 14, it utilizes Server Components for initial data fetching and Client Components for interactivity.
+
+\subsection{Real-time Updates}
+To ensure the dashboard reflects the live state of the system, we implemented a custom React hook \texttt{useActivity}.
+
+\begin{lstlisting}[language=TypeScript, caption=Custom Hook for Polling]
+export function useActivity(interval = 5000) {
+  const [data, setData] = useState<ActivityPoint[]>([]);
+
+  useEffect(() => {
+    const fetcher = setInterval(async () => {
+      const res = await fetch('/api/stats/activity');
+      const json = await res.json();
+      setData(json);
+    }, interval);
+
+    return () => clearInterval(fetcher);
+  }, [interval]);
+
+  return data;
+}
+\end{lstlisting}
+
+\section{Conclusion of Implementation}
+The implementation adheres to the "Separation of Concerns" principle. The Agent handles I/O, the Backend handles Logic/Persistance, and the Frontend handles Presentation.
+
+\cleardoublepage
+
+% =========================================================================
+% CHAPTER 5: TESTING AND EVALUATION
+% =========================================================================
+\chapter{Testing and Evaluation}
+
+\section{Introduction}
+Reliability is paramount in security software. This chapter details our testing strategy, encompassing unit tests, integration tests, and performance benchmarks.
+
+\section{Testing Methodology}
+We followed the "V-Model" approach, where each development phase is mirrored by a testing phase.
+\begin{enumerate}
+    \item \textbf{Unit Testing:} Verifying individual functions (Jest).
+    \item \textbf{Integration Testing:} Verifying API endpoints (Postman).
+    \item \textbf{System Testing:} Verifying the complete RAG pipeline.
+\end{enumerate}
+
+\section{Unit Testing Results}
+The threat detection engine was tested against known attack signatures.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|l|}
+    \hline
+    \textbf{Test Case ID} & \textbf{Input Pattern} & \textbf{Verdict} \\ \hline
+    TC-001 & \texttt{Failed password for root} & \textcolor{green}{PASS} \\ \hline
+    TC-002 & \texttt{UNION SELECT * FROM Users} & \textcolor{green}{PASS} \\ \hline
+    TC-003 & \texttt{<script>alert('XSS')</script>} & \textcolor{green}{PASS} \\ \hline
+    \end{tabular}
+    \caption{Threat Engine Unit Tests}
+\end{table}
+
+\section{Performance Evaluation}
+We conducted a load test using a custom script (\texttt{live-seed.sh}) to simulate a high-traffic environment generating 100 logs/second.
+
+\subsection{Resource Consumption}
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|c|c|c|}
+    \hline
+    \textbf{Service} & \textbf{CPU Usage} & \textbf{RAM Usage} & \textbf{Status} \\ \hline
+    Backend & 5\% & 120MB & Optimal \\ \hline
+    Database & 12\% & 250MB & Optimal \\ \hline
+    Ollama (Idle) & 0\% & 4GB & High (Expected) \\ \hline
+    Ollama (Inferencing) & 80\% & 4.5GB & Critical \\ \hline
+    \end{tabular}
+    \caption{Resource Usage under Load}
+\end{table}
+
+\placeholderImage{performance_graph.png}{CPU Usage during RAG Inference}
+
+\section{Deployment Guide}
+LogChat is designed to be deployed via Docker Compose.
+
+\subsection{Installation Steps}
+\begin{lstlisting}[language=bash]
+# Step 1: Clone the repository
+git clone https://github.com/user/logchat.git
+
+# Step 2: Start the stack
+docker-compose up -d --build
+
+# Step 3: Verify containers are running
+docker ps
+# output: logchat-backend, logchat-frontend, ollama, db
+\end{lstlisting}
+
+\section{User Guide}
+\subsection{Dashboard Overview}
+Upon logging in, the user is presented with the main dashboard.
+\placeholderImage{dashboard_full.png}{Main Dashboard View}
+
+\subsection{Chatting with Logs}
+The analyst can open the "AI Assistant" tab to ask natural language questions.
+\placeholderImage{chat_interface.png}{AI Chat Interface}
+
+\section{Conclusion}
+The system has passed all critical functional tests. Performance is within acceptable limits for a local development or SME environment, though LLM inference requires significant RAM.
+
+\cleardoublepage
+
+% =========================================================================
+% GENERAL CONCLUSION
+% =========================================================================
+\chapter*{General Conclusion}
+\addcontentsline{toc}{chapter}{General Conclusion}
+
+\section*{Summary}
+This project set out to democratize access to advanced security monitoring using the latest advancements in Artificial Intelligence. We successfully built \textbf{LogChat}, a functional SIEM that allows anyone—regardless of technical skill—to query their system's security status using natural language.
+
+\section*{Key Achievements}
+\begin{itemize}
+    \item \textbf{Full Stack Mastery:} Developed a complete solution using Next.js, Node.js, and Postgres.
+    \item \textbf{AI Innovation:} Successfully integrated a local LLM (Ollama) into a production workflow using RAG.
+    \item \textbf{User Experience:} Created a clean, intuitive interface that hides the complexity of log management.
+\end{itemize}
+
+\section*{Personal Reflections}
+Working on LogChat was a journey of discovery. We learned that integrating AI is not magic; it requires rigorous data engineering (RAG) to be useful. We also gained deep appreciation for the stability of Docker in development workflows.
+
+We believe LogChat represents the future of specialized software: tools that don't just display data, but help you \textit{understand} it.
+
+
+% =========================================================================
+% APPENDIX A: DIAGRAM SOURCE CODES
+% =========================================================================
+\appendix
+\chapter{Appendix: PlantUML Source Codes}
+For transparency and reproducibility, we include the source code for the diagrams used in this report. These can be rendered using any PlantUML-compatible tool.
+
+\section{Use Case Diagram: Global}
+\begin{lstlisting}
+@startuml usecase_global
+left to right direction
+actor "Security Analyst" as Analyst
+actor "System Administrator" as Admin
+actor "Background System" as System
+
+rectangle "LogChat SIEM Platform" {
+    package "Core Operations" {
+        usecase "Authenticate (Login/Logout)" as UC1
+        usecase "View Analytics Dashboard" as UC2
+        usecase "Explore & Filter Logs" as UC3
+        usecase "Chat with AI Assistant" as UC4
+    }
+
+    package "Administration" {
+        usecase "Manage Users & Roles" as UC5
+        usecase "Configure Log Sources" as UC6
+        usecase "Manage Alert Rules" as UC7
+        usecase "View Audit Logs" as UC8
+    }
+
+    package "Automated Processes" {
+        usecase "Ingest Logs via API" as UC9
+        usecase "Detect Threats (Real-time)" as UC10
+        usecase "Trigger Alerts" as UC11
+    }
+}
+
+Analyst --> UC1
+Analyst --> UC2
+Analyst --> UC3
+Analyst --> UC4
+Analyst --> UC8
+
+Admin --> UC1
+Admin --> UC5
+Admin --> UC6
+Admin --> UC7
+Admin --> UC8
+
+System --> UC9
+System --> UC10
+System --> UC11
+UC10 .> UC11 : <<include>>
+@enduml
+\end{lstlisting}
+
+\section{Component Architecture}
+\begin{lstlisting}
+@startuml architecture_component
+skinparam componentStyle uml2
+
+package "Docker Container Host" {
+    package "Frontend Container" {
+        [Next.js App Router] as NextJS
+        [React Components] as React
+        [Tailwind CSS] as UI
+        NextJS *-- React
+        React *-- UI
+    }
+
+    package "Backend Container" {
+        [Express.js Server] as Express
+        [Prisma ORM] as Prisma
+        [Threat Engine] as Engine
+        [AI Service Adapter] as AIService
+        Express *-- Engine
+        Express *-- AIService
+        Express *-- Prisma
+    }
+
+    package "Data Layer" {
+        database "PostgreSQL 16" as DB {
+            [Logs Table]
+            [Users Table]
+            [Alerts Table]
+        }
+    }
+
+    package "AI Layer" {
+        [Ollama Service] as Ollama
+        [LLM Model: qwen2.5] as Model
+        Ollama *-- Model
+    }
+}
+
+cloud "External World" {
+    [Admin Browser] as Client
+    [Log Sources] as Sources
+}
+
+Client --> NextJS : HTTPS / Port 3000
+Sources --> Express : HTTP POST /api/logs / Port 3001
+NextJS --> Express : REST API Requests
+Express --> DB : SQL Queries (Prisma)
+Express --> Ollama : JSON Inference Req
+@enduml
+\end{lstlisting}
+
+\section{Sequence Diagram: AI Chat RAG}
+\begin{lstlisting}
+@startuml sequence_chat_rag
+actor Analyst
+participant "Chat Interface" as UI
+participant "Backend Service" as Backend
+participant "Prisma DB" as DB
+participant "Ollama AI" as AI
+
+Analyst -> UI : "Why can't users login?"
+activate UI
+UI -> Backend : POST /api/chat {message}
+activate Backend
+
+group RAG Context Retrieval
+    Backend -> DB : Query: SELECT logs WHERE error=true
+    activate DB
+    DB --> Backend : List of Login Failed Logs
+    deactivate DB
+end
+
+Backend -> Backend : Build Prompt (System Role + Logs + Query)
+
+Backend -> AI : POST /api/generate {prompt}
+activate AI
+AI -> AI : Inference (Thinking...)
+AI --> Backend : "Multiple failed login attempts detected..."
+deactivate AI
+
+Backend -> DB : Save Chat History
+Backend --> UI : Return AI Response
+deactivate Backend
+
+UI -> Analyst : Display Response
+deactivate UI
+@enduml
+\end{lstlisting}
+
+\section{Activity Diagram: Threat Detection}
+\begin{lstlisting}
+@startuml activity_threat_detection
+start
+:Log Received via API;
+:Parse Log Content;
+:Validate Schema (Zod);
+
+partition "Threat Engine" {
+    if (Matches "SQL Injection" Pattern?) then (yes)
+        :Tag as CRITICAL;
+        :Create "Security Alert";
+    elseif (Matches "Brute Force" Pattern?) then (yes)
+        :Tag as HIGH;
+        :Increment Failed Login Counter;
+        if (Counter > Threshold?) then (yes)
+             :Create "Brute Force Alert";
+        endif
+    elseif (Is System Error?) then (yes)
+        :Tag as WARNING;
+    else (no)
+        :Tag as INFO;
+    endif
+}
+
+:Save to Database (Prisma);
+:Broadcast to Dashboard (WebSocket/SSE);
+stop
+@enduml
+\end{lstlisting}
+
+\section{Sequence Diagram: Login}
+\begin{lstlisting}
+@startuml sequence_login
+actor User
+participant "Next.js UI" as UI
+participant "Backend API" as API
+database "PostgreSQL" as DB
+
+User -> UI : Enter Email & Password
+activate UI
+UI -> API : POST /api/auth/login
+activate API
+API -> DB : Find User by Email
+activate DB
+DB --> API : User Record (Hash)
+deactivate DB
+
+API -> API : Compare Password Hash
+alt Password Valid
+    API -> API : Generate JWT Token
+    API --> UI : 200 OK + Token + UserData
+    UI -> UI : Store Token (Context/Cookie)
+    UI -> User : Redirect to Dashboard
+else Password Invalid
+    API --> UI : 401 Unauthorized
+    UI -> User : Show Error Message
+end
+deactivate API
+deactivate UI
+@enduml
+\end{lstlisting}
+
+\printbibliography[heading=bibintoc]
+
+
+\end{document}

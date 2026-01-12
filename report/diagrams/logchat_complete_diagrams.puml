@@ -1,0 +1,711 @@
+' ============================================================================
+' LOGCHAT - COMPLETE UML DIAGRAMS
+' ============================================================================
+' Render these diagrams at: https://www.planttext.com/
+' or use: java -jar plantuml.jar logchat_complete_diagrams.puml
+' ============================================================================
+
+' ============================================================================
+' 1. GLOBAL USE CASE DIAGRAM
+' ============================================================================
+@startuml usecase_global_complete
+left to right direction
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam usecase {
+    BackgroundColor<<core>> LightBlue
+    BackgroundColor<<admin>> LightGreen
+    BackgroundColor<<auto>> LightYellow
+}
+
+actor "Security Analyst" as Analyst #LightBlue
+actor "System Administrator" as Admin #LightGreen
+actor "LogChat Agent" as Agent #Orange
+
+rectangle "LogChat SIEM Platform" {
+    package "Core Operations" <<Rectangle>> {
+        usecase "Authenticate\n(Login/Logout)" as UC1 <<core>>
+        usecase "View Real-time\nDashboard" as UC2 <<core>>
+        usecase "Explore & Filter\nLog Entries" as UC3 <<core>>
+        usecase "Chat with AI\nAssistant (RAG)" as UC4 <<core>>
+        usecase "Export Logs\nto CSV/JSON" as UC5 <<core>>
+    }
+
+    package "Administration" <<Rectangle>> {
+        usecase "Manage Users\n& Roles (RBAC)" as UC6 <<admin>>
+        usecase "Configure Log\nSources & API Keys" as UC7 <<admin>>
+        usecase "Define Alert\nRules & Thresholds" as UC8 <<admin>>
+        usecase "View Immutable\nAudit Trail" as UC9 <<admin>>
+        usecase "Manage External\nIntegrations" as UC10 <<admin>>
+    }
+
+    package "Automated Processes" <<Rectangle>> {
+        usecase "Ingest Logs\nvia REST API" as UC11 <<auto>>
+        usecase "Detect Threats\nin Real-time" as UC12 <<auto>>
+        usecase "Trigger Security\nAlerts" as UC13 <<auto>>
+        usecase "Stream Updates\nvia SSE" as UC14 <<auto>>
+    }
+}
+
+' Analyst connections
+Analyst --> UC1
+Analyst --> UC2
+Analyst --> UC3
+Analyst --> UC4
+Analyst --> UC5
+Analyst --> UC9
+
+' Admin connections
+Admin --> UC1
+Admin --> UC6
+Admin --> UC7
+Admin --> UC8
+Admin --> UC9
+Admin --> UC10
+
+' Agent connections
+Agent --> UC11
+Agent --> UC14
+
+' Includes and extends
+UC12 .> UC13 : <<include>>
+UC11 .> UC12 : <<triggers>>
+UC12 .> UC14 : <<triggers>>
+@enduml
+
+' ============================================================================
+' 2. COMPONENT ARCHITECTURE DIAGRAM
+' ============================================================================
+@startuml architecture_component_complete
+skinparam componentStyle uml2
+skinparam component {
+    BackgroundColor<<frontend>> LightBlue
+    BackgroundColor<<backend>> LightGreen
+    BackgroundColor<<data>> LightYellow
+    BackgroundColor<<ai>> LightPink
+}
+
+package "Docker Container Host" {
+    
+    package "Frontend Container\n(Port 3000)" <<Rectangle>> {
+        component [Next.js 14\nApp Router] <<frontend>> as NextJS
+        component [React 18\nComponents] <<frontend>> as React
+        component [TailwindCSS\nStyling] <<frontend>> as Tailwind
+        component [Recharts\nVisualization] <<frontend>> as Charts
+        component [SSE Client\nReal-time] <<frontend>> as SSE_Client
+        
+        NextJS *-- React
+        React *-- Tailwind
+        React *-- Charts
+        React *-- SSE_Client
+    }
+
+    package "Backend Container\n(Port 3001)" <<Rectangle>> {
+        component [Express.js\nREST API] <<backend>> as Express
+        component [Prisma ORM\nType-safe Queries] <<backend>> as Prisma
+        component [Threat Detection\nEngine] <<backend>> as ThreatEngine
+        component [AI Service\nAdapter (Multi-Provider)] <<backend>> as AIService
+        component [SSE Server\nBroadcaster] <<backend>> as SSE_Server
+        component [JWT Auth\nMiddleware] <<backend>> as Auth
+        
+        Express *-- Prisma
+        Express *-- ThreatEngine
+        Express *-- AIService
+        Express *-- SSE_Server
+        Express *-- Auth
+    }
+
+    package "Database Container\n(Port 5432)" <<Rectangle>> {
+        database "PostgreSQL 16" <<data>> as DB {
+            [logs] as LogsTable
+            [users] as UsersTable
+            [chat_sessions] as ChatTable
+            [alerts] as AlertsTable
+            [audit_logs] as AuditTable
+        }
+    }
+
+    package "AI Container\n(Port 11434)" <<Rectangle>> {
+        component [Ollama\nLLM Runtime] <<ai>> as Ollama
+        component [Qwen 2.5\nLocal Model] <<ai>> as Model
+        
+        Ollama *-- Model
+    }
+}
+
+cloud "External World" {
+    [Admin/Analyst\nBrowser] as Client
+    [Windows Server\n(Agent)] as WinAgent
+    [Linux Server\n(Agent)] as LinuxAgent
+    [Cloud AI\nProviders] as CloudAI
+}
+
+' External connections
+Client --> NextJS : HTTPS / Port 3000
+WinAgent --> Express : HTTP POST /api/logs
+LinuxAgent --> Express : HTTP POST /api/logs
+
+' Internal connections
+NextJS --> Express : REST API Calls
+SSE_Client ..> SSE_Server : EventSource
+Express --> DB : SQL via Prisma
+Express --> Ollama : POST /api/generate
+AIService ..> CloudAI : Optional Fallback
+@enduml
+
+' ============================================================================
+' 3. SEQUENCE DIAGRAM: LOGIN FLOW
+' ============================================================================
+@startuml sequence_login_complete
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+skinparam sequence {
+    LifeLineBackgroundColor LightBlue
+    ParticipantBackgroundColor LightGreen
+}
+
+actor "User" as U
+participant "Next.js\nLogin Page" as UI
+participant "Express\nBackend" as API
+database "PostgreSQL" as DB
+
+title Authentication Sequence Diagram
+
+U -> UI : Enter email & password
+activate UI
+
+UI -> UI : Client-side validation
+UI -> API : POST /api/auth/login\n{email, password}
+activate API
+
+API -> DB : SELECT user WHERE email = ?
+activate DB
+DB --> API : User record (with password hash)
+deactivate DB
+
+API -> API : bcrypt.compare(password, hash)
+
+alt Password Valid
+    API -> API : Generate JWT token
+    API -> DB : INSERT INTO sessions\n(userId, token, expiresAt)
+    activate DB
+    DB --> API : Session created
+    deactivate DB
+    
+    API -> DB : UPDATE users SET lastLogin = NOW()
+    
+    API --> UI : 200 OK\n{token, user: {id, name, role}}
+    UI -> UI : Store token in\nContext + Cookie
+    UI -> U : Redirect to /dashboard
+else Password Invalid
+    API --> UI : 401 Unauthorized\n{error: "Invalid credentials"}
+    UI -> U : Display error message
+end
+
+deactivate API
+deactivate UI
+@enduml
+
+' ============================================================================
+' 4. SEQUENCE DIAGRAM: RAG CHAT WORKFLOW
+' ============================================================================
+@startuml sequence_rag_chat_complete
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+
+actor "Security Analyst" as A
+participant "Chat\nInterface" as UI
+participant "Chat\nRoute" as Backend
+participant "Prisma\nORM" as DB
+participant "AI Manager\n(Adapter)" as AI
+participant "Ollama\nLLM" as LLM
+
+title RAG (Retrieval Augmented Generation) Chat Workflow
+
+A -> UI : "Why are users unable\nto login this morning?"
+activate UI
+
+UI -> Backend : POST /api/chat\n{message, filters: {timeRange: "1h"}}
+activate Backend
+
+group Context Retrieval (RAG)
+    Backend -> DB : queryLogs({\n  level: ["ERROR", "WARN"],\n  startTime: now - 1h,\n  limit: 100\n})
+    activate DB
+    DB --> Backend : Recent log entries
+    deactivate DB
+    
+    Backend -> DB : getStatsForLLM(60)
+    activate DB
+    DB --> Backend : {totalLogs, errorCount,\nerrorRate, topServices}
+    deactivate DB
+    
+    Backend -> DB : getRecentErrors(20)
+    activate DB
+    DB --> Backend : Critical errors list
+    deactivate DB
+end
+
+Backend -> Backend : buildLogContext(logs, stats)\n→ Format for LLM prompt
+
+Backend -> AI : chat({\n  messages: [...],\n  provider: "ollama"\n})
+activate AI
+
+AI -> LLM : POST /api/generate\n{model: "qwen2.5:0.5b",\nprompt: contextualPrompt}
+activate LLM
+
+LLM -> LLM : Token generation\n(inference ~2-5s)
+
+LLM --> AI : "Based on the logs, I can see\nmultiple authentication failures\nfrom IP 192.168.1.105..."
+deactivate LLM
+
+AI --> Backend : {content, provider, usage}
+deactivate AI
+
+Backend -> DB : INSERT chat_message\n(session, role, content)
+
+Backend --> UI : {\n  success: true,\n  response: "...",\n  context: {logsAnalyzed: 47}\n}
+deactivate Backend
+
+UI -> UI : Render Markdown\nresponse
+UI -> A : Display AI analysis\nwith source logs
+deactivate UI
+@enduml
+
+' ============================================================================
+' 5. SEQUENCE DIAGRAM: LOG INGESTION WITH THREAT DETECTION
+' ============================================================================
+@startuml sequence_log_ingestion
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+
+actor "LogChat\nAgent" as Agent
+participant "Ingest\nEndpoint" as API
+participant "Threat\nEngine" as TE
+participant "Prisma" as DB
+participant "SSE\nBroadcaster" as SSE
+participant "Dashboard\nClients" as Clients
+
+title Log Ingestion with Real-time Threat Detection
+
+Agent -> API : POST /api/logs/ingest\nX-API-Key: xxx\n{agent: {...}, logs: [...]}
+activate API
+
+API -> API : Validate X-API-Key
+API -> API : Validate schema (Zod)
+
+loop For each log entry
+    API -> TE : analyzeThreat(log)
+    activate TE
+    
+    TE -> TE : Check SQL injection patterns
+    TE -> TE : Check XSS patterns
+    TE -> TE : Check brute force counters
+    
+    alt Threat Detected
+        TE --> API : {threat: "SQL_INJECTION",\nseverity: "CRITICAL"}
+        API -> DB : INSERT alert
+    else Clean
+        TE --> API : {threat: null}
+    end
+    deactivate TE
+    
+    API -> DB : INSERT log entry
+end
+
+API -> SSE : broadcast({event: "batch",\ncount: N, metrics: {...}})
+activate SSE
+SSE -> Clients : event: batch\ndata: {...}
+deactivate SSE
+
+API --> Agent : 201 Created\n{ingested: N, alerts: M}
+deactivate API
+@enduml
+
+' ============================================================================
+' 6. ACTIVITY DIAGRAM: THREAT DETECTION ENGINE
+' ============================================================================
+@startuml activity_threat_detection_complete
+skinparam activity {
+    BackgroundColor<<threat>> LightCoral
+    BackgroundColor<<safe>> LightGreen
+    BackgroundColor<<process>> LightBlue
+}
+
+title Threat Detection Engine - Activity Diagram
+
+start
+
+:Log Entry Received;
+
+partition "Preprocessing" {
+    :Parse Log Content;
+    :Validate JSON Schema;
+    :Extract Metadata\n(IP, User, Service);
+}
+
+partition "Threat Analysis Engine" <<process>> {
+    if (Matches SQL Injection\nPattern?) then (yes)
+        :Tag as **CRITICAL**; <<threat>>
+        :Create Security Alert\nType: SQL_INJECTION;
+        :Map to MITRE ATT&CK\nT1190;
+    else if (Matches XSS\nPattern?) then (yes)
+        :Tag as **HIGH**; <<threat>>
+        :Create Security Alert\nType: XSS_ATTEMPT;
+    else if (Failed Login?) then (yes)
+        :Increment Failed\nLogin Counter;
+        if (Counter > 5 in 60s?) then (yes)
+            :Tag as **HIGH**; <<threat>>
+            :Create Brute Force Alert;
+        else (no)
+            :Tag as **WARN**;
+        endif
+    else if (Contains /etc/passwd?) then (yes)
+        :Tag as **CRITICAL**; <<threat>>
+        :Create Path Traversal Alert;
+    else if (Level == ERROR?) then (yes)
+        :Tag as **WARN**;
+    else (no)
+        :Tag as **INFO**; <<safe>>
+    endif
+}
+
+partition "Persistence & Notification" {
+    :Save Log to PostgreSQL\n(Prisma);
+    
+    if (Alert Created?) then (yes)
+        :Broadcast Alert via SSE;
+        :Update Dashboard Stats;
+    endif
+}
+
+stop
+@enduml
+
+' ============================================================================
+' 7. CLASS DIAGRAM: DOMAIN MODEL
+' ============================================================================
+@startuml class_diagram_complete
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor<<entity>> LightBlue
+    BackgroundColor<<service>> LightGreen
+    BackgroundColor<<enum>> LightYellow
+}
+
+title LogChat Domain Class Diagram
+
+enum Role <<enum>> {
+    ADMIN
+    STAFF
+    USER
+}
+
+enum LogLevel <<enum>> {
+    DEBUG
+    INFO
+    WARN
+    ERROR
+    FATAL
+}
+
+enum AlertSeverity <<enum>> {
+    LOW
+    MEDIUM
+    HIGH
+    CRITICAL
+}
+
+class User <<entity>> {
+    +id: UUID
+    +email: String
+    +passwordHash: String
+    +name: String
+    +role: Role
+    +active: Boolean
+    +createdAt: DateTime
+    +lastLogin: DateTime
+    --
+    +login(password): AuthResult
+    +hasPermission(action): Boolean
+}
+
+class Session <<entity>> {
+    +id: UUID
+    +token: String
+    +userId: UUID
+    +expiresAt: DateTime
+    +ipAddress: String
+    +userAgent: String
+    --
+    +isValid(): Boolean
+}
+
+class LogEntry <<entity>> {
+    +id: UUID
+    +timestamp: DateTime
+    +level: LogLevel
+    +service: String
+    +message: String
+    +raw: String
+    +meta: JSON
+    --
+    +matchesThreat(pattern): Boolean
+}
+
+class ChatSession <<entity>> {
+    +id: UUID
+    +userId: UUID
+    +title: String
+    +messageCount: Int
+    +archived: Boolean
+    +createdAt: DateTime
+    --
+    +addMessage(content, role): ChatMessage
+}
+
+class ChatMessage <<entity>> {
+    +id: UUID
+    +sessionId: UUID
+    +role: Enum(user, assistant)
+    +content: String
+    +responseTime: Int
+    +tokensUsed: Int
+}
+
+class Alert <<entity>> {
+    +id: UUID
+    +ruleId: UUID
+    +logId: UUID
+    +severity: AlertSeverity
+    +message: String
+    +isAcknowledged: Boolean
+    +acknowledgedBy: UUID
+    --
+    +acknowledge(userId): void
+}
+
+class LogSource <<entity>> {
+    +id: UUID
+    +name: String
+    +type: Enum
+    +apiKey: String
+    +apiKeyHash: String
+    +rateLimit: Int
+    +isActive: Boolean
+    --
+    +validateRequest(key): Boolean
+}
+
+class AuditLog <<entity>> {
+    +id: UUID
+    +userId: UUID
+    +action: String
+    +resource: String
+    +resourceId: UUID
+    +timestamp: DateTime
+    +ipAddress: String
+}
+
+' Relationships
+User "1" -- "*" Session : has >
+User "1" -- "*" ChatSession : owns >
+User "1" -- "*" AuditLog : generates >
+ChatSession "1" -- "*" ChatMessage : contains >
+LogEntry "*" -- "0..1" Alert : triggers >
+User "1" -- "*" Alert : acknowledges >
+@enduml
+
+' ============================================================================
+' 8. DEPLOYMENT DIAGRAM
+' ============================================================================
+@startuml deployment_diagram_complete
+skinparam node {
+    BackgroundColor LightBlue
+}
+skinparam artifact {
+    BackgroundColor LightGreen
+}
+
+title LogChat Production Deployment Diagram
+
+node "Production Server\n(Ubuntu 22.04 / 16GB RAM)" as ProdServer {
+    component "Docker Engine 24.x" as Docker {
+        
+        node "Docker Network: logchat-net" {
+            
+            artifact "Frontend Container" as FE {
+                component "Next.js 14\nApp (Node 20)"
+                component "Static Assets\n(CSS, JS)"
+            }
+            
+            artifact "Backend Container" as BE {
+                component "Express API\n(TypeScript)"
+                component "Prisma Client"
+                component "AI Adapters"
+            }
+            
+            artifact "Database Container" as DB {
+                database "PostgreSQL 16" {
+                    [logs]
+                    [users]
+                    [sessions]
+                }
+            }
+            
+            artifact "AI Container" as AI {
+                component "Ollama Runtime"
+                component "qwen2.5:0.5b\nModel (3GB)"
+            }
+        }
+        
+        folder "Docker Volumes" {
+            storage "postgres_data" as PGData
+            storage "ollama_data" as OllamaData
+        }
+    }
+}
+
+node "Windows Server 2022" as WinServer {
+    component "LogChat Agent\n(logchat-agent.exe)" as WinAgent
+    file "config.yaml" as WinConfig
+    folder "Windows Event Logs" as WinLogs
+}
+
+node "Linux Server (Ubuntu)" as LinuxServer {
+    component "LogChat Agent\n(logchat-agent)" as LinuxAgent
+    file "/etc/logchat/config.yaml" as LinuxConfig
+    folder "/var/log/*" as LinuxLogs
+}
+
+node "Analyst Workstation" as Workstation {
+    component "Chrome/Firefox\nBrowser" as Browser
+}
+
+' Connections
+Browser --> FE : HTTPS:3000
+Browser --> BE : HTTPS:3001 (API)
+
+FE --> BE : Internal REST
+
+BE --> DB : TCP:5432
+BE --> AI : HTTP:11434
+
+WinAgent --> BE : HTTP POST\n/api/logs/ingest
+LinuxAgent --> BE : HTTP POST\n/api/logs/ingest
+
+WinAgent --> WinLogs : Collect
+LinuxAgent --> LinuxLogs : Collect
+
+DB --> PGData : Mount
+AI --> OllamaData : Mount
+@enduml
+
+' ============================================================================
+' 9. GOLANG AGENT INTERNAL ARCHITECTURE
+' ============================================================================
+@startuml agent_architecture
+skinparam componentStyle uml2
+
+title LogChat Golang Agent - Internal Architecture
+
+package "cmd/agent" {
+    [main.go\nEntry Point]
+}
+
+package "internal/config" {
+    [config.go\nYAML Parser]
+}
+
+package "internal/collector" {
+    interface "Collector" as ICollector {
+        +Name(): string
+        +Start(ctx)
+        +Stop()
+        +Stats(): map
+    }
+    
+    [FileCollector\n(tail -f)] as FileColl
+    [EventLogCollector\n(Windows API)] as WinColl
+    [JournaldCollector\n(systemd)] as JournalColl
+    [SyslogCollector\n(Linux)] as SyslogColl
+    
+    FileColl ..|> ICollector
+    WinColl ..|> ICollector
+    JournalColl ..|> ICollector
+    SyslogColl ..|> ICollector
+}
+
+package "internal/buffer" {
+    [RingBuffer\nIn-Memory Queue]
+}
+
+package "internal/sender" {
+    [Sender\nHTTP Client]
+    [Retry Logic\nExponential Backoff]
+}
+
+[main.go\nEntry Point] --> [config.go\nYAML Parser]
+[main.go\nEntry Point] --> [RingBuffer\nIn-Memory Queue]
+[main.go\nEntry Point] --> [Sender\nHTTP Client]
+[main.go\nEntry Point] --> ICollector
+
+ICollector --> [Sender\nHTTP Client] : Send(log)
+[Sender\nHTTP Client] --> [RingBuffer\nIn-Memory Queue] : Buffer on failure
+[Sender\nHTTP Client] --> [Retry Logic\nExponential Backoff]
+
+note right of WinColl
+  Uses: golang.org/x/sys/windows
+  Channels: Application, System, Security
+end note
+
+note right of FileColl
+  Uses: nxadm/tail
+  Supports: glob patterns
+  Parser: JSON, Regex
+end note
+@enduml
+
+' ============================================================================
+' 10. STATE DIAGRAM: ALERT LIFECYCLE
+' ============================================================================
+@startuml state_alert_lifecycle
+skinparam state {
+    BackgroundColor<<new>> LightCoral
+    BackgroundColor<<ack>> LightYellow
+    BackgroundColor<<resolved>> LightGreen
+}
+
+title Alert Lifecycle State Diagram
+
+[*] --> New : Threat Detected
+
+state "New" as New <<new>> {
+    state "Unacknowledged" as Unack
+}
+
+state "Acknowledged" as Ack <<ack>> {
+    state "Under Investigation" as Investigating
+    state "False Positive" as FalsePos
+}
+
+state "Resolved" as Resolved <<resolved>> {
+    state "Remediated" as Fixed
+    state "Ignored" as Ignored
+}
+
+New --> Ack : Analyst acknowledges
+Ack --> Resolved : Issue fixed / Marked false positive
+Ack --> New : Re-opened
+
+Resolved --> [*]
+
+note right of New
+  Dashboard shows
+  blinking indicator
+end note
+
+note right of Ack
+  Analyst assigned
+  Investigation ongoing
+end note
+@enduml

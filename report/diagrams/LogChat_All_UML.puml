@@ -1,0 +1,1361 @@
+' ╔══════════════════════════════════════════════════════════════════════════════╗
+' ║                     LOGCHAT - COMPLETE UML DIAGRAMS                          ║
+' ║                                                                              ║
+' ║  Render at: https://www.planttext.com or https://www.plantuml.com/plantuml  ║
+' ║  Or locally: java -jar plantuml.jar LogChat_All_UML.puml                    ║
+' ╚══════════════════════════════════════════════════════════════════════════════╝
+
+' ============================================================================
+' 1. GLOBAL USE CASE DIAGRAM
+' File: usecase_global.png
+' ============================================================================
+@startuml usecase_global
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam backgroundColor #FEFEFE
+skinparam handwritten false
+
+skinparam usecase {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    ArrowColor #1565C0
+}
+
+skinparam actor {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+}
+
+left to right direction
+
+actor "Security\nAnalyst" as Analyst #LightBlue
+actor "System\nAdministrator" as Admin #LightGreen  
+actor "LogChat\nAgent" as Agent #Orange
+
+rectangle "LogChat SIEM Platform" as Platform {
+    
+    package "Core Operations" as CoreOps #E3F2FD {
+        usecase "UC01: Authenticate\n(Login/Logout)" as UC01
+        usecase "UC02: View Real-time\nDashboard" as UC02
+        usecase "UC03: Explore &\nFilter Logs" as UC03
+        usecase "UC04: Chat with\nAI Assistant" as UC04
+        usecase "UC05: Export\nReports" as UC05
+    }
+
+    package "Administration" as AdminOps #E8F5E9 {
+        usecase "UC06: Manage Users\n& Roles (RBAC)" as UC06
+        usecase "UC07: Configure\nLog Sources" as UC07
+        usecase "UC08: Define Alert\nRules" as UC08
+        usecase "UC09: View Audit\nTrail" as UC09
+    }
+
+    package "Automated Processes" as AutoOps #FFF3E0 {
+        usecase "UC10: Ingest Logs\nvia API" as UC10
+        usecase "UC11: Detect Threats\n(Real-time)" as UC11
+        usecase "UC12: Trigger\nAlerts" as UC12
+        usecase "UC13: Stream Updates\nvia SSE" as UC13
+    }
+}
+
+' Analyst relationships
+Analyst --> UC01
+Analyst --> UC02
+Analyst --> UC03
+Analyst --> UC04
+Analyst --> UC05
+Analyst --> UC09
+
+' Admin relationships
+Admin --> UC01
+Admin --> UC06
+Admin --> UC07
+Admin --> UC08
+Admin --> UC09
+
+' Agent relationships
+Agent --> UC10
+Agent --> UC13
+
+' Include/Extend relationships
+UC11 .> UC12 : <<include>>
+UC10 .> UC11 : <<triggers>>
+UC11 .> UC13 : <<triggers>>
+UC04 .> UC03 : <<extend>>
+
+note right of UC04
+  Uses RAG to analyze
+  logs via natural language
+end note
+
+note right of UC11
+  Pattern matching for
+  SQL Injection, XSS,
+  Brute Force attacks
+end note
+
+@enduml
+
+' ============================================================================
+' 2. COMPONENT ARCHITECTURE DIAGRAM
+' File: component_diagram.png
+' ============================================================================
+@startuml component_diagram
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam componentStyle uml2
+skinparam backgroundColor #FEFEFE
+
+skinparam component {
+    BackgroundColor<<frontend>> #DBEAFE
+    BackgroundColor<<backend>> #D1FAE5
+    BackgroundColor<<database>> #FEF3C7
+    BackgroundColor<<ai>> #EDE9FE
+    BackgroundColor<<external>> #F3F4F6
+    BorderColor #374151
+}
+
+skinparam package {
+    BackgroundColor #F9FAFB
+    BorderColor #6B7280
+}
+
+skinparam database {
+    BackgroundColor #FEF3C7
+    BorderColor #D97706
+}
+
+title LogChat - Component Architecture Diagram
+
+package "Docker Container Host" as DockerHost {
+    
+    package "Frontend Container\n[Port 3000]" as FrontendPkg #E0F2FE {
+        component [Next.js 14\nApp Router] <<frontend>> as NextJS
+        component [React 18\nComponents] <<frontend>> as ReactComp
+        component [TailwindCSS\nStyling] <<frontend>> as Tailwind
+        component [Recharts\nVisualization] <<frontend>> as Charts
+        component [SSE Client\nEventSource] <<frontend>> as SSEClient
+        
+        NextJS --> ReactComp
+        ReactComp --> Tailwind
+        ReactComp --> Charts
+        ReactComp --> SSEClient
+    }
+
+    package "Backend Container\n[Port 3001]" as BackendPkg #DCFCE7 {
+        component [Express.js\nREST API] <<backend>> as Express
+        component [Prisma ORM\nType-safe DB] <<backend>> as Prisma
+        component [Threat Detection\nEngine] <<backend>> as ThreatEngine
+        component [AI Manager\nMulti-Provider] <<backend>> as AIManager
+        component [SSE Broadcaster\nReal-time] <<backend>> as SSEServer
+        component [JWT Auth\nMiddleware] <<backend>> as JWTAuth
+        component [Zod\nValidation] <<backend>> as Zod
+        
+        Express --> Prisma
+        Express --> ThreatEngine
+        Express --> AIManager
+        Express --> SSEServer
+        Express --> JWTAuth
+        Express --> Zod
+    }
+
+    package "Database Container\n[Port 5432]" as DBPkg #FEF9C3 {
+        database "PostgreSQL 16" as Postgres {
+            [logs] as LogsTable
+            [users] as UsersTable
+            [sessions] as SessionsTable
+            [chat_sessions] as ChatTable
+            [alerts] as AlertsTable
+            [audit_logs] as AuditTable
+        }
+    }
+
+    package "AI Container\n[Port 11434]" as AIPkg #F3E8FF {
+        component [Ollama\nLLM Runtime] <<ai>> as Ollama
+        component [qwen2.5:0.5b\nLocal Model] <<ai>> as QwenModel
+        
+        Ollama --> QwenModel
+    }
+}
+
+cloud "External Systems" as External {
+    component [Web Browser\nAnalyst/Admin] <<external>> as Browser
+    component [Windows Agent\nlogchat-agent.exe] <<external>> as WinAgent
+    component [Linux Agent\nlogchat-agent] <<external>> as LinuxAgent
+    component [Cloud AI APIs\nOpenAI/Anthropic/Gemini] <<external>> as CloudAI
+}
+
+' External connections
+Browser -down-> NextJS : HTTPS\nPort 3000
+WinAgent -down-> Express : HTTP POST\n/api/logs/ingest
+LinuxAgent -down-> Express : HTTP POST\n/api/logs/ingest
+
+' Internal connections
+NextJS -right-> Express : REST API\nInternal
+SSEClient .left.> SSEServer : EventSource\nStreaming
+Prisma -down-> Postgres : SQL\nTCP:5432
+AIManager -down-> Ollama : HTTP\nPort 11434
+AIManager .right.> CloudAI : Optional\nFallback
+
+@enduml
+
+' ============================================================================
+' 3. DEPLOYMENT DIAGRAM
+' File: deployment_diagram.png
+' ============================================================================
+@startuml deployment_diagram
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam backgroundColor #FEFEFE
+
+skinparam node {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+}
+
+skinparam artifact {
+    BackgroundColor #E8F5E9
+    BorderColor #2E7D32
+}
+
+skinparam database {
+    BackgroundColor #FEF3C7
+    BorderColor #D97706
+}
+
+skinparam component {
+    BackgroundColor #F3E8FF
+    BorderColor #7C3AED
+}
+
+title LogChat - Deployment Diagram
+
+node "Production Server\n<<Ubuntu 22.04 LTS>>\n[16GB RAM / 4 vCPU]" as ProdServer {
+    
+    node "Docker Engine 24.x" as DockerEngine {
+        
+        artifact "logchat-net\n<<Docker Network>>" as DockerNet {
+            
+            artifact "frontend\n<<Container>>" as FrontendContainer {
+                component "Next.js 14" as NextApp
+                component "Node.js 20" as NodeFE
+            }
+            
+            artifact "backend\n<<Container>>" as BackendContainer {
+                component "Express API" as ExpressApp
+                component "Prisma Client" as PrismaClient
+                component "Node.js 20" as NodeBE
+            }
+            
+            artifact "db\n<<Container>>" as DBContainer {
+                database "PostgreSQL 16\nAlpine" as PGDatabase
+            }
+            
+            artifact "ollama\n<<Container>>" as OllamaContainer {
+                component "Ollama Runtime" as OllamaRT
+                component "qwen2.5:0.5b" as LLMModel
+            }
+        }
+        
+        folder "Docker Volumes" as Volumes {
+            storage "postgres_data" as PGData
+            storage "ollama_data" as OllamaData
+        }
+    }
+}
+
+node "Windows Server 2022\n<<Log Source>>" as WinServer {
+    component "logchat-agent.exe\n<<Windows Service>>" as WinAgent
+    file "config.yaml" as WinConfig
+    folder "Event Logs\n[Application, System, Security]" as WinLogs
+}
+
+node "Linux Server\n<<Ubuntu 22.04>>" as LinuxServer {
+    component "logchat-agent\n<<systemd service>>" as LinuxAgent
+    file "/etc/logchat/config.yaml" as LinuxConfig
+    folder "/var/log/*\n[syslog, auth.log, app.log]" as LinuxLogs
+}
+
+node "Analyst Workstation\n<<Windows/macOS>>" as Workstation {
+    component "Chrome / Firefox\n<<Web Browser>>" as Browser
+}
+
+' Connections
+Browser -down-> FrontendContainer : HTTPS:3000
+Browser -down-> BackendContainer : HTTPS:3001\n(API calls)
+
+FrontendContainer -right-> BackendContainer : HTTP:3001\n(Internal)
+
+BackendContainer -down-> DBContainer : TCP:5432
+BackendContainer -right-> OllamaContainer : HTTP:11434
+
+WinAgent -up-> BackendContainer : HTTP POST\n/api/logs/ingest
+LinuxAgent -up-> BackendContainer : HTTP POST\n/api/logs/ingest
+
+WinAgent --> WinLogs : Collect
+WinAgent --> WinConfig : Read
+LinuxAgent --> LinuxLogs : Collect
+LinuxAgent --> LinuxConfig : Read
+
+PGDatabase -down-> PGData : Mount
+OllamaRT -down-> OllamaData : Mount
+
+@enduml
+
+' ============================================================================
+' 4. SEQUENCE DIAGRAM: LOGIN FLOW
+' File: sequence_login.png
+' ============================================================================
+@startuml sequence_login
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+skinparam maxmessagesize 200
+
+skinparam sequence {
+    ArrowColor #1565C0
+    LifeLineBorderColor #374151
+    LifeLineBackgroundColor #F3F4F6
+    ParticipantBorderColor #1565C0
+    ParticipantBackgroundColor #DBEAFE
+}
+
+skinparam participant {
+    BackgroundColor<<ui>> #DBEAFE
+    BackgroundColor<<api>> #D1FAE5
+    BackgroundColor<<db>> #FEF3C7
+}
+
+title Authentication Sequence Diagram
+
+actor "User" as User
+participant "Next.js\nLogin Page" as UI <<ui>>
+participant "Express\nBackend API" as API <<api>>
+database "PostgreSQL\nDatabase" as DB <<db>>
+
+User -> UI : 1. Enter email & password
+activate UI
+
+UI -> UI : 2. Client-side validation\n(Zod schema)
+
+UI -> API : 3. POST /api/auth/login\n{email, password}
+activate API
+
+API -> DB : 4. SELECT * FROM users\nWHERE email = ?
+activate DB
+DB --> API : 5. User record\n(id, email, passwordHash, role)
+deactivate DB
+
+API -> API : 6. bcrypt.compare(\n  password, passwordHash\n)
+
+alt Password Valid
+    API -> API : 7. Generate JWT token\njwt.sign({userId, role})
+    
+    API -> DB : 8. INSERT INTO sessions\n(userId, token, expiresAt, ip)
+    activate DB
+    DB --> API : 9. Session created
+    deactivate DB
+    
+    API -> DB : 10. UPDATE users\nSET lastLogin = NOW()
+    
+    API --> UI : 11. 200 OK\n{\n  token: "eyJ...",\n  user: {id, name, role}\n}
+    
+    UI -> UI : 12. Store token in\nAuthContext + Cookie
+    
+    UI --> User : 13. Redirect to\n/dashboard
+    
+else Password Invalid
+    API --> UI : 401 Unauthorized\n{error: "Invalid credentials"}
+    UI --> User : Display error toast\n"Invalid email or password"
+end
+
+deactivate API
+deactivate UI
+
+note over API
+  JWT expires in 7 days
+  Session stored for audit
+end note
+
+@enduml
+
+' ============================================================================
+' 5. SEQUENCE DIAGRAM: RAG CHAT WORKFLOW
+' File: sequence_rag_chat.png
+' ============================================================================
+@startuml sequence_rag_chat
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+
+skinparam sequence {
+    ArrowColor #7C3AED
+    LifeLineBorderColor #374151
+    LifeLineBackgroundColor #F3F4F6
+    ParticipantBorderColor #7C3AED
+    ParticipantBackgroundColor #F3E8FF
+}
+
+title RAG (Retrieval Augmented Generation) Chat Workflow
+
+actor "Security\nAnalyst" as Analyst
+participant "Chat\nInterface" as ChatUI #DBEAFE
+participant "Chat\nRoute" as ChatAPI #D1FAE5
+participant "Prisma\nORM" as Prisma #FEF3C7
+database "PostgreSQL" as DB #FEF3C7
+participant "AI Manager\n(Adapter)" as AIManager #F3E8FF
+participant "Ollama\nLLM" as Ollama #EDE9FE
+
+Analyst -> ChatUI : "Why are users failing\nto login this morning?"
+activate ChatUI
+
+ChatUI -> ChatAPI : POST /api/chat\n{\n  message: "...",\n  filters: {timeRange: "1h"}\n}
+activate ChatAPI
+
+group #E8F5E9 RAG Context Retrieval
+    ChatAPI -> Prisma : queryLogs({\n  level: ["ERROR", "WARN"],\n  startTime: now - 1h,\n  limit: 100\n})
+    activate Prisma
+    Prisma -> DB : SELECT * FROM logs\nWHERE timestamp > ?\nAND level IN (...)
+    activate DB
+    DB --> Prisma : 47 log entries
+    deactivate DB
+    Prisma --> ChatAPI : Log[] (47 entries)
+    deactivate Prisma
+    
+    ChatAPI -> Prisma : getStatsForLLM(60)
+    activate Prisma
+    Prisma -> DB : SELECT COUNT(*),\nGROUP BY level, service
+    activate DB
+    DB --> Prisma : Aggregated stats
+    deactivate DB
+    Prisma --> ChatAPI : {\n  totalLogs: 1247,\n  errorCount: 89,\n  topServices: [...]\n}
+    deactivate Prisma
+end
+
+ChatAPI -> ChatAPI : buildLogContext(\n  logs, stats\n)\n→ Format markdown\n   for LLM prompt
+
+ChatAPI -> AIManager : chat({\n  provider: "ollama",\n  messages: [...]\n})
+activate AIManager
+
+AIManager -> Ollama : POST /api/generate\n{\n  model: "qwen2.5:0.5b",\n  prompt: contextualPrompt,\n  stream: false\n}
+activate Ollama
+
+note over Ollama
+  LLM Inference
+  (~2-5 seconds)
+end note
+
+Ollama --> AIManager : {\n  response: "Based on the logs,\n  I identified 23 failed login\n  attempts from IP 192.168.1.50.\n  This appears to be a brute\n  force attack..."\n}
+deactivate Ollama
+
+AIManager --> ChatAPI : {\n  content: "...",\n  provider: "ollama",\n  tokensUsed: 847\n}
+deactivate AIManager
+
+ChatAPI -> Prisma : INSERT chat_message\n(sessionId, role, content)
+
+ChatAPI --> ChatUI : {\n  success: true,\n  response: "Based on...",\n  metadata: {\n    logsAnalyzed: 47,\n    provider: "ollama"\n  }\n}
+deactivate ChatAPI
+
+ChatUI -> ChatUI : Render Markdown\n(react-markdown)
+
+ChatUI --> Analyst : Display AI analysis\nwith formatted response
+deactivate ChatUI
+
+@enduml
+
+' ============================================================================
+' 6. SEQUENCE DIAGRAM: LOG INGESTION WITH THREAT DETECTION
+' File: sequence_log_ingestion.png
+' ============================================================================
+@startuml sequence_log_ingestion
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+
+skinparam sequence {
+    ArrowColor #DC2626
+    LifeLineBorderColor #374151
+    LifeLineBackgroundColor #F3F4F6
+    ParticipantBorderColor #DC2626
+    ParticipantBackgroundColor #FEE2E2
+}
+
+title Log Ingestion with Real-time Threat Detection
+
+actor "LogChat\nAgent" as Agent #FED7AA
+participant "Ingest\nEndpoint" as IngestAPI #D1FAE5
+participant "Zod\nValidator" as Zod #DBEAFE
+participant "Threat\nEngine" as ThreatEngine #FEE2E2
+participant "Prisma\nORM" as Prisma #FEF3C7
+database "PostgreSQL" as DB #FEF3C7
+participant "SSE\nBroadcaster" as SSE #EDE9FE
+participant "Dashboard\nClients" as Clients #DBEAFE
+
+Agent -> IngestAPI : POST /api/logs/ingest\nHeaders: {\n  X-API-Key: "src_xxx..."\n}\nBody: {\n  agent: {hostname, env},\n  logs: [{...}, {...}]\n}
+activate IngestAPI
+
+IngestAPI -> IngestAPI : Validate X-API-Key\nagainst log_sources table
+
+IngestAPI -> Zod : validate(requestBody)
+activate Zod
+Zod --> IngestAPI : Validated payload
+deactivate Zod
+
+loop For each log entry (N logs)
+    IngestAPI -> ThreatEngine : analyzeThreat(log)
+    activate ThreatEngine
+    
+    ThreatEngine -> ThreatEngine : Check SQL Injection\n/('|--|;|OR 1=1)/i
+    ThreatEngine -> ThreatEngine : Check XSS\n/<script|javascript:/i
+    ThreatEngine -> ThreatEngine : Check Path Traversal\n/\\.\\.\\/|etc\\/passwd/i
+    ThreatEngine -> ThreatEngine : Check Brute Force\n(failed login counter)
+    
+    alt Threat Detected
+        ThreatEngine --> IngestAPI : {\n  threat: "SQL_INJECTION",\n  severity: "CRITICAL",\n  mitre: "T1190"\n}
+        
+        IngestAPI -> Prisma : INSERT INTO alerts\n(logId, severity, type, message)
+        activate Prisma
+        Prisma -> DB : INSERT
+        DB --> Prisma : Alert created
+        deactivate Prisma
+        
+    else No Threat
+        ThreatEngine --> IngestAPI : { threat: null }
+    end
+    deactivate ThreatEngine
+    
+    IngestAPI -> Prisma : INSERT INTO logs\n(timestamp, level, service,\n message, raw, meta)
+    activate Prisma
+    Prisma -> DB : INSERT
+    DB --> Prisma : Log created
+    deactivate Prisma
+end
+
+IngestAPI -> SSE : broadcast({\n  event: "batch",\n  data: {\n    count: N,\n    alertCount: M,\n    timestamp: now\n  }\n})
+activate SSE
+
+SSE -> Clients : event: batch\ndata: {"count": N, ...}
+note right of Clients
+  Dashboard updates
+  in real-time
+end note
+
+deactivate SSE
+
+IngestAPI --> Agent : 201 Created\n{\n  success: true,\n  ingested: N,\n  alerts: M,\n  processingTime: "45ms"\n}
+deactivate IngestAPI
+
+@enduml
+
+' ============================================================================
+' 7. ACTIVITY DIAGRAM: THREAT DETECTION ENGINE
+' File: activity_threat_detection.png
+' ============================================================================
+@startuml activity_threat_detection
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam backgroundColor #FEFEFE
+
+skinparam activity {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    DiamondBackgroundColor #FEF3C7
+    DiamondBorderColor #D97706
+}
+
+skinparam activityDiamond {
+    BackgroundColor #FEF3C7
+    BorderColor #D97706
+}
+
+title Threat Detection Engine - Activity Diagram
+
+start
+
+:Log Entry Received\nvia /api/logs/ingest;
+
+partition "Pre-processing" #E8F5E9 {
+    :Parse JSON Payload;
+    :Extract Metadata\n(IP, UserAgent, Timestamp);
+    :Validate Schema\n(Zod);
+}
+
+partition "Threat Analysis Engine" #FEE2E2 {
+    
+    if (Matches SQL Injection\nPattern?) then (yes)
+        #FF6B6B:Tag: **CRITICAL**;
+        :Create Alert\nType: SQL_INJECTION\nMITRE: T1190;
+        :Log to Audit Trail;
+    else (no)
+        if (Matches XSS\nPattern?) then (yes)
+            #FFA94D:Tag: **HIGH**;
+            :Create Alert\nType: XSS_ATTEMPT\nMITRE: T1059.007;
+        else (no)
+            if (Contains Path\nTraversal?) then (yes)
+                #FF6B6B:Tag: **CRITICAL**;
+                :Create Alert\nType: PATH_TRAVERSAL\nMITRE: T1083;
+            else (no)
+                if (Failed Login\nAttempt?) then (yes)
+                    :Increment Counter\nfor Source IP;
+                    
+                    if (Counter > 5\nin 60 seconds?) then (yes)
+                        #FFA94D:Tag: **HIGH**;
+                        :Create Alert\nType: BRUTE_FORCE\nMITRE: T1110;
+                    else (no)
+                        #FFD93D:Tag: **WARN**;
+                    endif
+                else (no)
+                    if (Level == ERROR?) then (yes)
+                        #FFD93D:Tag: **WARN**;
+                    else (no)
+                        #51CF66:Tag: **INFO**;
+                    endif
+                endif
+            endif
+        endif
+    endif
+}
+
+partition "Persistence & Notification" #E3F2FD {
+    :Save Log Entry\nto PostgreSQL\n(via Prisma);
+    
+    if (Alert Created?) then (yes)
+        fork
+            :Broadcast Alert\nvia SSE;
+        fork again
+            :Update Dashboard\nStats;
+        fork again
+            :Log to Audit\nTrail;
+        end fork
+    else (no)
+        :Broadcast Log Event\nvia SSE;
+    endif
+}
+
+stop
+
+legend right
+  |= Color |= Severity |
+  | <#FF6B6B> | CRITICAL |
+  | <#FFA94D> | HIGH |
+  | <#FFD93D> | WARN |
+  | <#51CF66> | INFO |
+endlegend
+
+@enduml
+
+' ============================================================================
+' 8. CLASS DIAGRAM: DOMAIN MODEL
+' File: class_diagram_erd.png
+' ============================================================================
+@startuml class_diagram_erd
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam backgroundColor #FEFEFE
+skinparam classAttributeIconSize 0
+
+skinparam class {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    ArrowColor #1565C0
+}
+
+skinparam class {
+    BackgroundColor<<entity>> #DBEAFE
+    BackgroundColor<<enum>> #FEF3C7
+    BackgroundColor<<service>> #D1FAE5
+}
+
+title LogChat Domain Model - Class Diagram
+
+' ===== ENUMS =====
+enum Role <<enum>> {
+    ADMIN
+    STAFF
+    USER
+}
+
+enum LogLevel <<enum>> {
+    DEBUG
+    INFO
+    WARN
+    ERROR
+    FATAL
+}
+
+enum AlertSeverity <<enum>> {
+    LOW
+    MEDIUM
+    HIGH
+    CRITICAL
+}
+
+enum AlertStatus <<enum>> {
+    NEW
+    ACKNOWLEDGED
+    RESOLVED
+    FALSE_POSITIVE
+}
+
+' ===== ENTITIES =====
+class User <<entity>> {
+    +id: String <<PK, CUID>>
+    +email: String <<unique>>
+    +password: String
+    +name: String
+    +role: Role
+    +active: Boolean
+    +createdAt: DateTime
+    +updatedAt: DateTime
+    +lastLogin: DateTime?
+    --
+    +login(password: String): AuthResult
+    +hasPermission(action: String): Boolean
+    +updateProfile(data: ProfileDTO): User
+}
+
+class Session <<entity>> {
+    +id: String <<PK, CUID>>
+    +token: String <<unique>>
+    +userId: String <<FK>>
+    +expiresAt: DateTime
+    +ipAddress: String?
+    +userAgent: String?
+    +createdAt: DateTime
+    --
+    +isValid(): Boolean
+    +refresh(): Session
+    +revoke(): void
+}
+
+class LogEntry <<entity>> {
+    +id: String <<PK, CUID>>
+    +timestamp: DateTime
+    +level: LogLevel
+    +service: String
+    +message: String
+    +raw: String
+    +meta: Json?
+    +sourceId: String? <<FK>>
+    +createdAt: DateTime
+    --
+    +matchesThreat(pattern: RegExp): Boolean
+    +toJSON(): Object
+}
+
+class ChatSession <<entity>> {
+    +id: String <<PK, CUID>>
+    +userId: String <<FK>>
+    +title: String
+    +messageCount: Int
+    +archived: Boolean
+    +createdAt: DateTime
+    +updatedAt: DateTime
+    --
+    +addMessage(content, role): ChatMessage
+    +archive(): void
+    +generateTitle(): String
+}
+
+class ChatMessage <<entity>> {
+    +id: String <<PK, CUID>>
+    +sessionId: String <<FK>>
+    +role: String {user, assistant}
+    +content: String
+    +responseTime: Int?
+    +tokensUsed: Int?
+    +provider: String?
+    +createdAt: DateTime
+}
+
+class LogSource <<entity>> {
+    +id: String <<PK, CUID>>
+    +name: String
+    +type: String
+    +description: String?
+    +apiKey: String <<unique>>
+    +apiKeyHash: String
+    +rateLimit: Int
+    +isActive: Boolean
+    +lastSeen: DateTime?
+    +createdAt: DateTime
+    --
+    +validateApiKey(key: String): Boolean
+    +generateNewKey(): String
+}
+
+class Alert <<entity>> {
+    +id: String <<PK, CUID>>
+    +logId: String? <<FK>>
+    +ruleId: String? <<FK>>
+    +severity: AlertSeverity
+    +type: String
+    +message: String
+    +status: AlertStatus
+    +isAcknowledged: Boolean
+    +acknowledgedBy: String? <<FK>>
+    +acknowledgedAt: DateTime?
+    +createdAt: DateTime
+    --
+    +acknowledge(userId: String): void
+    +resolve(userId: String): void
+    +markFalsePositive(): void
+}
+
+class AuditLog <<entity>> {
+    +id: String <<PK, CUID>>
+    +userId: String? <<FK>>
+    +action: String
+    +resource: String
+    +resourceId: String?
+    +details: Json?
+    +ipAddress: String?
+    +userAgent: String?
+    +timestamp: DateTime
+}
+
+class AlertRule <<entity>> {
+    +id: String <<PK, CUID>>
+    +name: String
+    +description: String?
+    +pattern: String
+    +severity: AlertSeverity
+    +isActive: Boolean
+    +createdBy: String <<FK>>
+    +createdAt: DateTime
+    --
+    +matches(log: LogEntry): Boolean
+}
+
+' ===== RELATIONSHIPS =====
+User "1" -- "*" Session : has >
+User "1" -- "*" ChatSession : owns >
+User "1" -- "*" AuditLog : generates >
+User "1" -- "*" Alert : acknowledges >
+User "1" -- "*" AlertRule : creates >
+
+ChatSession "1" *-- "*" ChatMessage : contains >
+
+LogEntry "*" -- "0..1" Alert : triggers >
+LogEntry "*" -- "0..1" LogSource : from >
+
+AlertRule "1" -- "*" Alert : generates >
+
+' Hidden links for layout
+User -[hidden]right- Role
+LogEntry -[hidden]right- LogLevel
+Alert -[hidden]right- AlertSeverity
+
+@enduml
+
+' ============================================================================
+' 9. GOLANG AGENT INTERNAL ARCHITECTURE
+' File: agent_architecture.png
+' ============================================================================
+@startuml agent_architecture
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam componentStyle uml2
+skinparam backgroundColor #FEFEFE
+
+skinparam component {
+    BackgroundColor #D1FAE5
+    BorderColor #059669
+}
+
+skinparam package {
+    BackgroundColor #ECFDF5
+    BorderColor #059669
+}
+
+skinparam interface {
+    BackgroundColor #FEF3C7
+    BorderColor #D97706
+}
+
+title LogChat Golang Agent - Internal Architecture
+
+package "cmd/agent" as CmdPkg #E0F2FE {
+    component "main.go\n<<Entry Point>>" as Main
+    note right of Main
+      • Parse CLI flags
+      • Load config
+      • Initialize components
+      • Signal handling
+    end note
+}
+
+package "internal/config" as ConfigPkg #FEF3C7 {
+    component "config.go\n<<YAML Parser>>" as Config
+    component "validate.go\n<<Validation>>" as Validate
+    
+    Config --> Validate
+}
+
+package "internal/collector" as CollectorPkg #D1FAE5 {
+    interface "Collector" as ICollector {
+        +Name(): string
+        +Start(ctx context.Context)
+        +Stop()
+        +Stats(): map[string]any
+    }
+    
+    component "BaseCollector\n<<Abstract>>" as BaseCollector
+    
+    component "FileCollector\n<<tail -f>>" as FileCollector {
+        - paths: []string
+        - parser: Parser
+        - tailer: *tail.Tail
+    }
+    
+    component "EventLogCollector\n<<Windows API>>" as EventLogCollector {
+        - channels: []string
+        - handles: []Handle
+    }
+    
+    component "JournaldCollector\n<<systemd>>" as JournaldCollector {
+        - units: []string
+        - journal: *Journal
+    }
+    
+    component "SyslogCollector\n<<UDP/TCP>>" as SyslogCollector {
+        - listener: net.Listener
+        - port: int
+    }
+    
+    BaseCollector ..|> ICollector
+    FileCollector --|> BaseCollector
+    EventLogCollector --|> BaseCollector
+    JournaldCollector --|> BaseCollector
+    SyslogCollector --|> BaseCollector
+}
+
+package "internal/buffer" as BufferPkg #EDE9FE {
+    component "RingBuffer\n<<Thread-safe Queue>>" as RingBuffer {
+        - entries: []LogEntry
+        - head, tail: int
+        - mutex: sync.Mutex
+    }
+    
+    component "Persistence\n<<Disk Backup>>" as Persistence
+    
+    RingBuffer --> Persistence : backup on\noverflow
+}
+
+package "internal/sender" as SenderPkg #FEE2E2 {
+    component "Sender\n<<HTTP Client>>" as Sender {
+        - serverURL: string
+        - apiKey: string
+        - client: *http.Client
+    }
+    
+    component "RetryLogic\n<<Exp. Backoff>>" as Retry {
+        - maxRetries: int
+        - baseDelay: time.Duration
+    }
+    
+    component "HealthCheck\n<<Liveness>>" as HealthCheck
+    
+    Sender --> Retry
+    Sender --> HealthCheck
+}
+
+' Main connections
+Main --> Config : Load
+Main --> RingBuffer : Create
+Main --> Sender : Initialize
+Main --> ICollector : Start all
+
+' Collector to Sender flow
+ICollector --> Sender : Send(log)
+Sender --> RingBuffer : Buffer on\nfailure
+
+' Notes
+note bottom of EventLogCollector
+  Windows only
+  Build tag: //go:build windows
+  Uses: golang.org/x/sys/windows
+end note
+
+note bottom of FileCollector
+  Uses: nxadm/tail
+  Supports: glob patterns
+  Parsers: JSON, Regex, Raw
+end note
+
+note bottom of JournaldCollector
+  Linux only
+  Build tag: //go:build linux
+  Uses: coreos/go-systemd
+end note
+
+@enduml
+
+' ============================================================================
+' 10. DATA FLOW DIAGRAM
+' File: data_flow_diagram.png
+' ============================================================================
+@startuml data_flow_diagram
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam backgroundColor #FEFEFE
+
+skinparam rectangle {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    RoundCorner 15
+}
+
+skinparam database {
+    BackgroundColor #FEF3C7
+    BorderColor #D97706
+}
+
+skinparam storage {
+    BackgroundColor #D1FAE5
+    BorderColor #059669
+}
+
+skinparam cloud {
+    BackgroundColor #F3E8FF
+    BorderColor #7C3AED
+}
+
+title LogChat - Data Flow Diagram (DFD Level 1)
+
+' External entities
+rectangle "Log Sources" as Sources #FED7AA {
+    storage "Application\nLogs" as AppLogs
+    storage "System\nLogs" as SysLogs
+    storage "Security\nLogs" as SecLogs
+}
+
+rectangle "LogChat Agent\n(Golang)" as Agent #D1FAE5 {
+    storage "Collect" as AgentCollect
+    storage "Parse" as AgentParse
+    storage "Buffer" as AgentBuffer
+    storage "Compress" as AgentCompress
+}
+
+rectangle "Backend Processing\n(Node.js/Express)" as Backend #E3F2FD {
+    storage "Validate\n(Zod)" as Validate
+    storage "Threat\nDetection" as ThreatDetect
+    storage "Enrich\n& Store" as Enrich
+    storage "AI\nAnalysis" as AIAnalysis
+}
+
+database "PostgreSQL\nDatabase" as DB #FEF3C7 {
+    storage "logs" as LogsDB
+    storage "alerts" as AlertsDB
+    storage "users" as UsersDB
+    storage "chat_sessions" as ChatDB
+}
+
+cloud "Ollama LLM" as Ollama #F3E8FF
+
+rectangle "Client Applications" as Clients #DBEAFE {
+    storage "Dashboard" as Dashboard
+    storage "AI Chat" as Chat
+    storage "Reports" as Reports
+    storage "Alerts" as AlertsUI
+}
+
+rectangle "End Users" as Users #E8F5E9 {
+    storage "Security\nAnalyst" as Analyst
+    storage "Admin" as Admin
+}
+
+' Data flows
+Sources --> Agent : Raw logs
+Agent --> Backend : HTTP POST\n/api/logs/ingest\n(JSON batch)
+
+Backend --> DB : Store\n(Prisma)
+Backend --> Ollama : RAG\nPrompt
+Ollama --> Backend : AI\nResponse
+
+DB --> Backend : Query\nresults
+Backend --> Clients : REST API\n+ SSE Stream
+
+Clients --> Users : Visualize\n& Interact
+Users --> Clients : Input\n& Queries
+
+' Internal flows
+AppLogs --> AgentCollect
+SysLogs --> AgentCollect
+SecLogs --> AgentCollect
+AgentCollect --> AgentParse
+AgentParse --> AgentBuffer
+AgentBuffer --> AgentCompress
+
+Validate --> ThreatDetect
+ThreatDetect --> Enrich
+Enrich --> LogsDB
+ThreatDetect --> AlertsDB
+AIAnalysis --> ChatDB
+
+Dashboard --> Analyst
+Chat --> Analyst
+Reports --> Analyst
+AlertsUI --> Analyst
+Dashboard --> Admin
+
+@enduml
+
+' ============================================================================
+' 11. STATE DIAGRAM: ALERT LIFECYCLE
+' File: state_alert_lifecycle.png
+' ============================================================================
+@startuml state_alert_lifecycle
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam backgroundColor #FEFEFE
+
+skinparam state {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+}
+
+skinparam state {
+    BackgroundColor<<new>> #FEE2E2
+    BackgroundColor<<ack>> #FEF3C7
+    BackgroundColor<<resolved>> #D1FAE5
+    BackgroundColor<<false>> #E5E7EB
+}
+
+title Alert Lifecycle - State Diagram
+
+[*] --> New : Threat Detected
+
+state "New" as New <<new>> {
+    state "Unacknowledged" as Unack
+    state "Priority Queue" as Queue
+    
+    Unack --> Queue : Added to\ndashboard
+}
+
+state "Acknowledged" as Ack <<ack>> {
+    state "Under Investigation" as Investigating
+    state "Assigned" as Assigned
+    
+    Investigating --> Assigned : Assign to\nanalyst
+    Assigned --> Investigating : Investigation\nstarted
+}
+
+state "Resolved" as Resolved <<resolved>> {
+    state "Remediated" as Fixed
+    state "Closed" as Closed
+    
+    Fixed --> Closed : Close ticket
+}
+
+state "False Positive" as FalsePos <<false>> {
+    state "Marked FP" as MarkedFP
+    state "Rule Updated" as RuleUpdated
+    
+    MarkedFP --> RuleUpdated : Update\ndetection rule
+}
+
+New --> Ack : analyst.acknowledge()
+Ack --> Resolved : issue.fix()
+Ack --> FalsePos : mark.falsePositive()
+Ack --> New : reopen()
+
+Resolved --> [*]
+FalsePos --> [*]
+
+note right of New
+  Dashboard shows
+  blinking indicator
+  with count badge
+end note
+
+note right of Ack
+  Timer starts for
+  SLA tracking
+end note
+
+note bottom of Resolved
+  Audit log records
+  resolution details
+end note
+
+@enduml
+
+' ============================================================================
+' 12. PACKAGE DIAGRAM: PROJECT STRUCTURE
+' File: package_structure.png
+' ============================================================================
+@startuml package_structure
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam backgroundColor #FEFEFE
+
+skinparam package {
+    BackgroundColor #F3F4F6
+    BorderColor #374151
+}
+
+skinparam folder {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+}
+
+title LogChat - Project Package Structure
+
+package "logchat/" as Root {
+    
+    folder "frontend/" as Frontend #DBEAFE {
+        folder "app/" as App {
+            [page.tsx] as LandingPage
+            [layout.tsx] as RootLayout
+            folder "dashboard/" {
+                [page.tsx] as DashboardPage
+            }
+            folder "chat/" {
+                [page.tsx] as ChatPage
+            }
+            folder "login/" {
+                [page.tsx] as LoginPage
+            }
+            folder "admin/" {
+                [page.tsx] as AdminPage
+            }
+        }
+        folder "components/" as Components {
+            [Navbar.tsx]
+            [StatsCards.tsx]
+            [LogsChart.tsx]
+            [LogTable.tsx]
+            [ChatInterface.tsx]
+        }
+        folder "lib/" as Lib {
+            [api.ts]
+            [auth.ts]
+            [utils.ts]
+        }
+        [package.json]
+        [tailwind.config.ts]
+        [next.config.js]
+    }
+    
+    folder "backend/" as Backend #D1FAE5 {
+        folder "src/" as Src {
+            [index.ts] as ServerEntry
+            folder "routes/" {
+                [auth.ts]
+                [logs.ts]
+                [chat.ts]
+                [stream.ts]
+            }
+            folder "services/" {
+                [auth.ts] as AuthService
+                [logs.ts] as LogsService
+                [chat.ts] as ChatService
+                [ollama.ts] as OllamaService
+                [aiManager.ts]
+                [threatDetection.ts]
+            }
+            folder "middleware/" {
+                [auth.ts] as AuthMiddleware
+                [rateLimit.ts]
+            }
+        }
+        folder "prisma/" {
+            [schema.prisma]
+        }
+        [package.json] as BackendPkg
+        [tsconfig.json]
+        [Dockerfile]
+    }
+    
+    folder "golang-agent/" as Agent #FEF3C7 {
+        folder "cmd/agent/" {
+            [main.go]
+        }
+        folder "internal/" {
+            folder "collector/" {
+                [collector.go]
+                [file.go]
+                [eventlog_windows.go]
+                [journald_linux.go]
+            }
+            folder "sender/" {
+                [sender.go]
+            }
+            folder "buffer/" {
+                [buffer.go]
+            }
+            folder "config/" {
+                [config.go]
+            }
+        }
+        [go.mod]
+        [go.sum]
+        [Makefile]
+        [config.yaml]
+    }
+    
+    [docker-compose.yml]
+    [README.md]
+    [.env.example]
+}
+
+@enduml
+
+' ============================================================================
+' 13. DASHBOARD WIREFRAME (Mockup)
+' File: dashboard_wireframe.png
+' ============================================================================
+@startuml dashboard_wireframe
+
+!define ICONURL https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v2.4.0
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName Inter
+
+title LogChat Dashboard - UI Wireframe
+
+skinparam rectangle {
+    BackgroundColor #F9FAFB
+    BorderColor #E5E7EB
+    RoundCorner 8
+}
+
+rectangle "Dashboard Layout" as Layout {
+    
+    rectangle "Header / Navbar" as Header #1E3A8A {
+        rectangle "🛡️ LogChat" as Logo #1E3A8A
+        rectangle "Dashboard | Chat | Admin" as Nav #1E3A8A
+        rectangle "👤 John Doe ▼" as User #1E3A8A
+    }
+    
+    rectangle "Stats Cards Row" as StatsRow #F9FAFB {
+        rectangle "📊 Total Logs\n**12,547**\n↑ 12.3%" as TotalLogs #DBEAFE
+        rectangle "🔴 Errors\n**234**\n↓ 5.2%" as Errors #FEE2E2
+        rectangle "⚠️ Warnings\n**567**\n↑ 2.1%" as Warnings #FEF3C7
+        rectangle "🛡️ Threats\n**12**\n↑ 3" as Threats #EDE9FE
+    }
+    
+    rectangle "Charts Row" as ChartsRow #F9FAFB {
+        rectangle "Logs Over Time (24h)\n📈 Line Chart\n[Area chart visualization]" as TimeChart #FFFFFF
+        rectangle "Top Error Services\n📊 Bar Chart\nauth-service ████ 45\napi-gateway ███ 34" as ServicesChart #FFFFFF
+    }
+    
+    rectangle "Logs Table" as LogsTable #FFFFFF {
+        rectangle "🔍 Search... | Level ▼ | Service ▼ | Time: 24h ▼ | 🔄 Refresh" as Filters #F3F4F6
+        rectangle "TIME | LEVEL | SERVICE | MESSAGE\n14:32:15 | 🔴 ERR | auth-service | Failed login attempt from...\n14:32:12 | 🟡 WARN | api-gateway | Rate limit exceeded for...\n14:32:10 | 🔵 INFO | user-service | User profile updated..." as Table #FFFFFF
+        rectangle "◀ 1 2 3 4 5 ... 47 ▶ | Showing 1-20 of 932" as Pagination #F3F4F6
+    }
+}
+
+Header -[hidden]down- StatsRow
+StatsRow -[hidden]down- ChartsRow
+ChartsRow -[hidden]down- LogsTable
+
+@enduml
