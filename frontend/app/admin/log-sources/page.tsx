@@ -701,6 +701,7 @@ export default function LogSourcesPage() {
                         webhookUrl: '',
                         rateLimit: 1000,
                         rateLimitWindow: 60,
+                        environment: '',
                       });
                     }}
                     className="px-4 py-2 border border-border rounded-lg hover:bg-surface-hover transition"

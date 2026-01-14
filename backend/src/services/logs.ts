@@ -177,6 +177,18 @@ export async function createLogs(inputs: LogInput[]): Promise<number> {
   });
   
   const result = await prisma.log.createMany({ data });
+  
+  // Scan batch for threats (sample a few for performance)
+  // Get IDs of recently inserted logs for threat detection
+  const recentLogs = await prisma.log.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: Math.min(data.length, 10), // Check up to 10 logs per batch
+  });
+  
+  for (const log of recentLogs) {
+    detectThreats(log).catch(err => console.error(`[ThreatDetection] Batch scan error:`, err));
+  }
+  
   return result.count;
 }
 

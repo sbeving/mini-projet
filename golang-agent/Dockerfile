@@ -30,8 +30,7 @@ COPY --from=builder /logchat-agent /usr/local/bin/logchat-agent
 RUN mkdir -p /etc/logchat
 
 # Copy default config if exists
-COPY --from=builder /app/logchat-agent.yaml /etc/logchat/agent.yaml 2>/dev/null || true
-
+COPY --from=builder /app/logchat-agent.yaml /etc/logchat/agent.yaml 
 # Run as non-root
 RUN adduser -D -H logchat
 USER logchat
