@@ -332,6 +332,28 @@ export async function seedDefaultUsers() {
       console.log(`Created default user: ${userData.email} (${userData.role})`);
     }
   }
+
+  // Ensure default Alert Rules exist for Threat Detection
+  const admin = await prisma.user.findUnique({ where: { email: 'admin@logchat.com' } });
+  if (admin) {
+    const existingRule = await prisma.alertRule.findFirst({ where: { name: 'System Security Rules' } });
+    if (!existingRule) {
+      await prisma.alertRule.create({
+        data: {
+          name: 'System Security Rules',
+          createdById: admin.id,
+          condition: 'Pattern Match',
+          type: 'SYSTEM',
+          severity: 'HIGH',
+          isActive: true,
+          config: {
+             description: 'Default rules for detecting SQLi, XSS, and Brute Force patterns'
+          }
+        }
+      });
+      console.log('Created default System Security Alert Rules');
+    }
+  }
 }
 
 /**
