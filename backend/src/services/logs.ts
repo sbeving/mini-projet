@@ -5,6 +5,7 @@
 
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
+import { detectThreats } from './threat-detection.js';
 
 // Types for log data
 export interface ParsedLog {
@@ -116,7 +117,7 @@ export async function createLog(input: LogInput): Promise<ParsedLog> {
   }
   
   // Store in database
-  await prisma.log.create({
+  const log = await prisma.log.create({
     data: {
       timestamp: parsed.timestamp,
       level: parsed.level,
@@ -127,6 +128,9 @@ export async function createLog(input: LogInput): Promise<ParsedLog> {
     },
   });
   
+  // Real-time Threat Detection
+  detectThreats(log).catch(err => console.error(`[ThreatDetection] Error scanning log ${log.id}:`, err));
+
   return parsed;
 }
 
