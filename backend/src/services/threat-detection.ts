@@ -47,33 +47,33 @@ const PATTERNS: ThreatPattern[] = [
     severity: ThreatSeverity.HIGH,
     description: "Potential Cross-Site Scripting (XSS) detected"
   },
-  // Brute Force / Auth Failures
+  // Brute Force / Auth Failures - expanded patterns
   {
     type: ThreatType.BRUTE_FORCE,
-    pattern: /(failed login|invalid credentials|authentication failure|password check failed|bad password|incorrect password|too many attempts)/i,
-    severity: ThreatSeverity.MEDIUM,
-    description: "Authentication failure or potential brute force"
+    pattern: /(failed password for|invalid user|authentication failure|too many authentication failures|bruteforce attempt|failed login|maximum authentication attempts)/i,
+    severity: ThreatSeverity.HIGH,
+    description: "SSH/Auth brute force attack detected"
   },
   // Sensitive Data Leak
   {
     type: ThreatType.SENSITIVE_DATA,
-    pattern: /\b(api[_-]?key|access[_-]?token|secret[_-]?key|aws[_-]?access|bearer\s+eyJ)/i,
+    pattern: /(api[_-]?key\s*=|access[_-]?token|secret[_-]?key|aws[_-]?access|bearer\s+eyJ|credential.*(leak|exposed))/i,
     severity: ThreatSeverity.HIGH,
     description: "Possible exposure of sensitive API keys or tokens"
   },
-  // Suspicious Access
+  // Suspicious Access / Path Traversal
   {
     type: ThreatType.SUSPICIOUS_ACCESS,
-    pattern: /(\/etc\/passwd|\/etc\/shadow|\btraversal\b|\.\.\/|\.\.\\)/i,
+    pattern: /(\/etc\/passwd|\/etc\/shadow|directory traversal|\.\.\/\.\.\/|path traversal)/i,
     severity: ThreatSeverity.HIGH,
     description: "Directory traversal or system file access attempt"
   },
   // Shell Injection
   {
     type: ThreatType.SYSTEM_ANOMALY,
-    pattern: /(\b(rm|cp|mv|chmod|chown)\b\s+-\w+)|(\/bin\/sh|\/bin\/bash)|(cmd\.exe)|(powershell)/i,
+    pattern: /(\/bin\/sh|\/bin\/bash)|(cmd\.exe)|(powershell)|(DROP TABLE)/i,
     severity: ThreatSeverity.CRITICAL,
-    description: "Potential shell command injection"
+    description: "Potential shell/SQL command injection"
   }
 ];
 

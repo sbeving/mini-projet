@@ -16,7 +16,7 @@ const http = require('http');
 const CONFIG = {
   apiUrl: process.env.API_URL || 'http://localhost:3001/api/logs',
   apiKey: 'ls_5462e3b66cd403859176aab2b5303f0b9f4705f6125b1d25ed4353fe1ef3d6f7',
-  batchSize: 50,         // Logs per batch
+  batchSize: 1,         // Logs per batch
   intervalMs: 1000,       // Interval between batches
   servicesCount: 50      // Total simulated services
 };

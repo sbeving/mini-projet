@@ -102,11 +102,13 @@ collectors:
       tags:
         type: "error"
     
-    # System logs (Linux)
+    # System logs (Linux) - Kali/Debian paths
     - enabled: true
       paths:
         - "/var/log/syslog"
         - "/var/log/messages"
+        - "/var/log/auth.log"
+        - "/var/log/kern.log"
       service: "system"
       parser: "plain"
     
@@ -126,14 +128,10 @@ collectors:
     enabled: true
     
     # Units to collect from (empty = all units)
-    units:
-      - "docker.service"
-      - "nginx.service"
-      - "sshd.service"
-      - "postgresql.service"
+    units: []  # Empty means ALL units - better for demo
     
     # How far back to start collecting
-    since: "-1h"
+    since: "-5m"
     
     # Minimum priority level (0=Emergency to 7=Debug)
     # 0: Emergency
@@ -144,18 +142,18 @@ collectors:
     # 5: Notice
     # 6: Informational
     # 7: Debug
-    priority: 4
+    priority: 6  # Get INFO and above
 
   # --------------------------------------------------------------------------
   # SYSLOG COLLECTOR (Linux only)
   # Listen for syslog messages
   # --------------------------------------------------------------------------
   syslog:
-    enabled: false
+    enabled: true
     
     # Listen address
     # Format: protocol://address:port or unix:///path/to/socket
-    address: "udp://0.0.0.0:514"
+    address: "udp://0.0.0.0:1514"  # Use 1514 to avoid needing root for 514
     
     # Syslog protocol: rfc3164 or rfc5424
     protocol: "rfc3164"
