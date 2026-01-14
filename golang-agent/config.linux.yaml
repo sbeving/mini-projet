@@ -9,7 +9,7 @@ server:
   url: "http://localhost:3001"
   
   # API key for authentication (get this from LogChat admin panel)
-  api_key: "${LOGCHAT_API_KEY}"
+  api_key: "ls_5462e3b66cd403859176aab2b5303f0b9f4705f6125b1d25ed4353fe1ef3d6f7"
   
   # Connection timeout
   timeout: 30s
