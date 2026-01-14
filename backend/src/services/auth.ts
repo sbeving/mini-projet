@@ -341,14 +341,11 @@ export async function seedDefaultUsers() {
       await prisma.alertRule.create({
         data: {
           name: 'System Security Rules',
+          description: 'Default rules for detecting SQLi, XSS, and Brute Force patterns',
           createdById: admin.id,
-          condition: 'Pattern Match',
-          type: 'SYSTEM',
+          condition: { type: 'PATTERN_MATCH', patterns: ['SQL_INJECTION', 'XSS', 'BRUTE_FORCE'] },
           severity: 'HIGH',
           isActive: true,
-          config: {
-             description: 'Default rules for detecting SQLi, XSS, and Brute Force patterns'
-          }
         }
       });
       console.log('Created default System Security Alert Rules');

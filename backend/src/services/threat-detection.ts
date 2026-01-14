@@ -122,12 +122,11 @@ async function createAlert(log: Log, finding: ThreatPattern) {
              rule = await prisma.alertRule.create({
                 data: {
                     name: 'System Security Rules',
-                    condition: 'Pattern Match',
+                    description: 'Auto-created security detection rules',
+                    condition: { type: 'PATTERN_MATCH', patterns: ['SQL_INJECTION', 'XSS', 'BRUTE_FORCE'] },
                     createdById: admin.id,
                     isActive: true,
-                    type: 'SYSTEM',
                     severity: 'HIGH',
-                    config: {}
                 }
              });
         }
