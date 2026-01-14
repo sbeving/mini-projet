@@ -131,6 +131,24 @@ export function broadcastLogs(logs: any[]) {
 }
 
 /**
+ * Broadcast a security alert to all connected SSE clients
+ */
+export function broadcastAlert(alert: any) {
+  const data = JSON.stringify(alert);
+  
+  clients.forEach((client, clientId) => {
+    try {
+      client.res.write(`event: alert\ndata: ${data}\n\n`);
+    } catch (err) {
+      console.error(`[SSE] Error broadcasting alert to client ${clientId}:`, err);
+      clients.delete(clientId);
+    }
+  });
+  
+  console.log(`[SSE] Broadcasted alert ${alert.id} to ${clients.size} clients`);
+}
+
+/**
  * Broadcast stats update to all connected SSE clients
  */
 export function broadcastStats(stats: any) {
