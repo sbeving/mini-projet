@@ -241,6 +241,21 @@ export default function DashboardPage() {
       }
     });
 
+    eventSource.addEventListener("alert", (event) => {
+      try {
+        const alert = JSON.parse(event.data);
+        console.log("[SSE] Alert received:", alert);
+        addToast({
+          type: "error",
+          title: `🛡️ SECURITY THREAT: ${alert.severity}`,
+          message: `${alert.message}`,
+          duration: 10000,
+        });
+      } catch (err) {
+        console.error("[SSE] Error parsing alert:", err);
+      }
+    });
+
     eventSource.addEventListener("batch", (event) => {
       try {
         const data = JSON.parse(event.data);
