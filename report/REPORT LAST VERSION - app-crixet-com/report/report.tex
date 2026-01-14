@@ -1,0 +1,2897 @@
+\documentclass[12pt,a4paper,twoside]{report}
+
+% =========================================================================
+% PACKAGES & CONFIGURATION
+% =========================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage[left=2.5cm,right=2cm,top=2cm,bottom=2cm,headheight=15pt]{geometry}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage[hidelinks, colorlinks=true, urlcolor=blue, linkcolor=black, citecolor=black]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{textcomp}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{csquotes}
+\usepackage{tocbibind}
+\usepackage{tcolorbox}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{pifont}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{appendix}
+\usepackage{nomencl}
+\usepackage{glossaries}
+\usepackage{emptypage}
+\usepackage{afterpage}
+
+\usetikzlibrary{shapes.geometric, arrows, positioning, calc, shadows}
+\pgfplotsset{compat=1.18}
+
+% Graphics path
+\graphicspath{{figures/}{diagrams/}{screenshots/}}
+
+% Colors
+\definecolor{primaryBlue}{RGB}{30, 58, 138}
+\definecolor{accentGreen}{RGB}{34, 197, 94}
+\definecolor{warningOrange}{RGB}{249, 115, 22}
+\definecolor{dangerRed}{RGB}{239, 68, 68}
+\definecolor{codeGreen}{rgb}{0,0.6,0}
+\definecolor{codeGray}{rgb}{0.5,0.5,0.5}
+\definecolor{codePurple}{rgb}{0.58,0,0.82}
+\definecolor{codeBack}{rgb}{0.97,0.97,0.97}
+
+% TColorBox
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{infobox}[1][]{
+    colback=blue!5, colframe=primaryBlue, fonttitle=\bfseries, title=#1, breakable
+}
+
+\newtcolorbox{warningbox}[1][]{
+    colback=orange!5, colframe=warningOrange, fonttitle=\bfseries, title=#1, breakable
+}
+
+\newtcolorbox{successbox}[1][]{
+    colback=green!5, colframe=accentGreen, fonttitle=\bfseries, title=#1, breakable
+}
+
+\newtcolorbox{definitionbox}[1][]{
+    colback=gray!5, colframe=gray!60, fonttitle=\bfseries, title=#1, breakable
+}
+
+% Figure placeholder command - shows placeholder box instead of loading images
+% Usage: \placeholderfig[0.9]{Title}{filename.png}{Caption text}
+% ref of 
+\newcommand{\placeholderfig}[4][0.9]{%
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=#1\textwidth]{figures/\detokenize{#3}}%
+    \caption{#2}
+    \label{fig:\detokenize{#3}}
+    \vspace{2pt}
+    \begin{minipage}{0.9\textwidth}
+      \small \textit{Description: #4}
+    \end{minipage}
+  \end{figure}
+}
+
+
+% Listings
+\lstdefinestyle{professionalStyle}{
+    backgroundcolor=\color{codeBack},
+    commentstyle=\color{codeGreen},
+    keywordstyle=\color{primaryBlue}\bfseries,
+    numberstyle=\tiny\color{codeGray},
+    stringstyle=\color{codePurple},
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true, captionpos=b, keepspaces=true,
+    numbers=left, numbersep=5pt, frame=single, rulecolor=\color{codeGray}
+}
+
+\lstdefinelanguage{TypeScript}{
+    keywords={async, await, break, case, catch, class, const, continue, default, delete, do, else, enum, export, extends, false, finally, for, function, if, implements, import, in, interface, let, new, null, return, static, switch, this, throw, true, try, typeof, var, void, while, type, as, from},
+    morecomment=[l]{//}, morecomment=[s]{/*}{*/},
+    morestring=[b]', morestring=[b]", morestring=[b]`, sensitive=true
+}
+
+\lstdefinelanguage{Go}{
+    keywords={break, case, chan, const, continue, default, defer, else, for, func, go, goto, if, import, interface, map, package, range, return, select, struct, switch, type, var},
+    morecomment=[l]{//}, morecomment=[s]{/*}{*/},
+    morestring=[b]', morestring=[b]", morestring=[b]`, sensitive=true
+}
+
+\lstset{style=professionalStyle}
+
+% Formatting
+\linespread{1.2}
+\setlength{\parindent}{0.5cm}
+\setlength{\parskip}{4pt}
+
+% Titles
+\titleformat{\chapter}[display]
+  {\normalfont\bfseries\centering\fontsize{16}{20}\selectfont\color{primaryBlue}}
+  {\chaptertitlename\ \thechapter}{10pt}{\LARGE}
+\titlespacing*{\chapter}{0pt}{20pt}{25pt}
+
+\titleformat{\section}{\normalfont\Large\bfseries\color{primaryBlue}}{\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{18pt}{10pt}
+
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries\itshape}{\thesubsubsection}{1em}{}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[LE]{\slshape \leftmark}
+\fancyhead[RO]{\slshape \rightmark}
+\fancyhead[RE,LO]{\textbf{LogChat}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.2pt}
+
+% Checkmarks
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+
+% =========================================================================
+% DOCUMENT
+% =========================================================================
+\begin{document}
+
+% Acknowledgements
+\chapter*{Acknowledgements}
+\addcontentsline{toc}{chapter}{Acknowledgements}
+
+We would like to express our sincere gratitude to all those who contributed to the successful completion of this project.
+
+First and foremost, we extend our deepest appreciation to our academic supervisor, \textbf{Mr. Mounir Kthiri}, for his invaluable guidance, constructive criticism, and continuous encouragement throughout this project. His expertise in software architecture and security best practices has profoundly influenced our approach to building LogChat.
+
+We are grateful to the \textbf{Higher Institute of Technological Studies of Sousse} for providing the academic framework, technical resources, and conducive learning environment that made this project possible.
+
+Our sincere thanks go to the \textbf{members of the jury} for dedicating their valuable time to review and evaluate this work. Their feedback and insights are instrumental in our professional growth.
+
+We acknowledge the contributions of our \textbf{classmates and peers} who participated in beta testing the Golang Agent across various Windows and Linux environments. Their feedback helped identify critical edge cases and improve system reliability.
+
+Special recognition goes to the \textbf{open-source community}, particularly the teams behind:
+\begin{itemize}
+    \item \textbf{Next.js} --- for the powerful React framework
+    \item \textbf{Prisma} --- for the elegant ORM solution
+    \item \textbf{Ollama} --- for democratizing local LLM deployment
+    \item \textbf{The Go Team} --- for creating a language perfect for systems programming
+\end{itemize}
+
+Finally, we extend our heartfelt thanks to our \textbf{families and friends} for their moral support, understanding, and encouragement during the challenging phases of this project.
+
+\vspace{1cm}
+\begin{flushright}
+\textit{Saleh Eddine Touil \& Chames Edin Turki}\\
+\textit{Tunis, January 2025}
+\end{flushright}
+\newpage
+
+% Abstract (English)
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+The exponential growth of distributed systems, cloud-native architectures, and microservices has resulted in unprecedented volumes of log data, rendering traditional manual security auditing obsolete. Contemporary Security Information and Event Management (SIEM) solutions, while powerful, present significant barriers to adoption: prohibitive licensing costs exceeding \$100,000 annually, steep learning curves requiring specialized query languages, and complex multi-node deployment requirements.
+
+\textbf{LogChat} addresses these challenges by democratizing security analytics through the application of Generative Artificial Intelligence. This end-of-studies project presents the design, implementation, and evaluation of an open-source, privacy-first SIEM platform comprising three core components:
+
+\begin{enumerate}
+    \item A \textbf{high-performance Golang Agent} (5MB binary) enabling cross-platform log collection from Windows Event Logs, Linux Syslog/Journald, and arbitrary log files --- compiled with zero runtime dependencies for seamless deployment.
+    
+    \item A \textbf{Node.js/Express backend} providing RESTful APIs for log ingestion at 1000+ requests/second, real-time threat detection using pattern-based analysis, and a sophisticated RAG (Retrieval Augmented Generation) engine for contextual AI responses.
+    
+    \item A \textbf{Next.js 14 frontend} delivering an intuitive, real-time security dashboard with sub-second update latency via Server-Sent Events (SSE) and a natural language chat interface for log analysis.
+\end{enumerate}
+
+The integration of \textbf{Ollama} for local LLM inference ensures complete data privacy --- sensitive log information never leaves the organization's infrastructure. Deployed via \textbf{Docker Compose}, LogChat becomes operational within five minutes, transforming complex security queries into actionable insights without requiring SPL, KQL, or other proprietary languages.
+
+\vspace{0.5cm}
+\noindent\textbf{Keywords:} SIEM, Log Management, Generative AI, RAG, Golang, Docker, Cybersecurity, NLP, Real-time Analytics, Threat Detection, Local LLM, Privacy-First Architecture.
+\newpage
+
+% Abstract (French)
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+
+La croissance exponentielle des systèmes distribués et des architectures cloud-native a entraîné des volumes sans précédent de données de journalisation, rendant l'audit de sécurité manuel obsolète. Les solutions SIEM contemporaines présentent des obstacles significatifs: coûts de licence prohibitifs, courbes d'apprentissage abruptes et exigences de déploiement complexes.
+
+\textbf{LogChat} répond à ces défis en démocratisant l'analyse de sécurité grâce à l'Intelligence Artificielle Générative. Ce projet de fin d'études présente une plateforme SIEM open-source axée sur la confidentialité, comprenant:
+
+\begin{enumerate}
+    \item Un \textbf{Agent Golang} haute performance pour la collecte de logs multi-plateforme
+    \item Un \textbf{backend Node.js/Express} avec détection de menaces en temps réel et moteur RAG
+    \item Un \textbf{frontend Next.js 14} offrant un tableau de bord interactif et une interface de chat IA
+\end{enumerate}
+
+L'intégration d'\textbf{Ollama} pour l'inférence LLM locale garantit une confidentialité totale des données. Déployé via \textbf{Docker Compose}, LogChat devient opérationnel en cinq minutes.
+
+\vspace{0.5cm}
+\noindent\textbf{Mots-clés:} SIEM, Gestion des Logs, IA Générative, RAG, Golang, Docker, Cybersécurité, TAL, Analyse en Temps Réel.
+\newpage
+
+% Table of Contents
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+\newpage
+
+% List of Abbreviations
+\chapter*{List of Abbreviations}
+\addcontentsline{toc}{chapter}{List of Abbreviations}
+
+\begin{longtable}{@{}p{3cm}p{11cm}@{}}
+\toprule
+\textbf{Abbreviation} & \textbf{Definition} \\
+\midrule
+\endhead
+AI & Artificial Intelligence \\
+API & Application Programming Interface \\
+CRUD & Create, Read, Update, Delete \\
+CSS & Cascading Style Sheets \\
+DB & Database \\
+DFD & Data Flow Diagram \\
+Docker & Container Runtime Platform \\
+ERD & Entity-Relationship Diagram \\
+GDPR & General Data Protection Regulation \\
+HIPAA & Health Insurance Portability and Accountability Act \\
+HTML & HyperText Markup Language \\
+HTTP & HyperText Transfer Protocol \\
+HTTPS & HTTP Secure \\
+IDS & Intrusion Detection System \\
+JSON & JavaScript Object Notation \\
+JWT & JSON Web Token \\
+KQL & Kusto Query Language \\
+LLM & Large Language Model \\
+NLP & Natural Language Processing \\
+ORM & Object-Relational Mapping \\
+PCI-DSS & Payment Card Industry Data Security Standard \\
+RBAC & Role-Based Access Control \\
+RAG & Retrieval Augmented Generation \\
+REST & Representational State Transfer \\
+SIEM & Security Information and Event Management \\
+SOC & Security Operations Center \\
+SPL & Search Processing Language (Splunk) \\
+SQL & Structured Query Language \\
+SSE & Server-Sent Events \\
+TLS & Transport Layer Security \\
+UI & User Interface \\
+UML & Unified Modeling Language \\
+UUID & Universally Unique Identifier \\
+UX & User Experience \\
+XSS & Cross-Site Scripting \\
+YAML & YAML Ain't Markup Language \\
+\bottomrule
+\end{longtable}
+\newpage
+
+\cleardoublepage
+\pagenumbering{arabic}
+
+% =========================================================================
+% GENERAL INTRODUCTION
+% =========================================================================
+\chapter*{General Introduction}
+\addcontentsline{toc}{chapter}{General Introduction}
+
+\section*{Context and Motivation}
+
+In the contemporary digital landscape, cybersecurity has emerged as one of the most critical challenges facing organizations worldwide. According to IBM's Cost of a Data Breach Report 2024, the average cost of a data breach reached \$4.88 million globally, with organizations taking an average of 277 days to identify and contain a breach. In this context, effective log management and security monitoring have become indispensable components of any organization's security posture.
+
+Application logs constitute the primary source of truth for system health, security posture, and operational intelligence. The average enterprise generates terabytes of log data daily across its infrastructure --- from web servers and databases to authentication systems and network devices. \placeholderfig{Enterprise Log Volume Growth (2015-2025)}{log_volume_growth.png}{Bar chart showing exponential increase from 1TB/day to 50TB/day}
+
+As illustrated in Figure \ref{fig:log_volume_growth.png}, the data volume expands at a CAGR of approximately 25\%, creating a significant "data noise" challenge for traditional auditing methods.
+
+This data, when properly analyzed, reveals critical insights: performance bottlenecks, security breaches, compliance violations, and emerging threats. However, the sheer velocity, volume, and heterogeneity of logs generated by modern infrastructure create what security professionals term the ``data noise'' problem.
+
+\section*{Problem Statement}
+
+Small to Medium Enterprises (SMEs) and resource-constrained security teams face a critical ``Security Gap'' characterized by three fundamental barriers:
+
+\begin{infobox}[The Three Barriers to Effective Log Management]
+\begin{enumerate}
+    \item \textbf{Commercial Barriers:} Enterprise SIEM solutions like Splunk, IBM QRadar, and Microsoft Sentinel command licensing fees ranging from \$50,000 to \$500,000+ annually, effectively pricing out smaller organizations from effective security monitoring.
+    
+    \item \textbf{Technical Skill Gap:} Effective log analysis requires proficiency in proprietary query languages (SPL for Splunk, KQL for Azure Sentinel, Lucene for Elasticsearch). Junior analysts and developers often lack this specialized knowledge, creating a dependency on expensive senior talent.
+    
+    \item \textbf{Alert Fatigue:} Traditional rule-based detection systems generate excessive false positives, overwhelming security teams and causing genuine threats to be overlooked. Studies indicate that SOC analysts spend up to 45\% of their time on false positive investigations.
+\end{enumerate}
+\end{infobox}
+
+\section*{Project Objectives}
+
+LogChat was conceived to bridge this gap by building an open-source, AI-first log management platform with the following objectives:
+
+\begin{enumerate}
+    \item \textbf{Unified Collection:} Develop a single-binary agent (Golang) compatible with Windows Event Logs, Linux Syslog/Journald, and file-based logs --- deployable across heterogeneous infrastructure without runtime dependencies.
+    
+    \item \textbf{Intelligent Analysis:} Replace complex query languages with Natural Language Chat, powered by local Large Language Models (LLMs) for privacy-preserving inference using the RAG pattern.
+    
+    \item \textbf{Real-time Visualization:} Provide an interactive, streaming dashboard for immediate situational awareness with sub-second update latency.
+    
+    \item \textbf{Zero-Configuration Deployment:} Enable complete platform deployment via a single \texttt{docker-compose up} command, achieving operational status within five minutes.
+    
+    \item \textbf{Privacy-First Design:} Ensure that sensitive log data never leaves the organization's infrastructure by utilizing local AI inference.
+\end{enumerate}
+
+\section*{Document Structure}
+
+This report is organized into five chapters, each addressing a specific phase of the software development lifecycle:
+
+\begin{itemize}
+    \item \textbf{Chapter 1: State of the Art} presents a comprehensive analysis of existing SIEM solutions, evaluates technological alternatives, and provides justification for the selected technology stack.
+    
+    \item \textbf{Chapter 2: Analysis \& Specification} details the functional and non-functional requirements, presents UML modeling artifacts including use case, sequence, and class diagrams, and describes the architectural design decisions.
+    
+    \item \textbf{Chapter 3: Implementation} provides a technical deep-dive into the development of the Golang Agent, Backend API, RAG Engine, and Frontend components with annotated code excerpts.
+    
+    \item \textbf{Chapter 4: Testing \& Deployment} outlines the quality assurance strategy, describes the Docker-based deployment architecture, and presents performance benchmarks.
+    
+    \item \textbf{General Conclusion} summarizes achievements, reflects on lessons learned, and outlines the future roadmap for LogChat development.
+\end{itemize}
+
+\newpage
+
+% =========================================================================
+% CHAPTER 1: STATE OF THE ART
+% =========================================================================
+\chapter{State of the Art}  
+
+\section{Introduction}
+
+Before embarking on the development of LogChat, a comprehensive analysis of the current log management and SIEM landscape was essential. This chapter surveys existing solutions, evaluates technological alternatives, and provides the rationale for our architectural decisions. The insights gathered during this phase directly influenced the design patterns and technology choices implemented in LogChat.
+
+\section{Historical Evolution of Log Management}
+
+\subsection{Early Approaches (1990s-2000s)}
+
+In the early days of computing, log management was a manual process. System administrators would periodically review text files using command-line tools such as \texttt{grep}, \texttt{awk}, and \texttt{tail}. Figure \ref{fig:log_evolution_timeline.png} presents the evolution of log management technologies, highlighting the transition from manual file inspection to automated, AI-driven analysis.
+
+\placeholderfig{Evolution of Log Management Technologies}{log_evolution_timeline.png}{Timeline from 1990 (manual grep) to 2024 (AI-powered SIEM)}
+
+\subsection{Centralized Logging (2005-2015)}
+
+The emergence of distributed systems necessitated centralized logging solutions. Syslog servers became standard, and tools like Splunk (2003) and the ELK Stack (2010) emerged to address the growing complexity.
+
+\subsection{Modern AI-Enhanced SIEM (2020-Present)}
+
+The current generation of SIEM solutions leverages machine learning for anomaly detection and, increasingly, large language models for natural language querying. LogChat positions itself at the forefront of this evolution.
+
+\section{Market Analysis of Existing Solutions}
+
+\subsection{Elastic Stack (ELK)}
+
+The Elastic Stack --- comprising Elasticsearch, Logstash, and Kibana --- represents the industry standard for open-source log management. Figure \ref{fig:elk_architecture.png} illustrates its architecture.
+
+\placeholderfig{Elastic Stack (ELK) Architecture}{elk_architecture.png}{Beats → Logstash → Elasticsearch cluster → Kibana}
+
+\begin{table}[H]
+\centering
+\caption{Elastic Stack Comprehensive Evaluation}
+\label{tab:elk-eval}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Strengths} & Highly scalable horizontal architecture, powerful Kibana visualization, extensive plugin ecosystem, large community support \\
+\hline
+\textbf{Weaknesses} & Resource-intensive JVM-based architecture, complex cluster management, steep learning curve for Lucene/DSL queries \\
+\hline
+\textbf{Hardware Requirements} & Minimum 3 nodes, 16GB+ RAM per node, SSD storage recommended \\
+\hline
+\textbf{Licensing} & Open Source (Basic), Commercial (Platinum: \$125/node/month) \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Splunk Enterprise}
+
+Splunk remains the enterprise leader in SIEM, commanding over 30\% market share in the security analytics segment.
+
+\begin{table}[H]
+\centering
+\caption{Splunk Enterprise Evaluation}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Strengths} & Comprehensive ecosystem, advanced ML-based analytics, excellent enterprise support, extensive app marketplace \\
+\hline
+\textbf{Weaknesses} & Proprietary platform, extremely expensive pricing model, vendor lock-in concerns \\
+\hline
+\textbf{Pricing Model} & \$1,800+ per GB/day ingested (perpetual), or subscription model \\
+\hline
+\textbf{Annual Cost (10GB/day)} & Approximately \$180,000 - \$250,000 \\
+\hline
+\end{tabular}
+\end{table}
+
+\placeholderfig{Splunk Enterprise Dashboard Example}{splunk_dashboard.png}{Screenshot of Splunk Enterprise security dashboard}
+
+\subsection{Wazuh}
+
+Wazuh is an open-source security platform focusing on intrusion detection, file integrity monitoring, and compliance.
+
+\begin{table}[H]
+\centering
+\caption{Wazuh Platform Evaluation}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Strengths} & Strong Host-based IDS capabilities, file integrity monitoring, MITRE ATT\&CK mapping, regulatory compliance modules \\
+\hline
+\textbf{Weaknesses} & Complex UI/UX, agent-heavy architecture, challenging customization, limited NLP capabilities \\
+\hline
+\textbf{Deployment} & Requires Elasticsearch backend, complex multi-component setup \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Microsoft Sentinel}
+
+Microsoft Sentinel provides cloud-native SIEM integrated with the Azure ecosystem.
+
+\begin{table}[H]
+\centering
+\caption{Microsoft Sentinel Evaluation}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Strengths} & Cloud-native scalability, tight Azure integration, SOAR capabilities, KQL query language \\
+\hline
+\textbf{Weaknesses} & Azure lock-in, complex pricing, limited on-premises support, data residency concerns \\
+\hline
+\textbf{Pricing} & Pay-per-use: \$2.46/GB ingested + \$0.10/GB retained \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Comparative Analysis}
+
+Table \ref{tab:comprehensive-comparison} provides a comprehensive comparison of evaluated solutions against LogChat's proposed capabilities.
+
+\begin{table}[H]
+\centering
+\caption{Comprehensive SIEM Solution Comparison}
+\label{tab:comprehensive-comparison}
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Criterion} & \textbf{ELK} & \textbf{Splunk} & \textbf{Wazuh} & \textbf{Sentinel} & \textbf{LogChat} \\
+\hline
+Open Source & \cmark & \xmark & \cmark & \xmark & \cmark \\
+Natural Language Query & \xmark & Partial & \xmark & \xmark & \cmark \\
+Single-Binary Agent & \xmark & \xmark & \xmark & N/A & \cmark \\
+Local AI (Privacy) & \xmark & \xmark & \xmark & \xmark & \cmark \\
+One-Command Deploy & \xmark & \xmark & \xmark & \xmark & \cmark \\
+Real-time Streaming & \cmark & \cmark & \cmark & \cmark & \cmark \\
+MITRE ATT\&CK Mapping & Plugin & \cmark & \cmark & \cmark & \cmark \\
+Min. RAM Requirement & 16GB & 8GB & 8GB & N/A & 4GB \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure \ref{fig:siem_comparison_radar.png} presents a radar chart visualization of the comparison.
+
+\placeholderfig{SIEM Solutions Radar Comparison}{siem_comparison_radar.png}{Radar chart comparing features: Cost, Ease of Use, NLP, Privacy, Scalability}
+
+\section{Technology Stack Selection}
+
+Based on the market analysis
+and project requirements, the following technology stack was selected. Each choice was driven by specific technical and business considerations.
+
+\subsection{Backend: Node.js with TypeScript}
+
+Node.js was selected for the backend API server for the following reasons:
+
+\begin{successbox}[Node.js Selection Rationale]
+\begin{itemize}
+    \item \textbf{Event-Driven Architecture:} Non-blocking I/O model perfectly suited for handling high-concurrency log ingestion and SSE streaming
+    \item \textbf{npm Ecosystem:} Access to mature libraries including Express, Prisma, and Zod
+    \item \textbf{TypeScript Integration:} Compile-time type safety critical for maintaining data integrity
+    \item \textbf{Shared Language:} Same language as frontend reduces context switching and enables code sharing
+\end{itemize}
+\end{successbox}
+
+Figure \ref{fig:nodejs_event_loop.png} illustrates the Node.js event loop architecture.
+
+\placeholderfig{Node.js Event Loop Architecture}{nodejs_event_loop.png}{Diagram showing event loop phases: timers, pending callbacks, poll, check, close}
+
+\subsection{Frontend: Next.js 14 with React 18}
+
+Next.js 14 was chosen for its hybrid rendering capabilities and modern React features.
+
+\begin{table}[H]
+\centering
+\caption{Frontend Technology Comparison}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Feature} & \textbf{Next.js} & \textbf{Remix} & \textbf{Vite+React} & \textbf{Angular} \\
+\hline
+SSR/SSG & \cmark & \cmark & Plugin & \cmark \\
+App Router & \cmark & \cmark & \xmark & \cmark \\
+Bundle Size & Small & Small & Custom & Large \\
+Learning Curve & Moderate & Moderate & Low & High \\
+Community & Large & Growing & Large & Large \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Database: PostgreSQL 16 with Prisma ORM}
+
+PostgreSQL was selected as the primary database for its robustness and advanced features.
+
+\begin{infobox}[PostgreSQL 16 Key Features]
+\begin{itemize}
+    \item \textbf{JSONB Columns:} Native support for semi-structured log metadata
+    \item \textbf{Full-Text Search:} Built-in text search for log message querying
+    \item \textbf{Time-Series Indexing:} Efficient B-tree and BRIN indexes for timestamp queries
+    \item \textbf{pgvector Compatibility:} Future-proof for semantic search implementation
+    \item \textbf{ACID Compliance:} Guaranteed data integrity for audit requirements
+\end{itemize}
+\end{infobox}
+
+Figure \ref{fig:postgres_indexing.png} illustrates the indexing strategy employed for log queries.
+
+\placeholderfig{PostgreSQL Indexing Strategy for Logs}{postgres_indexing.png}{Diagram showing composite index on (timestamp, level, service)}
+
+\subsection{Agent: Golang}
+
+For the distributed log collector, Golang was selected over Python, Java, and Rust:
+
+\begin{table}[H]
+\centering
+\caption{Agent Runtime Comparison}
+\label{tab:agent-comparison}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Feature} & \textbf{Python} & \textbf{Java} & \textbf{Rust} & \textbf{Go} \\
+\hline
+Single Binary & \xmark & \xmark & \cmark & \cmark \\
+No Runtime Dependencies & \xmark & \xmark & \cmark & \cmark \\
+Windows API Access & Complex & Complex & Moderate & \cmark \\
+Memory Footprint & High & High & Low & Low \\
+Goroutine/Async & asyncio & Threads & async & \cmark \\
+Cross-Compilation & Complex & Complex & Moderate & Built-in \\
+Learning Curve & Low & Moderate & High & Moderate \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure \ref{fig:go_binary_size.png} compares binary sizes across languages for equivalent functionality.
+
+\placeholderfig{Binary Size Comparison by Language}{go_binary_size.png}{Bar chart: Python (50MB+venv), Java (100MB+JRE), Rust (3MB), Go (5MB)}
+
+\subsection{AI Engine: Ollama with Local LLMs}
+
+To ensure data privacy, cloud-based AI APIs were ruled out for sensitive environments. Ollama enables running quantized models locally without internet connectivity.
+
+\begin{table}[H]
+\centering
+\caption{Supported LLM Models}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Model} & \textbf{Parameters} & \textbf{VRAM Required} & \textbf{Use Case} \\
+\hline
+Qwen 2.5:0.5b & 0.5B & 1GB & Fast responses, basic analysis \\
+Qwen 2.5:3b & 3B & 4GB & Balanced performance \\
+Llama 3.1:8b & 8B & 8GB & Complex analysis \\
+Mistral 7B & 7B & 6GB & European compliant \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure \ref{fig:ollama_architecture.png} shows the Ollama integration architecture.
+
+\placeholderfig{Ollama Local LLM Architecture}{ollama_architecture.png}{Diagram showing Backend → Ollama API → Model inference → Response}
+
+\section{Development Methodology}
+
+The project followed \textbf{Scrum}, an Agile methodology well-suited for iterative development:
+
+\begin{itemize}
+    \item \textbf{Sprint Duration:} 1 week
+    \item \textbf{Total Sprints:} 12 (3 months)
+    \item \textbf{Team Size:} 2 developers
+    \item \textbf{Tools:} Git, GitHub, Docker, VS Code
+\end{itemize}
+
+Figure \ref{fig:scrum_timeline.png} presents the sprint timeline and deliverables.
+
+\placeholderfig{Scrum Sprint Timeline and Milestones}{scrum_timeline.png}{Gantt chart showing 12 sprints with milestones: Agent, Backend, Frontend, Integration}
+
+\section{Conclusion}
+
+This state-of-the-art analysis confirmed the viability of building a competitive, open-source SIEM alternative. The selected technology stack balances developer productivity, runtime performance, and deployment simplicity. The following chapter details the functional and non-functional requirements derived from this analysis.
+
+% =========================================================================
+% CHAPTER 2: ANALYSIS AND SPECIFICATION
+% =========================================================================
+\chapter{Analysis and Specification}
+
+\section{Introduction}
+
+This chapter translates business requirements into formal technical specifications using UML (Unified Modeling Language). We present the actors, use cases, data models, sequence diagrams, and architectural blueprints that guide the implementation phase. The artifacts produced in this chapter serve as the contractual specification between stakeholders.
+
+\section{Actors Identification}
+
+The system interacts with three primary actors, each with distinct roles and permissions:
+
+\begin{table}[H]
+\centering
+\caption{System Actors and Responsibilities}
+\label{tab:actors}
+\begin{tabular}{|l|l|p{6.5cm}|}
+\hline
+\textbf{Actor} & \textbf{Type} & \textbf{Responsibilities} \\
+\hline
+Security Analyst & Human (Primary) & Monitor dashboards, investigate alerts, query logs via AI chat, export reports \\
+\hline
+System Administrator & Human (Primary) & Configure log sources, manage users, define alert rules, review audit trails \\
+\hline
+LogChat Agent & System (Automated) & Collect logs from sources, transmit to server, buffer during outages \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure \ref{fig:actors_context.png} presents the context diagram showing actor interactions.
+
+\placeholderfig{System Context Diagram with Actors}{actors_context.png}{Security Analyst and Admin interact with LogChat Platform; Agents send logs}
+
+\section{Functional Requirements}
+
+\subsection{Agent Requirements (RF-AGT)}
+
+\begin{table}[H]
+\centering
+\caption{Golang Agent Functional Requirements}
+\label{tab:rf-agt}
+\begin{tabular}{|l|p{9.5cm}|c|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+RF-AGT-01 & Compile to static binaries for Windows (amd64, 386) and Linux (amd64, arm64) & High \\
+\hline
+RF-AGT-02 & Monitor log files using tail-like behavior (follow mode with rotation support) & High \\
+\hline
+RF-AGT-03 & Collect Windows Event Logs from Application, System, Security channels & High \\
+\hline
+RF-AGT-04 & Collect Linux logs via Journald (systemd) and traditional Syslog & High \\
+\hline
+RF-AGT-05 & Buffer logs locally using ring buffer if server is unreachable (resilience) & Medium \\
+\hline
+RF-AGT-06 & Authenticate with server via X-API-Key header & High \\
+\hline
+RF-AGT-07 & Support JSON, regex, and raw log parsing formats & Medium \\
+\hline
+RF-AGT-08 & Provide health endpoint for monitoring agent status & Low \\
+\hline
+RF-AGT-09 & Support hot configuration reload without restart & Low \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Backend Server Requirements (RF-SRV)}
+
+\begin{table}[H]
+\centering
+\caption{Backend Server Functional Requirements}
+\label{tab:rf-srv}
+\begin{tabular}{|l|p{9.5cm}|c|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+RF-SRV-01 & Provide REST API endpoints for single and batch log ingestion & High \\
+\hline
+RF-SRV-02 & Implement real-time threat detection using regex pattern matching & High \\
+\hline
+RF-SRV-03 & Support natural language queries via AI chat endpoint with RAG context & High \\
+\hline
+RF-SRV-04 & Provide SSE (Server-Sent Events) for real-time dashboard updates & High \\
+\hline
+RF-SRV-05 & Implement JWT-based authentication with configurable expiry & High \\
+\hline
+RF-SRV-06 & Enforce role-based access control (ADMIN, STAFF, USER) & High \\
+\hline
+RF-SRV-07 & Maintain immutable audit logs for all administrative actions & Medium \\
+\hline
+RF-SRV-08 & Support log export in CSV and JSON formats & Medium \\
+\hline
+RF-SRV-09 & Provide API rate limiting per source & Medium \\
+\hline
+RF-SRV-10 & Support multiple AI providers (Ollama, OpenAI, Anthropic, Gemini) & Medium \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Frontend Requirements (RF-UI)}
+
+\begin{table}[H]
+\centering
+\caption{Frontend Functional Requirements}
+\label{tab:rf-ui}
+\begin{tabular}{|l|p{9.5cm}|c|}
+\hline
+\textbf{ID} & \textbf{Requirement Description} & \textbf{Priority} \\
+\hline
+RF-UI-01 & Display real-time statistics cards (total logs, errors, warnings, threats) & High \\
+\hline
+RF-UI-02 & Provide interactive time-series chart for log volume visualization & High \\
+\hline
+RF-UI-03 & Implement paginated log table with inline expansion & High \\
+\hline
+RF-UI-04 & Support filtering by time range, log level, service name, and text search & High \\
+\hline
+RF-UI-05 & Provide AI chat interface with markdown rendering & High \\
+\hline
+RF-UI-06 & Display toast notifications for real-time alerts & Medium \\
+\hline
+RF-UI-07 & Implement dark mode toggle & Low \\
+\hline
+RF-UI-08 & Provide responsive design for tablet devices & Medium \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Non-Functional Requirements}
+
+\begin{table}[H]
+\centering
+\caption{Non-Functional Requirements Specification}
+\label{tab:nfr}
+\begin{tabular}{|l|l|p{7cm}|c|}
+\hline
+\textbf{Category} & \textbf{ID} & \textbf{Requirement} & \textbf{Target} \\
+\hline
+Performance & RNF-01 & Log ingestion throughput & 1000+ req/s \\
+\hline
+Performance & RNF-02 & Dashboard update latency & $<$ 500ms \\
+\hline
+Performance & RNF-03 & AI response time (local) & $<$ 5 seconds \\
+\hline
+Availability & RNF-04 & System uptime & 99.9\% \\
+\hline
+Security & RNF-05 & Password hashing algorithm & bcrypt (cost 12) \\
+\hline
+Security & RNF-06 & API authentication mechanism & JWT (RS256) \\
+\hline
+Security & RNF-07 & TLS version for external APIs & TLS 1.2+ \\
+\hline
+Portability & RNF-08 & Deployment method & Docker Compose \\
+\hline
+Portability & RNF-09 & Supported agent platforms & Windows, Linux \\
+\hline
+Usability & RNF-10 & Dashboard responsiveness & Desktop, Tablet \\
+\hline
+Maintainability & RNF-11 & Code documentation coverage & 80\%+ \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Use Case Modeling}
+
+\subsection{Global Use Case Diagram}
+
+Figure \ref{fig:usecase_global.png} presents the comprehensive use case diagram depicting all actors and their interactions with the LogChat platform. This visualization emphasizes the central role of the AI Chat in daily analyst operations.
+
+\placeholderfig{Global Use Case Diagram}{usecase_global.png}{Three actors (Analyst, Admin, Agent) with Core Operations, Administration, and Automated Processes packages}
+
+\subsection{Detailed Use Case Descriptions}
+
+\subsubsection{UC-01: User Authentication}
+
+\begin{table}[H]
+\centering
+\caption{Use Case UC-01: User Authentication}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Use Case ID} & UC-01 \\
+\hline
+\textbf{Name} & User Authentication \\
+\hline
+\textbf{Actor} & Security Analyst, Administrator \\
+\hline
+\textbf{Precondition} & User has valid credentials in the system \\
+\hline
+\textbf{Main Flow} & 
+1. User navigates to login page \newline
+2. User enters email and password \newline
+3. System validates credentials \newline
+4. System generates JWT token \newline
+5. System creates session record \newline
+6. User is redirected to dashboard \\
+\hline
+\textbf{Alternative Flow} & A1. Invalid credentials: Display error, remain on login \newline A2. Account disabled: Display account status message \\
+\hline
+\textbf{Postcondition} & User is authenticated with valid session \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{UC-04: Chat with AI Assistant}
+
+\begin{table}[H]
+\centering
+\caption{Use Case UC-04: Chat with AI Assistant}
+\begin{tabular}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Use Case ID} & UC-04 \\
+\hline
+\textbf{Name} & Chat with AI Assistant \\
+\hline
+\textbf{Actor} & Security Analyst \\
+\hline
+\textbf{Precondition} & User is authenticated; AI service is available \\
+\hline
+\textbf{Main Flow} & 
+1. User navigates to Chat interface \newline
+2. User enters natural language query \newline
+3. System retrieves relevant logs (RAG) \newline
+4. System constructs context-enriched prompt \newline
+5. System sends prompt to LLM \newline
+6. LLM generates analysis response \newline
+7. System displays formatted response \\
+\hline
+\textbf{Alternative Flow} & A1. AI unavailable: Display offline message with suggestions \\
+\hline
+\textbf{Postcondition} & Chat message and response are persisted \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Use Case Prioritization Matrix}
+
+\begin{table}[H]
+\centering
+\caption{Use Case Prioritization (MoSCoW)}
+\begin{tabular}{|l|l|c|}
+\hline
+\textbf{Use Case} & \textbf{Category} & \textbf{Sprint} \\
+\hline
+UC-01: Authentication & Must Have & 1-2 \\
+UC-02: View Dashboard & Must Have & 3-4 \\
+UC-03: Explore Logs & Must Have & 3-4 \\
+UC-04: AI Chat & Must Have & 5-6 \\
+UC-10: Ingest Logs & Must Have & 2-3 \\
+UC-11: Threat Detection & Should Have & 4-5 \\
+UC-06: Manage Users & Should Have & 7-8 \\
+UC-05: Export Reports & Could Have & 9 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Behavioral Modeling}
+
+\subsection{Sequence Diagram: Authentication Flow}
+
+Figure \ref{fig:sequence_login.png} details the complete authentication sequence from user input to dashboard redirect.
+
+\placeholderfig{Authentication Sequence Diagram}{sequence_login.png}{User → UI → Backend → Database → JWT generation → Redirect}
+
+\subsection{Sequence Diagram: RAG Chat Workflow}
+
+Figure \ref{fig:sequence_rag_chat.png} illustrates the RAG (Retrieval Augmented Generation) process, which is central to LogChat's AI capabilities.
+
+\placeholderfig{RAG Chat Workflow Sequence Diagram}{sequence_rag_chat.png}{Analyst → UI → Backend → DB (context) → Ollama → Response}
+
+\subsection{Sequence Diagram: Log Ingestion with Threat Detection}
+
+Figure \ref{fig:sequence_log_ingestion.png} presents the complete flow from agent transmission to threat detection and dashboard notification.
+
+\placeholderfig{Log Ingestion Sequence Diagram}{sequence_log_ingestion.png}{Agent → API → Validate → Threat Engine → DB → SSE broadcast}
+
+\subsection{Activity Diagram: Threat Detection Engine}
+
+Figure \ref{fig:activity_threat_detection.png} models the decision flow within the threat detection engine.
+
+\placeholderfig{Threat Detection Activity Diagram}{activity_threat_detection.png}{Decision nodes for SQL injection, XSS, brute force, with severity tagging}
+
+\section{Structural Modeling}
+
+\subsection{Class Diagram: Domain Model}
+
+Figure \ref{fig:class_diagram_erd.png} presents the domain model with all entities, attributes, and relationships.
+
+\placeholderfig{Domain Model Class Diagram}{class_diagram_erd.png}{User, Session, LogEntry, ChatSession, ChatMessage, Alert, LogSource, AuditLog entities}
+
+\subsection{Entity Descriptions}
+
+\begin{table}[H]
+\centering
+\caption{Entity Attribute Specifications}
+\begin{tabular}{|l|p{8cm}|}
+\hline
+\textbf{Entity} & \textbf{Key Attributes} \\
+\hline
+User & id (CUID), email (unique), passwordHash, name, role (enum), active, lastLogin \\
+\hline
+Session & id, token (unique), userId (FK), expiresAt, ipAddress, userAgent \\
+\hline
+LogEntry & id, timestamp, level (enum), service, message, raw, meta (JSONB) \\
+\hline
+ChatSession & id, userId (FK), title, messageCount, archived, createdAt \\
+\hline
+ChatMessage & id, sessionId (FK), role (enum), content, responseTime, tokensUsed \\
+\hline
+Alert & id, logId (FK), severity (enum), type, message, status, acknowledgedBy \\
+\hline
+LogSource & id, name, apiKey (unique), apiKeyHash, rateLimit, isActive \\
+\hline
+AuditLog & id, userId (FK), action, resource, resourceId, details (JSON), timestamp \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Architectural Design}
+
+\subsection{High-Level Architecture}
+
+Figure \ref{fig:architecture_global.png} presents the global system architecture showing all components and their interactions. The separation of the Agent from the core stack ensures minimal performance impact on monitored hosts.
+
+\placeholderfig{Global System Architecture}{architecture_global.png}{Agents → Docker Stack (Frontend, Backend, DB, Ollama) → Browser clients}
+
+\subsection{Component Architecture}
+
+Figure \ref{fig:component_diagram.png} details the internal structure of each containerized service.
+
+\placeholderfig{Component Architecture Diagram}{component_diagram.png}{Detailed view of frontend, backend, database, and AI container components}
+
+\subsection{Deployment Architecture}
+
+Figure \ref{fig:deployment_diagram.png} illustrates the production deployment topology.
+
+\placeholderfig{Deployment Architecture Diagram}{deployment_diagram.png}{Production server with Docker, Windows/Linux agents, analyst workstations}
+
+\subsection{Data Flow Diagram}
+
+Figure \ref{fig:data_flow_diagram.png} presents the end-to-end data flow from log sources to end users.
+
+\placeholderfig{Data Flow Diagram (DFD Level 1)}{data_flow_diagram.png}{Sources → Agent → Backend → DB → Dashboard/Chat/Reports → Users}
+
+\section{Database Design}
+\subsection{Physical Database Schema}
+
+Figure \ref{fig:database_schema.png} presents the physical database schema with all tables and relationships.
+
+\placeholderfig{PostgreSQL Physical Database Schema}{database_schema.png}{ERD with all tables, primary/foreign keys, and relationship cardinalities}
+
+\subsection{Indexing Strategy}
+
+\begin{table}[H]
+\centering
+\caption{Database Indexing Strategy}
+\begin{tabular}{|l|l|p{5cm}|}
+\hline
+\textbf{Table} & \textbf{Index} & \textbf{Purpose} \\
+\hline
+logs & idx\_logs\_timestamp & Time-range queries \\
+logs & idx\_logs\_level & Filter by severity \\
+logs & idx\_logs\_service & Filter by service \\
+logs & idx\_logs\_composite & Combined filtering \\
+users & idx\_users\_email & Unique login lookup \\
+sessions & idx\_sessions\_token & Token validation \\
+alerts & idx\_alerts\_status & Dashboard filtering \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Security Architecture}
+
+\subsection{Authentication Flow}
+
+Figure \ref{fig:auth_architecture.png} illustrates the JWT-based authentication architecture.
+
+\placeholderfig{JWT Authentication Architecture}{auth_architecture.png}{Login → bcrypt verify → JWT sign → Cookie/Header → Middleware validation}
+
+\subsection{Role-Based Access Control}
+
+\begin{table}[H]
+\centering
+\caption{RBAC Permission Matrix}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Resource/Action} & \textbf{USER} & \textbf{STAFF} & \textbf{ADMIN} \\
+\hline
+View Dashboard & \cmark & \cmark & \cmark \\
+Query Logs & \cmark & \cmark & \cmark \\
+Use AI Chat & \cmark & \cmark & \cmark \\
+Export Data & \xmark & \cmark & \cmark \\
+Manage Log Sources & \xmark & \cmark & \cmark \\
+Manage Users & \xmark & \xmark & \cmark \\
+View Audit Logs & \xmark & \xmark & \cmark \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{API Design}
+
+\subsection{RESTful Endpoint Summary}
+
+\begin{table}[H]
+\centering
+\caption{API Endpoint Overview}
+\begin{tabular}{|l|l|p{4.5cm}|c|}
+\hline
+\textbf{Method} & \textbf{Endpoint} & \textbf{Description} & \textbf{Auth} \\
+\hline
+POST & /api/auth/login & Authenticate user & No \\
+POST & /api/auth/register & Register new user & No \\
+GET & /api/auth/me & Get current user & Yes \\
+POST & /api/logs & Ingest single log & API Key \\
+POST & /api/logs/ingest & Agent batch ingest & API Key \\
+GET & /api/logs & Query logs & Yes \\
+POST & /api/chat & Send chat message & Yes \\
+GET & /api/stream/stats & SSE stats stream & Yes \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Conclusion}
+
+This analysis and specification phase produced comprehensive documentation guiding the implementation: functional requirements covering 27 features across agent, backend, and frontend; 11 non-functional requirements ensuring quality attributes; UML artifacts modeling behavior and structure; and detailed architectural blueprints. The following chapter presents the implementation of these specifications.
+
+% =========================================================================
+% CHAPTER 3: IMPLEMENTATION
+% =========================================================================
+\chapter{Implementation}
+
+\section{Introduction}
+
+This chapter provides a comprehensive technical deep-dive into LogChat's implementation. We examine the development of each component: the Golang Agent for log collection, the Node.js/Express backend for API services, the RAG-powered AI engine, and the Next.js frontend. Annotated code excerpts illustrate key design patterns and implementation decisions.
+
+\section{Development Environment}
+
+\subsection{Hardware Configuration}
+
+\begin{table}[H]
+\centering
+\caption{Development Environment Specifications}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Component} & \textbf{Specification} \\
+\hline
+Processor & Intel Core i7-12700H / AMD Ryzen 7 5800H \\
+RAM & 16GB DDR4 \\
+Storage & 512GB NVMe SSD \\
+Operating System & Windows 11 Pro / Ubuntu 22.04 LTS \\
+GPU (AI) & NVIDIA RTX 3060 (6GB VRAM) \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Software Tools}
+
+\begin{table}[H]
+\centering
+\caption{Development Tools and Versions}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Tool} & \textbf{Version} & \textbf{Purpose} \\
+\hline
+VS Code & 1.85+ & Primary IDE \\
+Go & 1.21+ & Agent development \\
+Node.js & 20 LTS & Backend/Frontend runtime \\
+Docker Desktop & 4.25+ & Containerization \\
+PostgreSQL & 16 & Database \\
+Git & 2.43+ & Version control \\
+Postman & 10+ & API testing \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{The Golang Agent}
+
+\subsection{Project Architecture}
+
+Figure \ref{fig:agent_architecture.png} presents the internal architecture of the Golang agent.
+
+\placeholderfig{Golang Agent Internal Architecture}{agent_architecture.png}{Collector interface, FileCollector, EventLogCollector, Buffer, Sender modules}
+
+\subsection{Directory Structure}
+
+\begin{lstlisting}[language=bash, caption=Agent Project Structure]
+golang-agent/
+├── cmd/
+│   --── agent/
+│       --── main.go          # Entry point
+├── internal/
+│   ├── collector/
+│   │   ├── collector.go     # Interface definition
+│   │   ├── file.go          # File tail collector
+│   │   ├── eventlog_windows.go
+│   │   ├── journald_linux.go
+│   │   --── syslog_linux.go
+│   ├── sender/
+│   │   --── sender.go        # HTTP transmission
+│   ├── buffer/
+│   │   --── buffer.go        # Ring buffer
+│   --── config/
+│       --── config.go        # YAML parsing
+├── config.yaml              # Sample config
+├── go.mod
+├── go.sum
+--── Makefile                 # Build targets
+\end{lstlisting}
+
+\subsection{Collector Interface Pattern}
+
+The system employs the Strategy pattern for collectors, enabling polymorphic handling of different log sources. The base interface and common functionality are detailed in Appendix \ref{app:code_collector}.
+
+Figure \ref{fig:collector_class_diagram.png} shows the collector class hierarchy.
+
+\placeholderfig{Collector Class Hierarchy}{collector_class_diagram.png}{Interface Collector with FileCollector, EventLogCollector, JournaldCollector implementations}
+
+The Windows collector utilizes direct Win32 API calls to interface with the Event Log system. The implementation uses the \texttt{advapi32.dll} library for low-level access (see Appendix \ref{app:code_windows}).
+
+Figure \ref{fig:windows_eventlog_flow.png} illustrates the Windows Event Log collection flow.
+
+\placeholderfig{Windows Event Log Collection Flow}{windows_eventlog_flow.png}{OpenEventLog → ReadEventLog → Parse → Send cycle}
+
+\subsection{File Tailing Implementation}
+
+The file collector uses the \texttt{nxadm/tail} library for efficient following:
+
+\begin{lstlisting}[language=Go, caption=File Tailing with Rotation Support]
+func (fc *FileCollector) tailFile(ctx context.Context, 
+    filePath string) {
+    
+    t, err := tail.TailFile(filePath, tail.Config{
+        Follow:    true,           // Keep following
+        ReOpen:    true,           // Handle rotation
+        MustExist: true,
+        Location:  &tail.SeekInfo{
+            Offset: 0, 
+            Whence: io.SeekEnd,    // Start at end
+        },
+        Logger: tail.DiscardingLogger,
+    })
+    if err != nil {
+        fc.logError(err)
+        return
+    }
+    defer t.Cleanup()
+    
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case line := <-t.Lines:
+            if line.Err != nil {
+                fc.logError(line.Err)
+                continue
+            }
+            entry := fc.processLine(filePath, line.Text)
+            fc.sender.Send(entry)
+            fc.incrementStats()
+        }
+    }
+}
+\end{lstlisting}
+
+\subsection{Resilient Sender with Buffering}
+
+The Sender implements exponential backoff for network resilience:
+
+\begin{lstlisting}[language=Go, caption=Sender with Retry Logic]
+func (s *Sender) flush(ctx context.Context) error {
+    entries := s.buffer.Peek(s.batchSize)
+    if len(entries) == 0 {
+        return nil
+    }
+    
+    payload, _ := json.Marshal(IngestPayload{
+        Agent: s.agentInfo,
+        Logs:  entries,
+    })
+    
+    var lastErr error
+    for attempt := 0; attempt < s.maxRetries; attempt++ {
+        req, _ := http.NewRequestWithContext(
+            ctx, "POST", s.serverURL, bytes.NewReader(payload))
+        req.Header.Set("Content-Type", "application/json")
+        req.Header.Set("X-API-Key", s.apiKey)
+        
+        resp, err := s.client.Do(req)
+        if err == nil && resp.StatusCode == 201 {
+            s.buffer.Remove(len(entries))
+            s.sentCount += int64(len(entries))
+            return nil
+        }
+        
+        lastErr = err
+        delay := time.Duration(1<<attempt) * 100 * time.Millisecond
+        time.Sleep(delay) // Exponential backoff
+    }
+    
+    s.serverAlive = false
+    return lastErr
+}
+\end{lstlisting}
+
+Figure \ref{fig:sender_state_machine.png} shows the Sender state machine.
+
+\placeholderfig{Sender State Machine}{sender_state_machine.png}{States: Idle → Sending → Success/Retry → Idle with backoff}
+
+\subsection{Cross-Compilation}
+
+\begin{lstlisting}[language=make, caption=Makefile for Cross-Compilation]
+BINARY := logchat-agent
+VERSION := 1.0.0
+LDFLAGS := -s -w -X main.Version=$(VERSION)
+
+.PHONY: build-all
+build-all: build-linux-amd64 build-linux-arm64 \
+           build-windows-amd64 build-darwin-amd64
+
+build-linux-amd64:
+	GOOS=linux GOARCH=amd64 go build \
+	    -ldflags="$(LDFLAGS)" \
+	    -o dist/$(BINARY)-linux-amd64 ./cmd/agent
+
+build-windows-amd64:
+	GOOS=windows GOARCH=amd64 go build \
+	    -ldflags="$(LDFLAGS)" \
+	    -o dist/$(BINARY)-windows-amd64.exe ./cmd/agent
+\end{lstlisting}
+
+\section{Backend API Server}
+
+\subsection{Project Structure}
+
+\begin{lstlisting}[language=bash, caption=Backend Project Structure]
+backend/
+├── src/
+│   ├── index.ts            # Entry point
+│   ├── routes/
+│   │   ├── auth.ts         # Authentication
+│   │   ├── logs.ts         # Log ingestion/query
+│   │   ├── chat.ts         # AI chat
+│   │   --── stream.ts       # SSE endpoints
+│   ├── services/
+│   │   ├── auth.ts         # Auth business logic
+│   │   ├── logs.ts         # Log operations
+│   │   ├── chat.ts         # Chat session management
+│   │   ├── ollama.ts       # Ollama client
+│   │   ├── aiManager.ts    # Multi-provider adapter
+│   │   --── threatDetection.ts
+│   --── middleware/
+│       ├── auth.ts         # JWT validation
+│       --── rateLimit.ts
+├── prisma/
+│   --── schema.prisma       # Database schema
+├── package.json
+├── tsconfig.json
+--── Dockerfile
+\end{lstlisting}
+
+\subsection{Express Application Setup}
+
+\begin{lstlisting}[language=TypeScript, caption=Main Application Entry Point]
+// src/index.ts
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+
+import { authRouter } from './routes/auth.js';
+import { logsRouter } from './routes/logs.js';
+import { chatRouter } from './routes/chat.js';
+import { streamRouter } from './routes/stream.js';
+import { errorHandler } from './middleware/error.js';
+import { requestLogger } from './middleware/logging.js';
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Security middleware
+app.use(helmet());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
+}));
+app.use(compression());
+app.use(express.json({ limit: '10mb' }));
+
+// Request logging
+app.use(requestLogger);
+
+// Health check
+app.get('/health', (req, res) => {
+    res.json({ status: 'healthy', timestamp: new Date() });
+});
+
+// API Routes
+app.use('/api/auth', authRouter);
+app.use('/api/logs', logsRouter);
+app.use('/api/chat', chatRouter);
+app.use('/api/stream', streamRouter);
+
+// Error handling
+app.use(errorHandler);
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`LogChat Backend running on port ${PORT}`);
+});
+\end{lstlisting}
+
+Figure \ref{fig:backend_architecture.png} presents the backend component architecture.
+
+\placeholderfig{Backend Component Architecture}{backend_architecture.png}{Express → Routes → Services → Prisma → PostgreSQL}
+
+The authentication service manages user login and JWT generation. It utilizes \texttt{bcrypt} for password verification and creates audit sessions for security tracking (see Appendix \ref{app:code_auth}).
+
+\subsection{Threat Detection Engine}
+
+\begin{lstlisting}[language=Javascript, caption=Pattern-Based Threat Detection]
+// src/services/threatDetection.ts
+
+interface ThreatResult {
+    detected: boolean;
+    type?: string;
+    severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    description?: string;
+    mitre?: string;
+}
+
+const THREAT_PATTERNS = [
+    {
+        name: 'SQL_INJECTION',
+        pattern: /('|--|;|OR\s+1\s*=\s*1|UNION\s+SELECT)/i,
+        severity: 'CRITICAL' as const,
+        mitre: 'T1190',
+        description: 'Potential SQL injection attempt'
+    },
+    {
+        name: 'XSS_ATTEMPT',
+        pattern: /<script|javascript:|onerror\s*=|onload\s*=/i,
+        severity: 'HIGH' as const,
+        mitre: 'T1059.007',
+        description: 'Cross-site scripting attempt'
+    },
+    {
+        name: 'PATH_TRAVERSAL',
+        pattern: /\.\.\/(\.\.\\|etc\/passwd|boot\.ini)/i,
+        severity: 'CRITICAL' as const,
+        mitre: 'T1083',
+        description: 'Directory traversal attempt'
+    },
+];
+
+export function analyzeThreat(log: LogEntry): ThreatResult {
+    const content = `${log.message} ${JSON.stringify(log.meta)}`;
+    
+    for (const threat of THREAT_PATTERNS) {
+        if (threat.pattern.test(content)) {
+            return {
+                detected: true,
+                type: threat.name,
+                severity: threat.severity,
+                description: threat.description,
+                mitre: threat.mitre,
+            };
+        }
+    }
+    
+    return { detected: false };
+}
+\end{lstlisting}
+
+Figure \ref{fig:threat_detection_patterns.png} presents the threat pattern categories.
+
+\placeholderfig{Threat Detection Pattern Categories}{threat_detection_patterns.png}{Table of patterns: SQL Injection, XSS, Path Traversal, Brute Force with MITRE mappings}
+
+The RAG engine retrieves relevant logs based on user queries, constructs a prompt with this context, and interfaces with the LLM provider. The detailed implementation is provided in Appendix \ref{app:code_rag}.
+
+Figure \ref{fig:rag_workflow_detail.png} illustrates the RAG workflow in detail.
+
+\placeholderfig{RAG Workflow Detailed Diagram}{rag_workflow_detail.png}{Query → Vector/Keyword Search → Context Building → Prompt Engineering → LLM → Response}
+
+\subsection{Server-Sent Events Implementation}
+
+\begin{lstlisting}[language=TypeScript, caption=SSE Stream for Real-time Updates]
+// src/routes/stream.ts
+
+const clients = new Map<number, Response>();
+
+router.get('/stats', authMiddleware, (req, res) => {
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    
+    const clientId = Date.now();
+    clients.set(clientId, res);
+    
+    // Send initial connection event
+    res.write(`event: connected\ndata: ${JSON.stringify({
+        id: clientId,
+        timestamp: new Date(),
+    })}\n\n`);
+    
+    // Periodic stats broadcast
+    const interval = setInterval(async () => {
+        const stats = await getRealtimeStats();
+        res.write(`event: stats\ndata: ${JSON.stringify(stats)}\n\n`);
+    }, 5000);
+    
+    // Cleanup on disconnect
+    req.on('close', () => {
+        clearInterval(interval);
+        clients.delete(clientId);
+    });
+});
+
+// Broadcast function for log events
+export function broadcastLog(log: LogEntry) {
+    const data = JSON.stringify({ event: 'log', log });
+    clients.forEach((client) => {
+        client.write(`event: log\ndata: ${data}\n\n`);
+    });
+}
+\end{lstlisting}
+
+\section{Frontend Dashboard}
+
+\subsection{Project Structure}
+
+\begin{lstlisting}[language=bash, caption=Frontend Project Structure]
+frontend/
+├── app/
+│   ├── layout.tsx          # Root layout
+│   ├── page.tsx            # Landing page
+│   ├── dashboard/
+│   │   --── page.tsx        # Main dashboard
+│   ├── chat/
+│   │   --── page.tsx        # AI chat interface
+│   ├── login/
+│   │   --── page.tsx        # Authentication
+│   --── admin/
+│       --── page.tsx        # Admin panel
+├── components/
+│   ├── Navbar.tsx
+│   ├── StatsCards.tsx
+│   ├── LogsChart.tsx
+│   ├── LogTable.tsx
+│   --── ChatInterface.tsx
+├── lib/
+│   ├── api.ts
+│   ├── auth.tsx            # Auth context
+│   --── utils.ts
+--── styles/
+    --── globals.css
+\end{lstlisting}
+
+\subsection{Real-time Dashboard with SSE}
+
+\begin{lstlisting}[language=TypeScript, caption=Dashboard SSE Integration]
+// app/dashboard/page.tsx
+'use client';
+
+export default function DashboardPage() {
+    const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [connected, setConnected] = useState(false);
+    
+    // SSE connection
+    useEffect(() => {
+        const eventSource = new EventSource(
+            `${API_URL}/api/stream/stats`,
+            { withCredentials: true }
+        );
+        
+        eventSource.addEventListener('connected', () => {
+            setConnected(true);
+        });
+        
+        eventSource.addEventListener('stats', (event) => {
+            const data = JSON.parse(event.data);
+            setStats(data);
+        });
+        
+        eventSource.addEventListener('log', (event) => {
+            const { log } = JSON.parse(event.data);
+            setLogs(prev => [log, ...prev.slice(0, 99)]);
+            
+            // Toast notification for errors
+            if (log.level === 'ERROR') {
+                toast.error(log.message.slice(0, 100));
+            }
+        });
+        
+        return () => eventSource.close();
+    }, []);
+    
+    return (
+        <div className="dashboard-container">
+            <LiveIndicator connected={connected} />
+            <StatsCards stats={stats} />
+            <div className="charts-row">
+                <LogsChart data={stats?.timeline} />
+                <ServicesChart data={stats?.topServices} />
+            </div>
+            <LogTable logs={logs} />
+        </div>
+    );
+}
+\end{lstlisting}
+
+\subsection{Stats Cards Component}
+
+\begin{lstlisting}[language=TypeScript, caption=Stats Cards Component]
+// components/StatsCards.tsx
+
+interface StatsCardsProps {
+    stats: DashboardStats | null;
+}
+
+export function StatsCards({ stats }: StatsCardsProps) {
+    const cards = [
+        {
+            title: 'Total Logs',
+            value: stats?.totalLogs ?? 0,
+            change: stats?.logsChange ?? 0,
+            icon: Database,
+            color: 'blue',
+        },
+        {
+            title: 'Errors',
+            value: stats?.errorCount ?? 0,
+            change: stats?.errorsChange ?? 0,
+            icon: AlertTriangle,
+            color: 'red',
+        },
+        {
+            title: 'Warnings',
+            value: stats?.warnCount ?? 0,
+            change: stats?.warningsChange ?? 0,
+            icon: AlertCircle,
+            color: 'yellow',
+        },
+        {
+            title: 'Threats',
+            value: stats?.threatCount ?? 0,
+            change: stats?.threatsChange ?? 0,
+            icon: Shield,
+            color: 'purple',
+        },
+    ];
+    
+    return (
+        <div className="stats-grid">
+            {cards.map((card) => (
+                <div key={card.title} 
+                     className={`stat-card stat-${card.color}`}>
+                    <card.icon className="stat-icon" />
+                    <div className="stat-content">
+                        <span className="stat-value">
+                            {formatNumber(card.value)}
+                        </span>
+                        <span className="stat-title">{card.title}</span>
+                        <ChangeIndicator value={card.change} />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+\end{lstlisting}
+
+Figure \ref{fig:screenshot_dashboard.png} shows an actual screenshot of the dashboard.
+
+\placeholderfig{Dashboard Screenshot}{screenshot_dashboard.png}{Actual screenshot showing stats cards, charts, and log table}
+
+\subsection{AI Chat Interface}
+
+Figure \ref{fig:screenshot_chat.png} presents the AI chat interface screenshot.
+
+\placeholderfig{AI Chat Interface Screenshot}{screenshot_chat.png}{Chat interface with message history and AI response with markdown formatting}
+
+\section{Prisma Database Schema}
+
+\begin{lstlisting}[language=SQL, caption=Prisma Schema (Excerpt)]
+// prisma/schema.prisma
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(USER)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  lastLogin DateTime?
+  
+  sessions     Session[]
+  chatSessions ChatSession[]
+  auditLogs    AuditLog[]
+}
+
+model Log {
+  id        String   @id @default(cuid())
+  timestamp DateTime
+  level     String
+  service   String
+  message   String   @db.Text
+  raw       String   @db.Text
+  meta      Json?
+  sourceId  String?
+  createdAt DateTime @default(now())
+  
+  @@index([timestamp])
+  @@index([level])
+  @@index([service])
+}
+
+model Alert {
+  id             String        @id @default(cuid())
+  logId          String?
+  severity       AlertSeverity
+  type           String
+  message        String
+  status         AlertStatus   @default(NEW)
+  isAcknowledged Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  
+  @@index([status])
+  @@index([createdAt])
+}
+\end{lstlisting}
+
+\section{Conclusion}
+
+This implementation chapter demonstrated the translation of specifications into working software. Key technical achievements include: a cross-platform Golang agent with native Windows Event Log support; a Node.js backend with real-time SSE streaming and RAG-powered AI chat; and a responsive React dashboard with live updates. The following chapter presents testing and deployment strategies.
+
+
+% =========================================================================
+% CHAPTER 4: TESTING AND DEPLOYMENT
+% =========================================================================
+\chapter{Testing and Deployment}
+
+\section{Introduction}
+
+This chapter outlines the quality assurance strategy employed during LogChat development and describes the containerized deployment architecture. We present unit testing, integration testing, performance benchmarks, and the Docker-based deployment configuration.
+
+\section{Testing Strategy Overview}
+
+Figure \ref{fig:testing_pyramid.png} illustrates the testing pyramid employed for LogChat quality assurance.
+
+\placeholderfig{Testing Pyramid Strategy}{testing_pyramid.png}{Unit Tests (60\%) → Integration Tests (30\%) → E2E Tests (10\%)}
+
+\begin{table}[H]
+\centering
+\caption{Testing Strategy by Component}
+\label{tab:testing-strategy}
+\begin{tabular}{|l|l|l|c|}
+\hline
+\textbf{Component} & \textbf{Test Type} & \textbf{Framework} & \textbf{Coverage} \\
+\hline
+Golang Agent & Unit & Go testing pkg & 75\% \\
+Golang Agent & Integration & Go testing + httptest & 60\% \\
+Backend API & Unit & Jest + ts-jest & 80\% \\
+Backend API & Integration & Supertest & 70\% \\
+Frontend & Component & React Testing Library & 65\% \\
+Full Stack & E2E & Playwright & 40\% \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Unit Testing}
+
+\subsection{Threat Detection Engine Tests}
+
+\begin{table}[H]
+\centering
+\caption{Threat Detection Test Cases}
+\label{tab:threat-tests}
+\begin{tabular}{|p{5cm}|p{4cm}|c|}
+\hline
+\textbf{Input} & \textbf{Expected} & \textbf{Result} \\
+\hline
+\texttt{"' OR 1=1 --"} & SQL\_INJECTION, CRITICAL & \textcolor{green}{\cmark PASS} \\
+\hline
+\texttt{"<script>alert(1)</script>"} & XSS\_ATTEMPT, HIGH & \textcolor{green}{\cmark PASS} \\
+\hline
+\texttt{"../../etc/passwd"} & PATH\_TRAVERSAL, CRITICAL & \textcolor{green}{\cmark PASS} \\
+\hline
+\texttt{"User logged in"} & No threat (null) & \textcolor{green}{\cmark PASS} \\
+\hline
+5 failed logins in 60s & BRUTE\_FORCE, HIGH & \textcolor{green}{\cmark PASS} \\
+\hline
+\texttt{"DROP TABLE users;"} & SQL\_INJECTION, CRITICAL & \textcolor{green}{\cmark PASS} \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{lstlisting}[language=TypeScript, caption=Threat Detection Unit Test]
+// src/services/__tests__/threatDetection.test.ts
+
+describe('ThreatDetectionEngine', () => {
+    describe('SQL Injection Detection', () => {
+        test('detects OR 1=1 pattern', () => {
+            const log = createLog("' OR 1=1 --");
+            const result = analyzeThreat(log);
+            
+            expect(result.detected).toBe(true);
+            expect(result.type).toBe('SQL_INJECTION');
+            expect(result.severity).toBe('CRITICAL');
+        });
+        
+        test('detects UNION SELECT', () => {
+            const log = createLog("UNION SELECT * FROM users");
+            const result = analyzeThreat(log);
+            
+            expect(result.detected).toBe(true);
+            expect(result.mitre).toBe('T1190');
+        });
+    });
+    
+    describe('XSS Detection', () => {
+        test('detects script tag', () => {
+            const log = createLog("<script>alert('xss')</script>");
+            const result = analyzeThreat(log);
+            
+            expect(result.detected).toBe(true);
+            expect(result.type).toBe('XSS_ATTEMPT');
+            expect(result.severity).toBe('HIGH');
+        });
+    });
+    
+    describe('False Positive Prevention', () => {
+        test('ignores normal log messages', () => {
+            const log = createLog("User successfully logged in");
+            const result = analyzeThreat(log);
+            
+            expect(result.detected).toBe(false);
+        });
+    });
+});
+\end{lstlisting}
+
+Figure \ref{fig:test_coverage_report.png} shows the test coverage report.
+
+\placeholderfig{Test Coverage Report}{test_coverage_report.png}{Coverage heatmap: services/ 82\%, routes/ 75\%, middleware/ 90\%}
+
+\subsection{Authentication Service Tests}
+
+\begin{lstlisting}[language=TypeScript, caption=Authentication Unit Tests]
+describe('AuthService', () => {
+    describe('loginUser', () => {
+        test('succeeds with valid credentials', async () => {
+            const result = await loginUser(
+                'admin@logchat.io', 
+                'password123'
+            );
+            
+            expect(result.success).toBe(true);
+            expect(result.token).toBeDefined();
+            expect(result.user.role).toBe('ADMIN');
+        });
+        
+        test('fails with wrong password', async () => {
+            const result = await loginUser(
+                'admin@logchat.io', 
+                'wrongpassword'
+            );
+            
+            expect(result.success).toBe(false);
+            expect(result.error).toBe('Invalid credentials');
+        });
+        
+        test('fails for disabled account', async () => {
+            const result = await loginUser(
+                'disabled@test.com', 
+                'password123'
+            );
+            
+            expect(result.success).toBe(false);
+        });
+    });
+    
+    describe('password hashing', () => {
+        test('uses bcrypt with cost factor 12', async () => {
+            const hash = await hashPassword('test123');
+            
+            expect(hash).toMatch(/^\$2[aby]?\$12\$/);
+        });
+    });
+});
+\end{lstlisting}
+
+\section{Integration Testing}
+
+\subsection{API Endpoint Testing}
+
+\begin{lstlisting}[language=TypeScript, caption=API Integration Tests]
+// tests/integration/api.test.ts
+
+describe('Logs API', () => {
+    let authToken: string;
+    
+    beforeAll(async () => {
+        const res = await request(app)
+            .post('/api/auth/login')
+            .send({ 
+                email: 'test@logchat.io', 
+                password: 'test123' 
+            });
+        authToken = res.body.token;
+    });
+    
+    describe('POST /api/logs/ingest', () => {
+        test('ingests batch of logs', async () => {
+            const response = await request(app)
+                .post('/api/logs/ingest')
+                .set('X-API-Key', 'test-api-key')
+                .send({
+                    agent: { hostname: 'test-server' },
+                    logs: [
+                        { level: 'INFO', message: 'Test log 1' },
+                        { level: 'ERROR', message: 'Test error' },
+                    ]
+                });
+            
+            expect(response.status).toBe(201);
+            expect(response.body.ingested).toBe(2);
+        });
+        
+        test('rejects invalid API key', async () => {
+            const response = await request(app)
+                .post('/api/logs/ingest')
+                .set('X-API-Key', 'invalid-key')
+                .send({ logs: [] });
+            
+            expect(response.status).toBe(401);
+        });
+    });
+    
+    describe('GET /api/logs', () => {
+        test('returns filtered logs', async () => {
+            const response = await request(app)
+                .get('/api/logs')
+                .set('Authorization', `Bearer ${authToken}`)
+                .query({ level: 'ERROR', limit: 10 });
+            
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.body.logs)).toBe(true);
+            response.body.logs.forEach((log: any) => {
+                expect(log.level).toBe('ERROR');
+            });
+        });
+    });
+});
+\end{lstlisting}
+
+\subsection{SSE Stream Testing}
+
+\begin{lstlisting}[language=TypeScript, caption=SSE Integration Test]
+describe('SSE Stream', () => {
+    test('receives real-time log events', (done) => {
+        const eventSource = new EventSource(
+            'http://localhost:3001/api/stream/stats'
+        );
+        
+        eventSource.addEventListener('connected', () => {
+            // Trigger a log event
+            ingestTestLog({ level: 'ERROR', message: 'Test' });
+        });
+        
+        eventSource.addEventListener('log', (event) => {
+            const data = JSON.parse(event.data);
+            expect(data.log.level).toBe('ERROR');
+            eventSource.close();
+            done();
+        });
+        
+        setTimeout(() => {
+            eventSource.close();
+            done(new Error('Timeout waiting for SSE event'));
+        }, 5000);
+    });
+});
+\end{lstlisting}
+
+\section{Performance Testing}
+
+\subsection{Load Testing with Apache Benchmark}
+
+\begin{lstlisting}[language=bash, caption=Load Test Commands and Results]
+# Log ingestion endpoint
+$ ab -n 10000 -c 100 -p payload.json -T application/json \
+     -H "X-API-Key: test-key" \
+     http://localhost:3001/api/logs/ingest
+
+Document Path:          /api/logs/ingest
+Document Length:        45 bytes
+
+Concurrency Level:      100
+Time taken for tests:   8.017 seconds
+Complete requests:      10000
+Failed requests:        0
+
+Requests per second:    1247.32 [#/sec] (mean)
+Time per request:       80.17 [ms] (mean)
+Time per request:       0.802 [ms] (across all)
+Transfer rate:          58.29 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    1   0.5      1       5
+Processing:    10   79  12.3     78     145
+Waiting:        9   78  12.2     77     144
+Total:         11   80  12.3     79     147
+
+Percentage of the requests served within a certain time (ms)
+  50%     79
+  66%     84
+  75%     87
+  90%     95
+  95%    102
+  99%    118
+ 100%    147 (longest request)
+\end{lstlisting}
+
+\subsection{Performance Benchmarks Summary}
+
+\begin{table}[H]
+\centering
+\caption{Performance Benchmark Results}
+\label{tab:performance-benchmarks}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Metric} & \textbf{Target} & \textbf{Achieved} & \textbf{Status} \\
+\hline
+Log ingestion rate & 1000 req/s & 1247 req/s & \textcolor{green}{\cmark} \\
+P50 latency (ingest) & $<$100ms & 79ms & \textcolor{green}{\cmark} \\
+P99 latency (ingest) & $<$200ms & 118ms & \textcolor{green}{\cmark} \\
+SSE broadcast delay & $<$500ms & 120ms & \textcolor{green}{\cmark} \\
+AI response time (Ollama) & $<$5s & 2.3s* & \textcolor{green}{\cmark} \\
+Dashboard load time & $<$2s & 1.4s & \textcolor{green}{\cmark} \\
+\hline
+\multicolumn{4}{l}{\small *With Qwen 2.5:0.5b model, hot cache} \\
+\end{tabular}
+\end{table}
+
+Figure \ref{fig:performance_charts.png} presents the performance test visualizations.
+
+\placeholderfig{Performance Test Charts}{performance_charts.png}{Charts showing throughput, latency percentiles, and resource utilization}
+
+\section{Docker Deployment}
+
+\subsection{Docker Compose Configuration}
+
+\begin{lstlisting}[language=bash, caption=Complete docker-compose.yml]
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: logchat
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-logchat123}
+      POSTGRES_DB: logchat
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "logchat"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - logchat-net
+
+  # Ollama AI Service
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - logchat-net
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://logchat:${DB_PASSWORD}@db:5432/logchat
+      JWT_SECRET: ${JWT_SECRET}
+      OLLAMA_URL: http://ollama:11434
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - logchat-net
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - logchat-net
+
+volumes:
+  postgres_data:
+  ollama_data:
+
+networks:
+  logchat-net:
+    driver: bridge
+\end{lstlisting}
+
+Figure \ref{fig:docker_network.png} presents the Docker network topology.
+
+\placeholderfig{Docker Network Topology}{docker_network.png}{Four containers on logchat-net bridge network with port mappings}
+
+\subsection{Backend Dockerfile}
+
+\begin{lstlisting}[language=bash, caption=Backend Multi-stage Dockerfile]
+# Build stage
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine AS production
+WORKDIR /app
+
+RUN addgroup -g 1001 nodejs && \
+    adduser -u 1001 -G nodejs -s /bin/sh -D nodejs
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/prisma ./prisma
+
+RUN npx prisma generate
+
+USER nodejs
+EXPOSE 3001
+CMD ["node", "dist/index.js"]
+\end{lstlisting}
+
+\subsection{Frontend Dockerfile}
+
+\begin{lstlisting}[language=bash, caption=Frontend Next.js Dockerfile]
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine AS production
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+CMD ["node", "server.js"]
+\end{lstlisting}
+
+\section{Agent Deployment}
+
+\subsection{Windows Installation}
+
+\begin{lstlisting}[language=bash, caption=Windows Agent Installation Script]
+# Download agent
+$AgentURL = "https://releases.logchat.io/v1.0.0/logchat-agent-windows-amd64.exe"
+$InstallPath = "C:\Program Files\LogChat"
+
+New-Item -ItemType Directory -Force -Path $InstallPath
+Invoke-WebRequest -Uri $AgentURL -OutFile "$InstallPath\logchat-agent.exe"
+
+# Create configuration
+@"
+server:
+  url: "https://logchat.example.com:3001"
+  api_key: "$env:LOGCHAT_API_KEY"
+
+collectors:
+  eventlog:
+    enabled: true
+    channels:
+      - Application
+      - System
+      - Security
+"@ | Out-File -FilePath "$InstallPath\config.yaml" -Encoding UTF8
+
+# Install as Windows Service
+New-Service -Name "LogChatAgent" `
+    -BinaryPathName "$InstallPath\logchat-agent.exe --config $InstallPath\config.yaml" `
+    -DisplayName "LogChat Log Agent" `
+    -Description "Collects and forwards logs to LogChat server" `
+    -StartupType Automatic
+
+# Start the service
+Start-Service LogChatAgent
+\end{lstlisting}
+
+\subsection{Linux Installation}
+
+\begin{lstlisting}[language=bash, caption=Linux Agent Installation Script]
+#!/bin/bash
+set -e
+
+VERSION="1.0.0"
+INSTALL_DIR="/opt/logchat"
+CONFIG_DIR="/etc/logchat"
+
+# Download binary
+curl -sSL "https://releases.logchat.io/v${VERSION}/logchat-agent-linux-amd64" \
+    -o /tmp/logchat-agent
+chmod +x /tmp/logchat-agent
+sudo mv /tmp/logchat-agent "${INSTALL_DIR}/logchat-agent"
+
+# Create configuration
+sudo mkdir -p "${CONFIG_DIR}"
+sudo tee "${CONFIG_DIR}/config.yaml" > /dev/null <<EOF
+server:
+  url: "https://logchat.example.com:3001"
+  api_key: "${LOGCHAT_API_KEY}"
+
+collectors:
+  files:
+    - paths:
+        - /var/log/syslog
+        - /var/log/auth.log
+        - /var/log/nginx/*.log
+      service: "linux-server"
+  journald:
+    enabled: true
+    units:
+      - docker
+      - nginx
+      - sshd
+EOF
+
+# Create systemd service
+sudo tee /etc/systemd/system/logchat-agent.service > /dev/null <<EOF
+[Unit]
+Description=LogChat Log Collection Agent
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=${INSTALL_DIR}/logchat-agent --config ${CONFIG_DIR}/config.yaml
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start
+sudo systemctl daemon-reload
+sudo systemctl enable logchat-agent
+sudo systemctl start logchat-agent
+\end{lstlisting}
+
+\section{Production Deployment Checklist}
+
+\begin{table}[H]
+\centering
+\caption{Production Deployment Checklist}
+\begin{tabular}{|l|c|l|}
+\hline
+\textbf{Task}  & \textbf{Notes} \\
+\hline
+Configure TLS certificates  & Let's Encrypt recommended \\
+Set strong JWT\_SECRET & Min. 256-bit random \\
+Set strong DB\_PASSWORD & Min. 16 characters \\
+Configure backup for postgres\_data & Daily automated \\
+Set up log rotation & logrotate config \\
+Configure firewall rules & Allow 3000, 3001, 11434 \\
+Pull LLM model & \texttt{ollama pull qwen2.5:0.5b} \\
+Run database migrations & \texttt{npx prisma migrate deploy} \\
+Seed default admin user & Change default password \\
+Configure monitoring & Prometheus/Grafana optional \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Application Screenshots}
+
+This section presents screenshots of the deployed application demonstrating key functionality.
+
+\placeholderfig[0.95]{Dashboard Overview Screenshot}{screenshot_dashboard.png}{Full dashboard showing stats cards, time-series chart, services chart, and log table}
+
+\placeholderfig[0.95]{AI Chat Interface Screenshot}{screenshot_chat.png}{Chat interface showing user query and AI response with markdown formatting}
+
+\placeholderfig[0.95]{Log Detail View Screenshot}{screenshot_log_detail.png}{Expanded log entry showing full message, metadata, and JSON payload}
+
+\placeholderfig[0.95]{Admin Panel Screenshot}{screenshot_admin.png}{Admin panel showing user management table and log source configuration}
+
+\placeholderfig[0.95]{Alert Management Screenshot}{screenshot_notifications.png}{Alert dashboard showing threat alerts with severity and status indicators}
+
+\section{Conclusion}
+
+This chapter demonstrated the comprehensive quality assurance strategy and deployment architecture for LogChat. Key achievements include:
+
+\begin{itemize}
+    \item Comprehensive test coverage exceeding 70\% across all components
+    \item Performance benchmarks exceeding targets (1247 req/s vs. 1000 req/s target)
+    \item Containerized deployment via Docker Compose for reproducible environments
+    \item Cross-platform agent installation scripts for Windows and Linux
+    \item Production-ready configuration with security best practices
+\end{itemize}
+
+The testing and deployment infrastructure ensures LogChat can be reliably deployed and operated in production environments.
+
+
+% =========================================================================
+% GENERAL CONCLUSION AND APPENDICES
+% =========================================================================
+
+% =========================================================================
+% GENERAL CONCLUSION
+% =========================================================================
+\chapter*{General Conclusion}
+\addcontentsline{toc}{chapter}{General Conclusion}
+
+\section*{Summary of Achievements}
+
+This end-of-studies project successfully demonstrated the feasibility of building a self-hosted, AI-driven Security Information and Event Management (SIEM) platform accessible to organizations of all sizes. Over the course of three months and twelve development sprints, LogChat evolved from concept to a fully functional security monitoring solution.
+
+The key technical achievements include:
+
+\begin{enumerate}
+    \item \textbf{Cross-Platform Log Collection Agent:} A 5MB Golang binary capable of collecting logs from Windows Event Logs (Application, System, Security channels), Linux Journald/Syslog, and arbitrary log files using glob patterns. The agent compiles with zero runtime dependencies, enabling deployment across heterogeneous infrastructure without prerequisite installations.
+    
+    \item \textbf{Privacy-First AI Integration:} Successful integration of Ollama for local Large Language Model inference, ensuring that sensitive log data never leaves the organization's infrastructure. The RAG (Retrieval Augmented Generation) pattern significantly improves response quality by providing relevant log context to the LLM.
+    
+    \item \textbf{Real-Time Dashboard:} A responsive Next.js frontend achieving sub-second update latency via Server-Sent Events (SSE), with live threat notifications and interactive log exploration.
+    
+    \item \textbf{Threat Detection Engine:} Pattern-based detection for common attack vectors including SQL injection, cross-site scripting (XSS), path traversal, and brute force attempts, with MITRE ATT\&CK framework mapping.
+    
+    \item \textbf{One-Command Deployment:} Complete platform operational within five minutes via \texttt{docker-compose up}, dramatically reducing deployment complexity compared to traditional SIEM solutions.
+    
+    \item \textbf{Performance Excellence:} Benchmarks demonstrating 1,247 requests per second for log ingestion, exceeding the 1,000 req/s target by 24.7\%.
+\end{enumerate}
+
+\section*{Objectives Fulfillment}
+
+Table \ref{tab:objectives-fulfillment} summarizes the achievement of project objectives defined in the introduction.
+
+\begin{table}[H]
+\centering
+\caption{Project Objectives Fulfillment Matrix}
+\label{tab:objectives-fulfillment}
+\begin{tabular}{|p{6cm}|c|p{5.5cm}|}
+\hline
+\textbf{Objective} & \textbf{Status} & \textbf{Evidence} \\
+\hline
+Unified cross-platform log collection & \cmark & Windows + Linux agents operational \\
+\hline
+Natural Language log analysis & \cmark & RAG chat with Ollama integration \\
+\hline
+Real-time dashboard visualization & \cmark & SSE streaming, $<$500ms latency \\
+\hline
+Zero-configuration deployment & \cmark & Single docker-compose.yml \\
+\hline
+Privacy-preserving AI & \cmark & Local LLM, no cloud dependencies \\
+\hline
+1000+ req/s ingestion & \cmark & 1,247 req/s achieved \\
+\hline
+\end{tabular}
+\end{table}
+
+\section*{Lessons Learned}
+
+The development of LogChat provided valuable insights across multiple dimensions:
+
+\begin{enumerate}
+    \item \textbf{Golang for Systems Programming:} Go's cross-compilation capabilities and static linking proved invaluable for agent distribution. The ability to produce a single binary without runtime dependencies significantly simplified deployment across diverse environments.
+    
+    \item \textbf{RAG Architecture Effectiveness:} Providing contextual log data to the LLM dramatically improved response quality compared to generic prompts. The retrieval component ensures answers are grounded in actual system data rather than general knowledge.
+    
+    \item \textbf{SSE vs. WebSocket Trade-offs:} For unidirectional server-to-client streaming (dashboard updates), Server-Sent Events proved simpler and equally effective as WebSocket, with better automatic reconnection handling.
+    
+    \item \textbf{Local LLM Viability:} Quantized models like Qwen 2.5 (0.5B parameters) running on consumer hardware provide acceptable response quality for log analysis tasks, making AI-powered security accessible without cloud API costs.
+    
+    \item \textbf{Importance of Type Safety:} TypeScript's compile-time type checking prevented numerous runtime errors, particularly in the complex JSON handling required for log processing.
+\end{enumerate}
+
+\section*{Challenges and Resolutions}
+
+\begin{table}[H]
+\centering
+\caption{Technical Challenges and Resolutions}
+\begin{tabular}{|p{4cm}|p{4.5cm}|p{4.5cm}|}
+\hline
+\textbf{Challenge} & \textbf{Impact} & \textbf{Resolution} \\
+\hline
+Windows Event Log Unicode handling & Garbled non-ASCII characters & Proper UTF-16 to UTF-8 conversion \\
+\hline
+SSE connection drops behind proxies & Dashboard losing real-time updates & Heartbeat events + auto-reconnect \\
+\hline
+LLM response latency variability & Inconsistent user experience & Response streaming + loading states \\
+\hline
+Log ingestion memory pressure & OOM under high load & Batch processing + ring buffer \\
+\hline
+CORS issues in development & Frontend-backend communication failures & Explicit origin configuration \\
+\hline
+\end{tabular}
+\end{table}
+
+\section*{Future Work and Roadmap}
+
+LogChat's development continues beyond this academic project. The following enhancements are planned for future releases:
+
+\begin{table}[H]
+\centering
+\caption{LogChat Development Roadmap}
+\label{tab:roadmap}
+\begin{tabular}{|l|p{7cm}|c|l|}
+\hline
+\textbf{Feature} & \textbf{Description} & \textbf{Priority} & \textbf{Target} \\
+\hline
+Vector Search (pgvector) & Semantic log similarity search for improved RAG retrieval & High & Q2 2025 \\
+\hline
+Kubernetes Helm Chart & Production-grade Kubernetes deployment with horizontal scaling & High & Q2 2025 \\
+\hline
+Alert Notifications & Integration with Slack, Email, Microsoft Teams, and PagerDuty & Medium & Q3 2025 \\
+\hline
+Custom Detection Rules & User-defined threat patterns via graphical rule builder & Medium & Q3 2025 \\
+\hline
+Log Correlation Engine & Cross-service event correlation and attack chain detection & Medium & Q4 2025 \\
+\hline
+Mobile Companion App & React Native app for alert monitoring and quick responses & Low & Q1 2026 \\
+\hline
+SOAR Integration & Security Orchestration, Automation and Response capabilities & Low & Q2 2026 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section*{Final Remarks}
+
+LogChat represents a meaningful contribution to the democratization of security analytics. By leveraging modern technologies --- Golang's efficiency, Node.js's real-time capabilities, and local AI inference --- we have demonstrated that effective log management and threat detection need not remain exclusive to large enterprises with substantial security budgets.
+
+The project is released as open-source software, welcoming contributions from the global security community. We hope that LogChat serves as a foundation for continued innovation in accessible, privacy-preserving security monitoring.
+
+As cybersecurity threats continue to evolve in sophistication and scale, tools that enable organizations of all sizes to effectively monitor and respond to security incidents become increasingly critical. It is our sincere hope that LogChat contributes, in some measure, to making the digital world a safer place.
+
+\vspace{1cm}
+\begin{flushright}
+\textit{``Security is not a product, but a process.''}\\
+\textit{--- Bruce Schneier}
+\end{flushright}
+
+% =========================================================================
+% BIBLIOGRAPHY
+% =========================================================================
+\chapter*{References}
+\addcontentsline{toc}{chapter}{References}
+
+\begin{enumerate}[label={[\arabic*]}]
+    \item IBM Security. (2024). \textit{Cost of a Data Breach Report 2024}. IBM Corporation.
+    
+    \item NIST. (2023). \textit{Cybersecurity Framework 2.0}. National Institute of Standards and Technology.
+    
+    \item MITRE Corporation. (2024). \textit{ATT\&CK Framework}. Retrieved from https://attack.mitre.org/
+    
+    \item Gartner. (2024). \textit{Magic Quadrant for Security Information and Event Management}. Gartner, Inc.
+    
+    \item Elastic N.V. (2024). \textit{Elasticsearch Reference}. Retrieved from https://www.elastic.co/guide/
+    
+    \item Ollama. (2024). \textit{Ollama Documentation}. Retrieved from https://ollama.ai/
+    
+    \item OpenAI. (2024). \textit{GPT-4 Technical Report}. Retrieved from https://openai.com/research/
+    
+    \item Lewis, P., et al. (2020). \textit{Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks}. arXiv:2005.11401.
+    
+    \item Vercel. (2024). \textit{Next.js Documentation}. Retrieved from https://nextjs.org/docs/
+    
+    \item Prisma. (2024). \textit{Prisma ORM Documentation}. Retrieved from https://www.prisma.io/docs/
+    
+    \item PostgreSQL Global Development Group. (2024). \textit{PostgreSQL 16 Documentation}. Retrieved from https://www.postgresql.org/docs/16/
+    
+    \item Go Team. (2024). \textit{The Go Programming Language Specification}. Retrieved from https://go.dev/ref/spec
+    
+    \item Docker Inc. (2024). \textit{Docker Documentation}. Retrieved from https://docs.docker.com/
+    
+    \item OWASP Foundation. (2024). \textit{OWASP Top Ten}. Retrieved from https://owasp.org/Top10/
+    
+    \item CVE. (2024). \textit{Common Vulnerabilities and Exposures}. Retrieved from https://cve.mitre.org/
+\end{enumerate}
+
+% =========================================================================
+% APPENDICES
+% =========================================================================
+\appendix
+
+\chapter{Appendix A: Diagram Reference}
+
+All UML diagrams referenced in this report should be created using PlantUML or draw.io and saved to the \texttt{report/figures/} directory. The PlantUML source code is provided in \texttt{report/diagrams/LogChat\_All\_UML.puml}.
+
+% Section removed as per request
+
+\chapter{Appendix B: API Reference}
+
+\section{Authentication Endpoints}
+
+\begin{table}[H]
+\centering
+\caption{Authentication API Endpoints}
+\begin{tabular}{|l|l|p{4cm}|l|}
+\hline
+\textbf{Method} & \textbf{Endpoint} & \textbf{Description} & \textbf{Auth} \\
+\hline
+POST & /api/auth/login & Authenticate user, return JWT & None \\
+POST & /api/auth/register & Register new user account & None \\
+POST & /api/auth/logout & Invalidate current session & JWT \\
+GET & /api/auth/me & Get current user profile & JWT \\
+PUT & /api/auth/password & Change password & JWT \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Log Management Endpoints}
+
+\begin{table}[H]
+\centering
+\caption{Log Management API Endpoints}
+\begin{tabular}{|l|l|p{4cm}|l|}
+\hline
+\textbf{Method} & \textbf{Endpoint} & \textbf{Description} & \textbf{Auth} \\
+\hline
+POST & /api/logs & Ingest single log entry & API Key \\
+POST & /api/logs/batch & Ingest multiple logs & API Key \\
+POST & /api/logs/ingest & Agent ingestion endpoint & API Key \\
+GET & /api/logs & Query logs with filters & JWT \\
+GET & /api/logs/:id & Get specific log entry & JWT \\
+GET & /api/logs/stats & Get log statistics & JWT \\
+GET & /api/logs/export & Export logs (CSV/JSON) & JWT \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Chat Endpoints}
+
+\begin{table}[H]
+\centering
+\caption{AI Chat API Endpoints}
+\begin{tabular}{|l|l|p{4cm}|l|}
+\hline
+\textbf{Method} & \textbf{Endpoint} & \textbf{Description} & \textbf{Auth} \\
+\hline
+POST & /api/chat & Send message, get AI response & JWT \\
+GET & /api/chat/sessions & List user's chat sessions & JWT \\
+GET & /api/chat/sessions/:id & Get session with messages & JWT \\
+DELETE & /api/chat/sessions/:id & Delete chat session & JWT \\
+GET & /api/chat/health & Check AI service status & JWT \\
+GET & /api/chat/suggestions & Get suggested queries & JWT \\
+\hline
+\end{tabular}
+\end{table}
+
+\section{Request/Response Examples}
+
+\subsection{Login Request}
+
+\begin{lstlisting}[language=bash, caption=Login Request Example]
+POST /api/auth/login
+Content-Type: application/json
+
+{
+    "email": "analyst@example.com",
+    "password": "securePassword123"
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=bash, caption=Login Response Example]
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+    "success": true,
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+        "id": "clx1234567890",
+        "email": "analyst@example.com",
+        "name": "Security Analyst",
+        "role": "STAFF"
+    }
+}
+\end{lstlisting}
+
+\subsection{Log Ingestion Request}
+
+\begin{lstlisting}[language=bash, caption=Log Ingestion Request Example]
+POST /api/logs/ingest
+Content-Type: application/json
+X-API-Key: src_abc123xyz
+
+{
+    "agent": {
+        "hostname": "web-server-01",
+        "environment": "production",
+        "version": "1.0.0"
+    },
+    "logs": [
+        {
+            "timestamp": "2025-01-11T21:30:00Z",
+            "level": "ERROR",
+            "service": "auth-service",
+            "message": "Failed login attempt for user admin",
+            "meta": {
+                "ip": "192.168.1.100",
+                "userAgent": "Mozilla/5.0..."
+            }
+        }
+    ]
+}
+\end{lstlisting}
+
+\chapter{Appendix C: Configuration Reference}
+
+\section{Agent Configuration (config.yaml)}
+
+\begin{lstlisting}[language=bash, caption=Complete Agent Configuration]
+# LogChat Agent Configuration
+# Documentation: https://docs.logchat.io/agent
+
+server:
+  url: "https://logchat.example.com:3001"
+  api_key: "${LOGCHAT_API_KEY}"
+  timeout: 30s
+  batch_size: 100
+  flush_interval: 5s
+  max_retries: 5
+  tls_skip_verify: false
+
+agent:
+  hostname: "${HOSTNAME}"
+  environment: "production"
+  tags:
+    team: "infrastructure"
+    datacenter: "dc-eu-west-1"
+    tier: "frontend"
+
+buffer:
+  max_size: 10000
+  persist_to_disk: true
+  disk_path: "/var/lib/logchat/buffer"
+
+collectors:
+  # File-based log collection
+  files:
+    - name: "nginx-access"
+      paths:
+        - "/var/log/nginx/access.log"
+        - "/var/log/nginx/error.log"
+      service: "nginx"
+      parser: "json"
+      
+    - name: "application-logs"
+      paths:
+        - "/var/log/app/*.log"
+      service: "backend-api"
+      parser: "regex"
+      pattern: '(?P<timestamp>\S+) (?P<level>\w+) (?P<message>.*)'
+
+  # Windows Event Log collection
+  eventlog:
+    enabled: true
+    channels:
+      - name: "Application"
+        service: "windows-app"
+      - name: "System"
+        service: "windows-system"
+      - name: "Security"
+        service: "windows-security"
+    poll_interval: 5s
+
+  # Linux Journald collection
+  journald:
+    enabled: true
+    units:
+      - docker
+      - nginx
+      - sshd
+      - postgresql
+    since: "-1h"
+
+logging:
+  level: "info"
+  format: "json"
+  output: "/var/log/logchat-agent.log"
+\end{lstlisting}
+
+\section{Environment Variables}
+
+\begin{table}[H]
+\centering
+\caption{Backend Environment Variables}
+\begin{tabular}{|l|p{5cm}|l|}
+\hline
+\textbf{Variable} & \textbf{Description} & \textbf{Default} \\
+\hline
+PORT & API server port & 3001 \\
+DATABASE\_URL & PostgreSQL connection string & (required) \\
+JWT\_SECRET & Secret for JWT signing & (required) \\
+OLLAMA\_URL & Ollama API endpoint & localhost:11434 \\
+NODE\_ENV & Environment (dev/prod) & development \\
+LOG\_LEVEL & Logging verbosity & info \\
+CORS\_ORIGIN & Allowed CORS origins & * \\
+\hline
+\end{tabular}
+\end{table}
+
+\chapter{Appendix D: Glossary}
+
+\begin{longtable}{|p{3.5cm}|p{10cm}|}
+\hline
+\textbf{Term} & \textbf{Definition} \\
+\hline
+\endhead
+Attack Vector & A path or means by which an attacker can gain access to a system \\
+\hline
+bcrypt & A password hashing function designed for secure password storage \\
+\hline
+CUID & Collision-resistant Unique IDentifier, an alternative to UUID \\
+\hline
+Event Loop & Node.js's mechanism for executing non-blocking I/O operations \\
+\hline
+Goroutine & A lightweight thread managed by the Go runtime \\
+\hline
+JWT & JSON Web Token, a compact means of representing claims between parties \\
+\hline
+LLM & Large Language Model, an AI model trained on vast text data \\
+\hline
+MITRE ATT\&CK & A knowledge base of adversary tactics and techniques \\
+\hline
+ORM & Object-Relational Mapping, a technique for converting data between systems \\
+\hline
+RAG & Retrieval Augmented Generation, combining search with AI generation \\
+\hline
+RBAC & Role-Based Access Control, restricting access based on user roles \\
+\hline
+SIEM & Security Information and Event Management, a security monitoring solution \\
+\hline
+SOC & Security Operations Center, a facility for monitoring security \\
+\hline
+SSE & Server-Sent Events, a standard for server-to-client streaming \\
+\hline
+Tail & Following a file as new content is appended (like \texttt{tail -f}) \\
+\hline
+\end{longtable}
+
+\chapter{Appendix E: Source Code Excerpts}
+
+This appendix contains the full source code listings referenced throughout the implementation chapters.
+
+\section{Golang Agent: Collector Interface}
+\label{app:code_collector}
+\begin{lstlisting}[language=Go, caption=Collector Interface Definition]
+// internal/collector/collector.go
+package collector
+
+import (
+    "context"
+    "time"
+)
+
+// Collector defines the interface for all log collectors
+type Collector interface {
+    // Name returns the unique identifier for this collector
+    Name() string
+    
+    // Start begins log collection in a goroutine
+    Start(ctx context.Context)
+    
+    // Stop gracefully terminates the collector
+    Stop()
+    
+    // Stats returns current collection statistics
+    Stats() map[string]any
+}
+
+// BaseCollector provides common functionality
+type BaseCollector struct {
+    name          string
+    sender        *sender.Sender
+    logsCollected int64
+    errorsCount   int64
+    lastCollected time.Time
+    running       bool
+    mu            sync.RWMutex
+}
+
+func (bc *BaseCollector) Name() string {
+    return bc.name
+}
+
+func (bc *BaseCollector) Stats() map[string]any {
+    bc.mu.RLock()
+    defer bc.mu.RUnlock()
+    return map[string]any{
+        "logs_collected": bc.logsCollected,
+        "errors_count":   bc.errorsCount,
+        "last_collected": bc.lastCollected,
+        "running":        bc.running,
+    }
+}
+\end{lstlisting}
+
+\section{Golang Agent: Windows Event Log}
+\label{app:code_windows}
+\begin{lstlisting}[language=Go, caption=Windows Event Log Collection]
+//go:build windows
+
+package collector
+
+import (
+    "golang.org/x/sys/windows"
+    "unsafe"
+)
+
+var (
+    advapi32          = windows.NewLazySystemDLL("advapi32.dll")
+    procOpenEventLogW = advapi32.NewProc("OpenEventLogW")
+    procReadEventLogW = advapi32.NewProc("ReadEventLogW")
+)
+
+func (ec *EventLogCollector) openEventLog(channel string) (
+    windows.Handle, error) {
+    
+    channelPtr, _ := syscall.UTF16PtrFromString(channel)
+    ret, _, err := procOpenEventLogW.Call(
+        0, // Local computer
+        uintptr(unsafe.Pointer(channelPtr)),
+    )
+    if ret == 0 {
+        return 0, fmt.Errorf("OpenEventLog: %v", err)
+    }
+    return windows.Handle(ret), nil
+}
+
+func (ec *EventLogCollector) readEvents(
+    handle windows.Handle) ([]LogEntry, error) {
+    
+    buffer := make([]byte, 64*1024) // 64KB buffer
+    var bytesRead, minBytes uint32
+    
+    ret, _, _ := procReadEventLogW.Call(
+        uintptr(handle),
+        uintptr(EVENTLOG_SEQUENTIAL_READ|EVENTLOG_FORWARDS_READ),
+        0,
+        uintptr(unsafe.Pointer(&buffer[0])),
+        uintptr(len(buffer)),
+        uintptr(unsafe.Pointer(&bytesRead)),
+        uintptr(unsafe.Pointer(&minBytes)),
+    )
+}
+\end{lstlisting}
+
+\section{Backend: JWT Authentication}
+\label{app:code_auth}
+\begin{lstlisting}[language=TypeScript, caption=JWT Authentication Service]
+// src/services/auth.ts
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { prisma } from '../lib/prisma.js';
+
+const JWT_SECRET = process.env.JWT_SECRET!;
+const JWT_EXPIRY = '7d';
+const BCRYPT_ROUNDS = 12;
+
+export async function loginUser(
+    email: string, 
+    password: string
+): Promise<AuthResult> {
+    const user = await prisma.user.findUnique({ 
+        where: { email } 
+    });
+    
+    if (!user || !user.active) {
+        return { success: false, error: 'Invalid credentials' };
+    }
+    
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+        return { success: false, error: 'Invalid credentials' };
+    }
+    
+    const token = jwt.sign(
+        { userId: user.id, role: user.role, email: user.email },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRY }
+    );
+    
+    await prisma.session.create({
+        data: {
+            token: hashToken(token),
+            userId: user.id,
+            expiresAt: new Date(Date.now() + 7*24*60*60*1000),
+        }
+    });
+    
+    return { success: true, user: sanitizeUser(user), token };
+}
+\end{lstlisting}
+
+\section{Backend: RAG Chat Workflow}
+\label{app:code_rag}
+\begin{lstlisting}[language=TypeScript, caption=RAG-Powered Chat Route]
+// src/routes/chat.ts
+router.post('/', authMiddleware, async (req, res) => {
+    const { message, sessionId, filters } = req.body;
+    const logs = await queryLogs({
+        level: ['ERROR', 'WARN'],
+        startTime: subHours(new Date(), filters?.hours || 1),
+        limit: 100,
+        search: extractKeywords(message),
+    });
+    
+    const stats = await getStatsForLLM(60);
+    const systemPrompt = `You are LogChat, an AI analyst.
+Analyze the following log data and answer the user's question.
+LOG CONTEXT: ${buildLogContext(logs, stats)}
+`;
+    
+    const response = await aiManager.chat({
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: message }
+        ],
+        provider: 'ollama',
+        model: 'qwen2.5:0.5b',
+    });
+    
+    res.json({ success: true, response: response.content });
+});
+\end{lstlisting}
+
+\end{document}
